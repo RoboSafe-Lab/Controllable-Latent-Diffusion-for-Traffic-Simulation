@@ -1,1 +1,31 @@
 # HazardForge
+
+**Dynamic and Realistic Vehicle Scenario Generation for Autonomous Safety Testing**
+
+Codebase for **HazardForge**, focusing on the generation of controllable and dynamic hazardous driving scenarios for autonomous vehicle testing. This framework leverages reinforcement learning and diffusion models to create complex traffic situations, pushing the limits of safety-critical driving environments.
+## Installation
+### Basic (mainly based on tbsim)
+Create conda environment (Note nuplan-devkit needs `python>=3.9` so the virtual environment with python version 3.9 needs to be created instead of python 3.8.)
+```angular2html
+conda create -n hf python=3.9
+conda activate hf
+```
+
+Install `HazardForge` (this repo)
+```angular2html
+git clone https://github.com/RoboSafe-Lab/HazardForge.git
+cd HazardForge
+pip install -e .
+```
+Install a customized version of `trajdata`
+```angular2html
+cd ..
+git clone https://github.com/AIasd/trajdata.git
+cd trajdata
+pip install -r trajdata_requirements.txt
+pip install -e .
+```
+
+## Quick start
+### 1. Obtain dataset(s)
+We currently support the nuScenes [dataset](https://www.nuscenes.org/nuscenes).
