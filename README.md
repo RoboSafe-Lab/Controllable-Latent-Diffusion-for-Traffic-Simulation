@@ -7,12 +7,9 @@ Codebase for **HazardForge**, focusing on the generation of controllable and dyn
 ### Basic (mainly based on tbsim)
 Create conda environment (Note nuplan-devkit needs `python>=3.9` so the virtual environment with python version 3.9 needs to be created instead of python 3.8.)
 ```angular2html
-conda create -n hf python=3.9
+conda env create -f environment.yml
 conda activate hf
-```
-
-Install `HazardForge` (this repo)
-```angular2html
+cd ~
 git clone https://github.com/RoboSafe-Lab/HazardForge.git
 cd HazardForge
 pip install -e .
@@ -23,6 +20,13 @@ cd ..
 git clone https://github.com/AIasd/trajdata.git
 cd trajdata
 pip install -r trajdata_requirements.txt
+pip install -e .
+```
+Install `Pplan`
+```angular2html
+cd ..
+git clone https://github.com/NVlabs/spline-planner.git Pplan
+cd Pplan
 pip install -e .
 ```
 

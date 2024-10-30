@@ -1,0 +1,8 @@
+config_name: "trajdata_nusc_diff_xyz"
+dataset_path: ""
+remove_exp_dir : True
+output_dir: "../logs"
+trajdata_source_train :  "nusc_mini"
+trajdata_source_valid :  "nusc_mini"
+trajdata_data_dirs:
+  nusc_mini: "/datasets/mini"
