@@ -1,46 +1,70 @@
-
-import  yaml,os,sys,argparse
+import os
+import argparse
+from dataclasses import asdict
 import pytorch_lightning as pl
-from my_registry import  get_my_registered_experiment_config
+from omegaconf import OmegaConf, DictConfig
+from configs.experiment_config import ExperimentConfig, EvalConfig
 from tbsim.utils.batch_utils import set_global_batch_type
-from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env,set_global_trajdata_batch_raster_cfg
+from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
 import tbsim.utils.train_utils as TrainUtils
 from tbsim.datasets.factory import datamodule_factory
-def load_yaml_config(config_path):
-    with open(config_path, 'r') as file:
-        config = yaml.safe_load(file)
-    return config
 
-def main(cfg,auto_remove_exp_dir=False):
-    pl.seed_everything(cfg.seed)
+
+def replace_infinity(cfg: DictConfig):
+
+    def recursive_replace(d):
+        for k, v in d.items():
+            if isinstance(v, str) and v.lower() == "infinity":
+                d[k] = float('inf')
+            elif isinstance(v, DictConfig):
+                recursive_replace(v)
+            elif isinstance(v, list):
+                for idx, item in enumerate(v):
+                    if isinstance(item, str) and item.lower() == "infinity":
+                        v[idx] = float('inf')
+                    elif isinstance(item, DictConfig):
+                        recursive_replace(item)
+
+    recursive_replace(cfg)
+
+
+def main(cfg: DictConfig, auto_remove_exp_dir=False):
+
+    seed = cfg.train.training_num_steps if hasattr(cfg.train, 'training_num_steps') else 42
+    pl.seed_everything(seed)
+
+
     set_global_batch_type("trajdata")
-    set_global_trajdata_batch_env("nusc_trainval")
+    set_global_trajdata_batch_env(cfg.env.data_generation_trajdata_centric)
     set_global_trajdata_batch_raster_cfg(cfg.env.rasterizer)
 
+
     root_dir, log_dir, ckpt_dir, video_dir, version_key = TrainUtils.get_exp_dir(
-        exp_name=cfg.name,
-        output_dir=cfg.root_dir,
-        save_checkpoints=cfg.train.save.enabled,
+        exp_name=cfg.registered_name,
+        output_dir=cfg.output_dir,
+        save_checkpoints=cfg.train.save_best_k > 0,
         auto_remove_exp_dir=auto_remove_exp_dir
     )
-    cfg.dump(os.path.join(root_dir, version_key, "config.json"))
+
+
+    config_save_path = os.path.join(root_dir, version_key, "config.yaml")
+    OmegaConf.save(cfg, config_save_path)
+    print(f"Configuration saved to {config_save_path}")
+
     train_callbacks = []
 
-    # Training strategy: on single or multiple GPU
-    assert cfg.train.parallel_strategy in ["dp","ddp_spawn",None,]
-    # if only one GPU then override the locked config
-    if not cfg.devices.num_gpus > 1:
-        with cfg.train.unlocked():
-            cfg.train.parallel_strategy = None
-    if cfg.train.parallel_strategy in ["ddp_spawn"]:
-        with cfg.train.training.unlocked():
-            cfg.train.training.batch_size = int(
-                cfg.train.training.batch_size / cfg.devices.num_gpus
-            )
-        with cfg.train.validation.unlocked():
-            cfg.train.validation.batch_size = int(
-                cfg.train.validation.batch_size / cfg.devices.num_gpus
-            )
+
+    assert cfg.train.parallel_strategy in ["dp", "ddp_spawn", None], "Invalid parallel strategy"
+
+
+    num_gpus = OmegaConf.to_container(cfg, resolve=True).get("devices", {}).get("num_gpus", 1)
+    if num_gpus <= 1:
+        cfg.train.parallel_strategy = None
+
+    if cfg.train.parallel_strategy == "ddp_spawn":
+        cfg.train.training_batch_size = int(cfg.train.training_batch_size / num_gpus)
+        cfg.train.validation_batch_size = int(cfg.train.validation_batch_size / num_gpus)
+
 
     datamodule = datamodule_factory(
         cls_name=cfg.train.datamodule_class, config=cfg
@@ -48,39 +72,42 @@ def main(cfg,auto_remove_exp_dir=False):
 
     datamodule.setup()
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
 
+    # model = YourModel(cfg.algo)
+    # trainer = pl.Trainer(...)
+    # trainer.fit(model, datamodule=datamodule)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Training Script")
     parser.add_argument(
         "--config",
         type=str,
-        default="../configs/config.yaml",
+        default="../config.yaml",
+        help="Path to the main configuration YAML file"
     )
-
     args = parser.parse_args()
 
-    yaml_config = load_yaml_config(args.config)
-    default_config = get_my_registered_experiment_config(yaml_config["config_name"])
 
-    print("***** default_config *****", default_config)
+    cfg = OmegaConf.structured(ExperimentConfig)
+    yaml_config = OmegaConf.load(args.config)
+    cfg = OmegaConf.merge(cfg, yaml_config)
+
+
+    replace_infinity(cfg)
+
+
+    if cfg.train.rollout_enabled:
+        if cfg.eval is None:
+            cfg.eval = EvalConfig()
+        cfg.eval.env = cfg.env.data_generation_trajdata_centric
+        cfg.eval.eval_class = cfg.algo.eval_class
+        cfg.eval.dataset_path = cfg.dataset_path
 
 
 
-    default_config.train.dataset_path = yaml_config["dataset_path"]
-    default_config.root_dir = os.path.abspath(yaml_config["output_dir"])
-    default_config.train.trajdata_source_train = yaml_config["trajdata_source_train"]
-    default_config.train.trajdata_source_valid = yaml_config["trajdata_source_valid"]
-    default_config.train.trajdata_data_dirs = yaml_config["trajdata_data_dirs"]
-    if default_config.train.rollout.enabled:
-        default_config.eval.env = default_config.env.name
-        assert default_config.algo.eval_class is not None, \
-            "Please set an eval_class for {}".format(default_config.algo.name)
-        default_config.eval.eval_class = default_config.algo.eval_class
-        default_config.eval.dataset_path = default_config.train.dataset_path
-        for k in default_config.eval[default_config.eval.env]:  # copy env-specific config to the global-level
-            default_config.eval[k] = default_config.eval[default_config.eval.env][k]
-        default_config.eval.pop("nusc")
-        default_config.eval.pop("l5kit")
+    print("***** Loaded Configuration *****")
+    print(OmegaConf.to_yaml(cfg))
 
-    default_config.lock()  # Make config read-only
-    main(default_config, auto_remove_exp_dir= yaml_config["remove_exp_dir"])
+
+    main(cfg, auto_remove_exp_dir=cfg.get("remove_exp_dir", False))

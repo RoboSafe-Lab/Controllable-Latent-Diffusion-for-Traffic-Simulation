@@ -1,0 +1,79 @@
+config_name: "custom_trajdata_diff_xyz"
+dataset_path: "/path/to/dataset"
+remove_exp_dir: true
+output_dir: "../logs"
+trajdata_source_train: ["nusc_mini-mini_train"]
+trajdata_source_valid: ["nusc_mini-mini_val"]
+trajdata_data_dirs:
+  nusc_mini: "/absolute/path/to/nuscenes/mini"
+  nusc_trainval: "/absolute/path/to/nuscenes"
+  nusc_test: "/absolute/path/to/nuscenes"
+
+algo:
+  name: "diffuser"
+  model_architecture: "TemporalMapUnet"
+  loss_type: "l2"
+  eval_class: "Diffuser"
+
+train:
+  trajdata_cache_location: "~/.unified_data_cache"
+  trajdata_source_train: ["nusc_mini-mini_train"]
+  trajdata_source_valid: ["nusc_mini-mini_val"]
+  trajdata_data_dirs:
+    nusc_trainval: "../behavior-generation-dataset/nuscenes"
+    nusc_test: "../behavior-generation-dataset/nuscenes"
+    nusc_mini: "../behavior-generation-dataset/nuscenes/mini"
+  trajdata_rebuild_cache: false
+  rollout_enabled: true
+  rollout_save_video: true
+  rollout_every_n_steps: 10000
+  rollout_warm_start_n_steps: 0
+  training_batch_size: 4
+  training_num_steps: 1000
+  training_num_data_workers: 8
+  save_every_n_steps: 10000
+  save_best_k: 10
+  validation_enabled: true
+  validation_batch_size: 4
+  validation_num_data_workers: 0
+  validation_every_n_steps: 500
+  validation_num_steps_per_epoch: 50
+  on_ngc: false
+  logging_terminal_output_to_txt: true
+  logging_log_tb: false
+  logging_log_wandb: false
+  logging_wandb_project_name: "tbsim"
+  logging_log_every_n_steps: 10
+  logging_flush_every_n_steps: 100
+
+env:
+  data_generation_trajdata_centric: agent
+  data_generation_trajdata_only_types:
+  - vehicle
+  data_generation_trajdata_predict_types:
+  - vehicle
+  data_generation_trajdata_scene_desc_contains: null
+  data_generation_trajdata_incl_map: true
+  data_generation_trajdata_max_agents_distance: .inf
+  data_generation_trajdata_standardize_data: true
+  data_generation_trajdata_other_agents_num: null
+  rasterizer:
+    num_sem_layers: 3
+    rgb_idx_groups:
+    - - 0
+    - - 1
+    - - 2
+    raster_size: 224
+    pixel_size: 0.5
+    ego_center:
+    - -0.5
+    - 0.0
+    no_map_fill_value: -1.0
+
+registered_name: "custom_trajdata_diff_xyz"
+
+
+eval:
+  env: "agent"
+  eval_class: "Diffuser"
+  dataset_path: "/path/to/dataset"
