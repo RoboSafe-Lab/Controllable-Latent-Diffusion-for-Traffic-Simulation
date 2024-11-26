@@ -1657,6 +1657,7 @@ class DiffuserTrafficModel(pl.LightningModule):
         # "output" is final output of the entired denoising process.
 
         # TBD: extract these and modify the later logics
+        print(f"algo_config_diffuser_input_mode: {algo_config.diffuser_input_mode}")
         if algo_config.diffuser_input_mode == 'state':
             observation_dim = 0
             action_dim = 3 # x, y, yaw
@@ -1668,6 +1669,7 @@ class DiffuserTrafficModel(pl.LightningModule):
         elif algo_config.diffuser_input_mode == 'state_and_action':
             observation_dim = 4 # x, y, vel, yaw
             action_dim = 2 # acc, yawvel
+
             output_dim = 2 # acc, yawvel
         elif algo_config.diffuser_input_mode == 'state_and_action_no_dyn':
             observation_dim = 4 # x, y, vel, yaw
