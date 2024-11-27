@@ -45,7 +45,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         "ddp_spawn",
         None,
     ]
-    if not cfg.devices.num_gpus > 1: 
+    if not cfg.devices.num_gpus > 1:
 
         with cfg.train.unlocked():
             cfg.train.parallel_strategy = None
