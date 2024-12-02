@@ -13,7 +13,7 @@ from tbsim.utils.env_utils import RolloutCallback
 from tbsim.algos.factory import algo_factory
 import wandb
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
-from  models.algos import  Diffusion_Decoder
+from  models.algos import  UnifiedTrainer
 
 
 
@@ -75,9 +75,10 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
             video_dir=video_dir
         )
         train_callbacks.append(rollout_callback)
-    model = Diffusion_Decoder(algo_config=cfg.algo,
-                              modality_shapes=datamodule.modality_shapes,
-                              registered_name=cfg.registered_name)
+    model = UnifiedTrainer(algo_config=cfg.algo,
+                           modality_shapes=datamodule.modality_shapes,
+                           registered_name=cfg.registered_name,
+                           train_mode=args.train_mode)
     # Checkpointing
     if cfg.train.validation.enabled and cfg.train.save.save_best_validation:
         assert (
@@ -228,6 +229,13 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         "--debug", action="store_true", help="Debug mode, suppress wandb logging, etc."
+    )
+    parser.add_argument(
+        "--train_mode",
+        type=str,
+        choices=["vae", "dm"],
+        default="vae",
+        help="Specify which model to train: 'vae' for Variational Autoencoder, 'dm' for Diffusion Model",
     )
 
     args = parser.parse_args()

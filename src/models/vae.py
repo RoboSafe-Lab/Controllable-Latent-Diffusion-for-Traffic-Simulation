@@ -1,80 +1,161 @@
+from collections import OrderedDict
 import torch
 import torch.nn as nn
-class VAE(nn.Module):
-    def __init__(self, in_channels=3, latent_dim=4, image_size=512):
-        super(VAE, self).__init__()
-        self.in_channels = in_channels
-        self.latent_dim = latent_dim
-        self.image_size = image_size
+import torch.nn.functional as F
+from tbsim.models.diffuser import DiffuserModel
+from tbsim.models.base_models import MLP
+from tbsim.models.vaes import CVAE, FixedGaussianPrior
+from tbsim.models.base_models import PosteriorEncoder
+from tbsim.models.base_models import TrajectoryDecoder
+import tbsim.utils.tensor_utils as TensorUtils
 
-        # Encoder
-        # 3 x 512 x 512 -> 4 x 64 x 64
-        self.encoder = nn.Sequential(
-            self._conv_block(in_channels, 64),  # 64 x 256 x 256
-            self._conv_block(64, 128),  # 128 x 128 x 128
-            self._conv_block(128, 256),  # 256 x 64 x 64
+class HF_Decoder(TrajectoryDecoder):
+    def __init__(self, feature_dim,state_dim,num_steps,step_time,dynamics_type,dynamics_kwargs):
+        super(HF_Decoder, self).__init__(feature_dim=feature_dim,
+                                         state_dim=state_dim,
+                                         num_steps=num_steps,
+                                         step_time=step_time,
+                                         dynamics_type=dynamics_type,
+                                         dynamics_kwargs=dynamics_kwargs,
+                                         )
+
+    def _create_networks(self):
+
+        input_dim = self.feature_dim  # z  + condition_features
+        output_dim = self.num_steps * self.dyn.udim
+        hidden_dim = 128
+        self.decoder_mlp = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, output_dim)
         )
 
-        # Encoder 的潜在空间输出
-        self.fc_mu = nn.Conv2d(256, latent_dim, 1)  # 4 x 64 x 64 <- Latent Space
-        self.fc_var = nn.Conv2d(256, latent_dim, 1)  # 4 x 64 x 64 <- Latent Space
+    def _forward_networks(self, inputs, current_states=None, num_steps=None):
+        # input:(B,320)
+        batch_size = inputs.size(0)
+        num_steps = num_steps or self.num_steps #52
+        action_dim = self.dyn.udim
 
+
+        actions = self.decoder_mlp(inputs)  # [batch_size, num_steps * action_dim](B,52*2)
+
+
+        actions = actions.view(batch_size, num_steps, action_dim)#(B,52,2)
+
+        preds = {
+            "trajectories": actions  # trajectories 表示动作序列
+        }
+        return preds
+    def forward(self, inputs, current_states=None, num_steps=None, with_guidance=False, data_batch=None, num_samp=1):
+
+        preds = self._forward_networks(inputs, current_states=current_states, num_steps=num_steps)
+        if self.dyn is not None:
+            if with_guidance:
+                def decoder_wrapper(controls):
+                    if len(current_states.shape) == 3:
+                        current_states_join = TensorUtils.join_dimensions(current_states, 0, 2)
+                    else:
+                        current_states_join = current_states
+                    trajectories, _ = self._forward_dynamics(current_states=current_states_join, actions=controls)
+                    return trajectories
+
+
+                if len(preds["trajectories"].shape) == 4:
+                    preds_trajectories_join = TensorUtils.join_dimensions(preds["trajectories"], 0, 2)  # [B*N, T, 3]
+                else:
+                    preds_trajectories_join = preds["trajectories"]
+
+
+                controls, _ = self.current_perturbation_guidance.perturb(
+                    preds_trajectories_join, data_batch, self.guidance_optimization_params, num_samp=num_samp,
+                    decoder=decoder_wrapper)
+
+
+                if len(preds["trajectories"].shape) == 4:
+                    controls = controls[:, None, ...]
+                preds["controls"] = controls
+            else:
+                preds["controls"] = preds["trajectories"]
+
+
+            preds["trajectories"], x = self._forward_dynamics(
+                current_states=current_states,
+                actions=preds["controls"]
+            )
+            preds["terminal_state"] = x[..., -1, :]
+            preds["states"] = x
+        return preds
+
+
+class HF_CVAE(CVAE):
+    def __init__(
+        self,
+        step_time:int,
+        trajectory_shape: tuple,  # [T, D]
+        condition_dim: int,
+        latent_dim: int,
+        dynamics_type: str,
+        dynamics_kwargs=None,
+        mlp_layer_dims: tuple = (128, 128),
+        rnn_hidden_size: int = 100,
+        kl_loss_weight: float = 1.0,
+        recon_loss_weight: float = 1.0,
+
+    ):
+        """
+        A Conditional Variational Autoencoder (C-VAE) specialized for HF tasks.
+
+        Args:
+            trajectory_shape (tuple): Shape of the trajectory input, e.g., (T, D).
+            condition_dim (int): Dimensionality of condition features.
+            latent_dim (int): Dimensionality of the latent space.
+            mlp_layer_dims (tuple): Hidden dimensions for MLP layers.
+            rnn_hidden_size (int): Hidden size for RNN encoder.
+            kl_loss_weight (float): Weight for KL divergence loss.
+            recon_loss_weight (float): Weight for reconstruction loss.
+        """
+        # Posterior encoder
+        q_net = PosteriorEncoder(
+            condition_dim=condition_dim,
+            trajectory_shape=trajectory_shape,
+            output_shapes=OrderedDict(mu=(latent_dim,), logvar=(latent_dim,)),
+            mlp_layer_dims=mlp_layer_dims,
+            rnn_hidden_size=rnn_hidden_size,
+        )
         # Decoder
-        # 4 x 64 x 64 -> 3 x 512 x 512
-        self.decoder_input = nn.ConvTranspose2d(latent_dim, 256, 1)  # 256 x 64 x 64
-        self.decoder = nn.Sequential(
-            self._conv_transpose_block(256, 128),  # 128 x 128 x 128
-            self._conv_transpose_block(128, 64),  # 64 x 256 x 256
-            self._conv_transpose_block(64, in_channels),  # 3 x 512 x 512
+
+        decoder = HF_Decoder(
+            feature_dim=latent_dim + condition_dim,
+            state_dim=trajectory_shape[-1],   #fixme:检查一下对不对
+            num_steps=trajectory_shape[0],
+            dynamics_type=dynamics_type,
+            dynamics_kwargs=dynamics_kwargs,
+            step_time=step_time,
+
         )
 
-        self.sigmoid = nn.Sigmoid()  # [0, 1]
-        self.tanh = nn.Tanh()  # [-1, 1]
+        # Prior (Gaussian prior)
+        prior = FixedGaussianPrior(latent_dim=latent_dim)
 
-    def _conv_block(self, in_channels, out_channels):
-        return nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, 3, stride=2, padding=1),
-            # nn.GroupNorm(num_groups=1, num_channels=out_channels),
-            nn.BatchNorm2d(out_channels),
-            # nn.LeakyReLU(),
-            nn.LeakyReLU(0.2)
+        # Initialize CVAE
+        super(HF_CVAE, self).__init__(q_net=q_net, c_net=None, decoder=decoder, prior=prior)
+
+        self.latent_dim = latent_dim
+        self.kl_loss_weight = kl_loss_weight
+        self.recon_loss_weight = recon_loss_weight
+
+    def forward(self, inputs: torch.Tensor,condition_features,decoder_kwargs=None) -> torch.Tensor:
+        q_params = self.q_net(inputs={'trajectories': inputs}, condition_features=condition_features)#{"mu":(B,64),"logvar":(B,64)}
+        z = self.prior.sample_with_parameters(q_params, n=1).squeeze(dim=1)#(B,64)
+        initial_states = inputs[:, 0, :]# (B,52,6)->(B,6)初始状态，采用52个时间步的第一个
+        decoder_input = torch.cat([z, condition_features], dim=-1)#(B,64+256)->(B,320)
+        current_states = initial_states[:, :4]#(B,4)
+        x_recons = self.decoder(
+            inputs=decoder_input,
+            current_states=current_states,
+            num_steps=52
         )
+        return {"x_recons": x_recons, "q_params": q_params, "z": z, "c": condition_features}
 
-    def _conv_transpose_block(self, in_channels, out_channels):
-        return nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, 3, stride=2, padding=1, output_padding=1),
-            # nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True),
-            # nn.Conv2d(in_channels, out_channels, 3, stride=1, padding=1),
-            # nn.GroupNorm(num_groups=1, num_channels=out_channels),
-            nn.BatchNorm2d(out_channels),
-            # nn.LeakyReLU(),
-            nn.LeakyReLU(0.2)
-        )
 
-    def encode(self, input):
-        result = self.encoder(input)
-        mu = self.fc_mu(result)
-        log_var = self.fc_var(result)
-        return mu, log_var
 
-    def decode(self, z):
-        result = self.decoder_input(z)
-        result = self.decoder(result)
-        # result = self.sigmoid(result)  # 如果原始图像被归一化为[0, 1]，则使用sigmoid
-        result = self.tanh(result)  # 如果原始图像被归一化为[-1, 1]，则使用tanh
-        # return result.view(-1, self.in_channels, self.image_size, self.image_size)
-        return result
-
-    def reparameterize(self, mu, logvar):
-        std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
-        return eps * std + mu
-
-    def forward(self, input):
-        """
-        返回4个值：
-        reconstruction, input, mu, log_var
-        """
-        mu, log_var = self.encode(input)
-        z = self.reparameterize(mu, log_var)  # 潜在空间的向量表达 Latent Vector z
-        return self.decode(z), input, mu, log_var

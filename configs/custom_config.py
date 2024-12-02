@@ -21,7 +21,7 @@ class HfCustomTrainConfig(NuscTrajdataTrainConfig):
         }
 
         self.trajdata_cache_location = "~/my_custom_cache_location"
-        self.training.batch_size = 64
+        self.training.batch_size = 100
         self.training.num_steps = 50000
         self.validation.every_n_steps = 1000
         self.logging.log_tb = True
@@ -36,9 +36,13 @@ class HfCustomEnvConfig(NuscTrajdataEnvConfig):
 class HfCustomAlgoConfig(DiffuserConfig):
     def __init__(self):
         super(HfCustomAlgoConfig, self).__init__()
-        self.diffuser_input_mode = 'state_and_action_no_dyn'
+        self.diffuser_input_mode = 'state_and_action'
         if hasattr(self.optim_params, "policy"):
             del self.optim_params.policy
+
+        self.trajectory_shape = (52,6)
+        self.condition_dim = 256
+        self.latent_dim = 64
 
         self.optim_params.dm = {
             "learning_rate": {
