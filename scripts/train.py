@@ -14,7 +14,7 @@ from tbsim.algos.factory import algo_factory
 import wandb
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from  models.algos import  UnifiedTrainer
-
+from datetime import  datetime
 
 
 
@@ -37,6 +37,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         logger = PrintLogger(os.path.join(log_dir, "log.txt"))
         sys.stdout = logger
         sys.stderr = logger
+    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     train_callbacks = []
     # Training Parallelism
@@ -139,7 +140,8 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         apikey = os.environ["WANDB_APIKEY"]
         wandb.login(key=apikey)
         logger = WandbLogger(
-            name=cfg.name, project=cfg.train.logging.wandb_project_name
+            name=f"{cfg.name}_{current_time}",
+            project=cfg.train.logging.wandb_project_name
         )
         # record the entire config on wandb
         logger.experiment.config.update(cfg.to_dict())
