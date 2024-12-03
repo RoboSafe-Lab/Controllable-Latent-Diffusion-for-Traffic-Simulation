@@ -63,6 +63,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         cls_name=cfg.train.datamodule_class, config=cfg
     )
     datamodule.setup()
+
     # Environment for close-loop evaluation
     if cfg.train.rollout.enabled:
         # Run rollout at regular intervals
@@ -75,7 +76,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
             video_dir=video_dir
         )
         train_callbacks.append(rollout_callback)
-    model = UnifiedTrainer(algo_config=cfg.algo,
+    model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
                            modality_shapes=datamodule.modality_shapes,
                            registered_name=cfg.registered_name,
                            train_mode=args.train_mode)
@@ -91,11 +92,10 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
                 "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
             )
             ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=ckpt_dir,
-                filename="iter{step}_ep{epoch}_%s{%s:.2f}" % (metric_name, metric_key),
-                # explicitly spell out metric names, otherwise PL parses '/' in metric names to directories
+                dirpath=f"{ckpt_dir}/{metric_name}",
+                filename=f"iter{{step}}_ep{{epoch}}_{metric_name}_{metric_key}",
                 auto_insert_metric_name=False,
-                save_top_k=cfg.train.save.best_k,  # save the best k models
+                save_top_k=cfg.train.save.best_k,
                 monitor=metric_key,
                 mode="min",
                 every_n_train_steps=cfg.train.save.every_n_steps,
@@ -115,28 +115,12 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
             monitor="rollout/metrics_ego_ADE",
             mode="min",
             every_n_train_steps=cfg.train.save.every_n_steps,
+            state_key='rollout_checkpoint',
+
             verbose=True,
         )
         train_callbacks.append(ckpt_rollout_callback)
 
-    # a ckpt monitor to save at fixed interval
-    ckpt_fixed_callback = pl.callbacks.ModelCheckpoint(
-        dirpath=ckpt_dir,
-        filename="iter{step}",
-        auto_insert_metric_name=False,
-        save_top_k=-1,
-        monitor=None,
-        every_n_train_steps=10000,
-        verbose=True,
-    )
-    train_callbacks.append(ckpt_fixed_callback)
-
-    # # NOTE: this is annoying to be able to load in EMA weights at test time,
-    # #           implemented in the lightning module class instead.
-    # if 'use_ema' in cfg.algo.__dict__ and cfg.algo.use_ema:
-    #     from tbsim.utils.ema import EMA
-    #     ema_callback = EMA(decay=cfg.algo.ema_decay, every_n_train_steps=cfg.algo.ema_step)
-    #     train_callbacks.append(ema_callback)
 
     # Logging
     assert not (cfg.train.logging.log_tb and cfg.train.logging.log_wandb)
@@ -170,7 +154,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         # logging
         logger=logger,
         # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
-        log_every_n_steps=cfg.train.logging.log_every_n_steps,
+        log_every_n_steps=1,#cfg.train.logging.log_every_n_steps,
         # training
         max_steps=cfg.train.training.num_steps,
         # validation
@@ -178,13 +162,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         limit_val_batches=cfg.train.validation.num_steps_per_epoch,
         # all callbacks
         callbacks=train_callbacks,
-        # device & distributed training setup
-        # gpus=cfg.devices.num_gpus,
-        accelerator="gpu",
-        strategy='auto',
-        # setting for overfit debugging
-        # limit_val_batches=0,
-        # overfit_batches=2
+        precision=16,
         num_sanity_val_steps=0,
     )
 

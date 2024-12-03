@@ -41,26 +41,19 @@ class DMVAE(DiffuserModel):
 
         x = self.scale_traj(target_traj)
         batch_size = len(x)
-        t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long()
 
-
-
-        x = self.scale_traj(target_traj)
         x_start = x
         cond_feat = aux_info['cond_feat']
-        z= self.vae(x_start,cond_feat)
-        noise_init = torch.randn_like(z)
-        # noise_init = torch.randn_like(x)
-        #noise = noise_init
-        #x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
-        #t_inp = t
+        vae_output= self.vae(x_start,cond_feat)
+        mu, logvar= vae_output['encoder_output']['mu'],vae_output['encoder_output']['logvar']
+        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
 
-        # if self.diffuser_input_mode == 'state_and_action':
-        #     x_action_noisy = x_noisy[..., [4, 5]]
-        #     x_noisy = self.convert_action_to_state_and_action(x_action_noisy, aux_info['curr_states'])
+        reconstructed_trajectory = vae_output['decoder_output']['states']
+        state_x = x[..., :4]
 
+        recon_loss = F.mse_loss(reconstructed_trajectory, state_x,reduction='mean')
 
-
+        return kl_loss, recon_loss
 
 
 

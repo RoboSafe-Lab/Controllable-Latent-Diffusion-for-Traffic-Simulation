@@ -1,3 +1,4 @@
+from l5kit.tests.planning.open_loop_model_test import batch_size
 from tbsim.algos.algos import DiffuserTrafficModel
 import torch.optim as optim
 import torch,copy
@@ -13,7 +14,7 @@ from tbsim.utils.guidance_loss import choose_action_from_guidance, choose_action
 from tbsim.models.diffuser_helpers import EMA
 
 class UnifiedTrainer(pl.LightningModule):
-    def __init__(self, algo_config, modality_shapes, registered_name,
+    def __init__(self, algo_config,train_config, modality_shapes, registered_name,
                  do_log=True, guidance_config=None, constraint_config=None,train_mode="vae", vae_model_path=None):
 
         super(UnifiedTrainer, self).__init__()
@@ -165,28 +166,71 @@ class UnifiedTrainer(pl.LightningModule):
                 self.nets["dm_vae"].vae.load_state_dict(torch.load(vae_model_path))
                 for param in self.nets["dm_vae"].vae.parameters():
                     param.requires_grad = False
+        self.total_annealing_steps=10000# vae 退火策略
+        self.beta=0.0
+        self.beta_max=1.0
+        self.beta_inc = self.beta_max / self.total_annealing_steps
+        self.batch_size = train_config.training.batch_size
+        self.val_batch_size = train_config.validation.batch_size
 
-    def on_validation_epoch_end(self, *args, **kwargs):
-        pass
-
-    def on_train_epoch_end(self, *args, **kwargs):
-        pass
 
 
+    def configure_optimizers(self):
+        """
+        Configure optimizers based on training mode.
+        """
+        if self.train_mode == "vae":
+            optim_params_vae = self.algo_config.optim_params["vae"]
+
+            optimizer = optim.Adam(
+                params=self.nets["dm_vae"].vae.parameters(),
+                lr=optim_params_vae["learning_rate"]["initial"],
+                weight_decay=optim_params_vae["regularization"]["L2"],
+            )
+            scheduler = torch.optim.lr_scheduler.MultiStepLR(
+                optimizer,
+                milestones=optim_params_vae["learning_rate"]["epoch_schedule"],
+                gamma=optim_params_vae["learning_rate"]["decay_factor"],
+            )
+        elif self.train_mode == "dm":
+            optim_params_dm = self.algo_config.optim_params["dm"]
+            optimizer = optim.Adam(
+                params=self.nets["dm_vae"].dm.parameters(),
+                lr=optim_params_dm["learning_rate"]["initial"],
+                weight_decay=optim_params_dm["regularization"]["L2"],
+            )
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                optimizer,
+                mode="min",
+                factor=optim_params_dm["learning_rate"]["decay_factor"],
+                patience=5,
+                verbose=True,
+            )
+        else:
+            raise ValueError(f"Unknown training mode: {self.train_mode}")
+
+        # 直接返回优化器和调度器，而不是列表
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val_loss",  # 根据您的验证指标
+            },
+        }
 
     def forward(self, batch, plan=None, step_index=0, num_samp=1, class_free_guide_w=0.0, guide_as_filter_only=False, guide_clean=False, global_t=0):
         """
         Forward pass based on training mode.
         """
         if self.train_mode == "vae":
-            vae_output = self.nets["dm_vae"].get_vaeloss(batch)
-            return vae_output
+            kl_loss, recon_loss = self.nets["dm_vae"].get_vaeloss(batch)
+            #total_loss = recon_loss + self.beta * kl_loss*10
+            return kl_loss, recon_loss
         elif self.train_mode == "dm":
             dm_output = self.nets["dm_vae"].get_dmloss(batch)
             return dm_output
 
-    def set_guidance(self, guidance_config, example_batch=None):
-        pass
+
 
     def on_train_batch_start(self, batch, logs=None):
         pass
@@ -195,6 +239,8 @@ class UnifiedTrainer(pl.LightningModule):
         """
         Training step based on training mode.
         """
+        if self.use_ema and self.cur_train_step % self.ema_update_every == 0:
+            self.step_ema(self.cur_train_step)
         if self.data_centric is None:
             if "num_agents" in batch:
                 self.data_centric = 'scene'
@@ -241,105 +287,27 @@ class UnifiedTrainer(pl.LightningModule):
                     drop_mask = torch.rand((B)) < self.cond_drop_neighbor_p
                     batch["all_other_agents_history_availabilities"][drop_mask] = 0
         if self.train_mode == "vae":
-            vae_output = self(batch)
-            loss = self.compute_vae_loss(vae_output, batch)
-            self.log("vae_loss", loss)
+            kl_loss, recon_loss = self(batch)
+            loss = self.compute_vae_loss(kl_loss,recon_loss)
+            self.log("train/kl_loss", kl_loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
+            self.log("train/recon_loss", recon_loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
+            self.log("train/vae_loss", loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
+            self.cur_train_step += 1
             return loss
 
-        elif self.train_mode == "dm":
-            dm_output = self(batch)
-            loss = self.compute_dm_loss(dm_output, batch)
-            self.log("dm_loss", loss)
-            return loss
+        # elif self.train_mode == "dm":
+        #     dm_output = self(batch)
+        #     loss = self.compute_dm_loss(dm_output, batch)
+        #     self.log("dm_loss", loss)
+        #     return loss
 
 
-
-    def compute_vae_loss(self, vae_output, batch):
-        recon_loss = torch.nn.functional.mse_loss(vae_output["recons"], batch["target"])
-        kl_loss = vae_output["kl"]
-        return recon_loss + self.algo_config.vae_loss_weight * kl_loss
-
-    def compute_dm_loss(self, dm_output, batch):
-        """
-        Compute DM loss.
-        """
-        pass
-
-    def on_train_batch_end(self, outputs, batch, batch_idx, unused=0):
-        print("Optimizer 1 state:", self.optimizers()[0].state_dict())
-        print("Optimizer 2 state:", self.optimizers()[1].state_dict())
-
-    def configure_optimizers(self):
-        """
-        Configure optimizers based on training mode.
-        """
-        if self.train_mode == "vae":
-            optim_params_vae = self.algo_config.optim_params["vae"]
-            optimizer = optim.Adam(
-                params=self.nets["dm_vae"].vae.parameters(),
-                lr=optim_params_vae["learning_rate"]["initial"],
-                weight_decay=optim_params_vae["regularization"]["L2"],
-            )
-            scheduler = torch.optim.lr_scheduler.MultiStepLR(
-                optimizer,
-                milestones=optim_params_vae["learning_rate"]["epoch_schedule"],
-                gamma=optim_params_vae["learning_rate"]["decay_factor"],
-            )
-        elif self.train_mode == "dm":
-            optim_params_dm = self.algo_config.optim_params["dm"]
-            optimizer = optim.Adam(
-                params=self.nets["dm_vae"].dm.parameters(),
-                lr=optim_params_dm["learning_rate"]["initial"],
-                weight_decay=optim_params_dm["regularization"]["L2"],
-            )
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer,
-                mode="min",
-                factor=optim_params_dm["learning_rate"]["decay_factor"],
-                patience=5,
-                verbose=True,
-            )
-        else:
-            raise ValueError(f"Unknown training mode: {self.train_mode}")
-
-        # 直接返回优化器和调度器，而不是列表
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
-                "scheduler": scheduler,
-                "monitor": "val_loss",  # 根据您的验证指标
-            },
-        }
 
     def on_train_epoch_end(self):
-        # Switch training phases
-        if self.training_phase == "vae":
-            print("VAE pretraining completed. Switching to DM training.")
-            self.training_phase = "dm"
-            # Freeze VAE
-            for param in self.nets["dm_vae"].vae.parameters():
-                param.requires_grad = False
-        elif self.training_phase == "dm":
-            print("DM training ongoing.")
+        print(f"-----Epoch {self.current_epoch} has ended. Total Steps: {self.global_step}")
 
-    @property
-    def checkpoint_monitor_keys(self):
-        if self.use_ema:
-            return {"valLoss": "val/ema_losses_diffusion_loss"}
-        else:
-            return {"valLoss": "val/losses_diffusion_loss"}
-    def reset_parameters(self):
-        self.ema_policy.load_state_dict(self.nets["dm_vae"].state_dict())
-    def step_ema(self, step):#fixme:需要修改一下
-        if step < self.ema_start_step:
-            self.reset_parameters()
-            return
-        self.ema.update_model_average(self.ema_policy, self.nets["dm_vae"])
-    def on_training_step_end(self, batch_parts):
-        self.cur_train_step += 1
 
     def validation_step(self, batch, batch_idx):
-        cur_policy = self.nets["dm_vae"]
         if self.data_centric is None:
             if "num_agents" in batch:
                 self.data_centric = 'scene'
@@ -351,48 +319,97 @@ class UnifiedTrainer(pl.LightningModule):
         if self.data_centric == 'agent' and self.coordinate == 'agent_centric':
             pass
         elif self.data_centric == 'scene' and self.coordinate == 'agent_centric':
-            batch = convert_scene_data_to_agent_coordinates(batch, merge_BM=True, max_neighbor_dist=self.scene_agent_max_neighbor_dist)
+            batch = convert_scene_data_to_agent_coordinates(batch, merge_BM=True,
+                                                            max_neighbor_dist=self.scene_agent_max_neighbor_dist)
         else:
             raise NotImplementedError
 
-        losses =TensorUtils.detach(cur_policy.compute_losses(batch))
+        # if self.use_ema:
+        #     cur_policy = self.ema_policy
+        #     ema_output = self.ema_policy(batch)
+        #     ema_loss = self.compute_vae_loss(ema_output, batch)
+        #     self.log("val_ema_loss", ema_loss, prog_bar=True, on_epoch=True)
 
-        pout = cur_policy(batch,
-                        num_samp=self.algo_config.diffuser.num_eval_samples,
-                        return_diffusion=False,
-                        return_guidance_losses=False)
-        metrics = self._compute_metrics(pout, batch)
-        return_dict =  {"losses": losses, "metrics": metrics}
+        if self.train_mode == "vae":
+            kl_loss, recon_loss = self(batch)
 
-        # use EMA for val
+            val_vae_loss = TensorUtils.detach(self.compute_vae_loss(kl_loss, recon_loss))
+            self.log("val/kl_loss",kl_loss,        on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
+            self.log("val/recon_loss", recon_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
+            self.log("val/vae_loss", val_vae_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
+
+
         if self.use_ema:
             cur_policy = self.ema_policy
-            ema_losses = TensorUtils.detach(cur_policy.compute_losses(batch))
-            pout = cur_policy(batch,
-                        num_samp=self.algo_config.diffuser.num_eval_samples,
-                        return_diffusion=False,
-                        return_guidance_losses=False)
-            ema_metrics = self._compute_metrics(pout, batch)
-            return_dict["ema_losses"] = ema_losses
-            return_dict["ema_metrics"] = ema_metrics
+            kl_loss, recon_loss=cur_policy.get_vaeloss(batch)
+            ema_losses= TensorUtils.detach(self.compute_vae_loss(kl_loss, recon_loss))
+            self.log("val/ema_loss", ema_losses, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
 
-        return return_dict
 
-    def on_validation_epoch_end(self, outputs) -> None:
-        for k in outputs[0]["losses"]:
-            m = torch.stack([o["losses"][k] for o in outputs]).mean()
-            self.log("val/losses_" + k, m)
-        for k in outputs[0]["metrics"]:
-            m = np.stack([o["metrics"][k] for o in outputs]).mean()
-            self.log("val/metrics_" + k, m)
+        # return_dict = {"losses": val_vae_loss, "val_ema_loss": ema_losses}
+        #
+        # return return_dict
 
-        if self.use_ema:
-            for k in outputs[0]["ema_losses"]:
-                m = torch.stack([o["ema_losses"][k] for o in outputs]).mean()
-                self.log("val/ema_losses_" + k, m)
-            for k in outputs[0]["ema_metrics"]:
-                m = np.stack([o["ema_metrics"][k] for o in outputs]).mean()
-                self.log("val/ema_metrics_" + k, m)
+        # elif self.train_mode == "dm":
+        #     dm_output = self(batch)
+        #     val_loss = self.compute_dm_loss(dm_output, batch)
+        #     self.log("val_dm_loss", val_loss, on_step=False, on_epoch=True, prog_bar=True)
+        #     return val_loss
+
+
+    def on_validation_epoch_end(self) -> None:
+        kl_loss = self.trainer.callback_metrics.get("val/kl_loss")
+        recon_loss=self.trainer.callback_metrics.get("val/recon_loss",)
+        vae_loss = self.trainer.callback_metrics.get("val/vae_loss")
+
+
+    def compute_vae_loss(self, kl,recon):
+        total_loss = recon + self.beta * kl * 10
+        return total_loss
+
+
+    def compute_dm_loss(self, dm_output, batch):
+        """
+        Compute DM loss.
+        """
+        pass
+
+
+
+
+
+
+
+    @property
+    def checkpoint_monitor_keys(self):
+        monitor_keys = {}
+
+        if self.train_mode == "vae":
+            # Monitor metrics specific to VAE training
+            monitor_keys = {
+                "ema_loss": "val/ema_loss",
+                "vae_loss": "val/vae_loss"
+            }
+        elif self.train_mode == "dm":
+            # Monitor metrics specific to DM training
+            monitor_keys = {
+                "val_loss": "val/dm_loss",
+            }
+        else:
+            raise ValueError(f"Unknown train mode: {self.train_mode}")
+
+        return monitor_keys
+    def reset_parameters(self):
+        self.ema_policy.load_state_dict(self.nets["dm_vae"].state_dict())
+    def step_ema(self, step):
+        if step < self.ema_start_step:
+            self.reset_parameters()
+            return
+        self.ema.update_model_average(self.ema_policy, self.nets["dm_vae"])
+
+
+
+
 
     def get_plan(self, obs_dict, **kwargs):
         plan = kwargs.get("plan", None)

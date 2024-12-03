@@ -8,7 +8,7 @@ from tbsim.models.vaes import CVAE, FixedGaussianPrior
 from tbsim.models.base_models import PosteriorEncoder
 from tbsim.models.base_models import TrajectoryDecoder
 import tbsim.utils.tensor_utils as TensorUtils
-
+from typing import Dict, Any
 class HF_Decoder(TrajectoryDecoder):
     def __init__(self, feature_dim,state_dim,num_steps,step_time,dynamics_type,dynamics_kwargs):
         super(HF_Decoder, self).__init__(feature_dim=feature_dim,
@@ -79,15 +79,15 @@ class HF_Decoder(TrajectoryDecoder):
 
 
             preds["trajectories"], x = self._forward_dynamics(
-                current_states=current_states,
-                actions=preds["controls"]
+                current_states=current_states,#(B,4)
+                actions=preds["controls"]#(B,52,2)
             )
             preds["terminal_state"] = x[..., -1, :]
             preds["states"] = x
         return preds
 
 
-class HF_CVAE(CVAE):
+class HF_CVAE(nn.Module):
     def __init__(
         self,
         step_time:int,
@@ -102,20 +102,8 @@ class HF_CVAE(CVAE):
         recon_loss_weight: float = 1.0,
 
     ):
-        """
-        A Conditional Variational Autoencoder (C-VAE) specialized for HF tasks.
-
-        Args:
-            trajectory_shape (tuple): Shape of the trajectory input, e.g., (T, D).
-            condition_dim (int): Dimensionality of condition features.
-            latent_dim (int): Dimensionality of the latent space.
-            mlp_layer_dims (tuple): Hidden dimensions for MLP layers.
-            rnn_hidden_size (int): Hidden size for RNN encoder.
-            kl_loss_weight (float): Weight for KL divergence loss.
-            recon_loss_weight (float): Weight for reconstruction loss.
-        """
-        # Posterior encoder
-        q_net = PosteriorEncoder(
+        super(HF_CVAE, self).__init__()
+        self.q_net = PosteriorEncoder(
             condition_dim=condition_dim,
             trajectory_shape=trajectory_shape,
             output_shapes=OrderedDict(mu=(latent_dim,), logvar=(latent_dim,)),
@@ -124,9 +112,9 @@ class HF_CVAE(CVAE):
         )
         # Decoder
 
-        decoder = HF_Decoder(
+        self.decoder = HF_Decoder(
             feature_dim=latent_dim + condition_dim,
-            state_dim=trajectory_shape[-1],   #fixme:检查一下对不对
+            state_dim=trajectory_shape[-1],
             num_steps=trajectory_shape[0],
             dynamics_type=dynamics_type,
             dynamics_kwargs=dynamics_kwargs,
@@ -134,28 +122,27 @@ class HF_CVAE(CVAE):
 
         )
 
-        # Prior (Gaussian prior)
-        prior = FixedGaussianPrior(latent_dim=latent_dim)
 
-        # Initialize CVAE
-        super(HF_CVAE, self).__init__(q_net=q_net, c_net=None, decoder=decoder, prior=prior)
+        self.prior = FixedGaussianPrior(latent_dim=latent_dim)
+
+
 
         self.latent_dim = latent_dim
         self.kl_loss_weight = kl_loss_weight
         self.recon_loss_weight = recon_loss_weight
 
-    def forward(self, inputs: torch.Tensor,condition_features,decoder_kwargs=None) -> torch.Tensor:
-        q_params = self.q_net(inputs={'trajectories': inputs}, condition_features=condition_features)#{"mu":(B,64),"logvar":(B,64)}
-        z = self.prior.sample_with_parameters(q_params, n=1).squeeze(dim=1)#(B,64)
+    def forward(self, inputs: torch.Tensor,condition_features,decoder_kwargs=None) -> Dict[str, Any]:
+        encoder_output = self.q_net(inputs={'trajectories': inputs}, condition_features=condition_features)#{"mu":(B,64),"logvar":(B,64)}
+        z = self.prior.sample_with_parameters(encoder_output, n=1).squeeze(dim=1)#(B,64)
         initial_states = inputs[:, 0, :]# (B,52,6)->(B,6)初始状态，采用52个时间步的第一个
         decoder_input = torch.cat([z, condition_features], dim=-1)#(B,64+256)->(B,320)
         current_states = initial_states[:, :4]#(B,4)
-        x_recons = self.decoder(
+        decoder_output = self.decoder(
             inputs=decoder_input,
             current_states=current_states,
             num_steps=52
         )
-        return {"x_recons": x_recons, "q_params": q_params, "z": z, "c": condition_features}
+        return {"decoder_output": decoder_output, "encoder_output": encoder_output, "z": z, "condition_features": condition_features}
 
 
 

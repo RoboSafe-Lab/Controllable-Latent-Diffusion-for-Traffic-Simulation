@@ -23,26 +23,26 @@ class NuscTrajdataTrainConfig(TrajdataTrainConfig):
         # for debug
         self.trajdata_rebuild_cache = False
 
-        self.rollout.enabled = True
-        self.rollout.save_video = True
+        self.rollout.enabled = False
+        self.rollout.save_video = False
         self.rollout.every_n_steps = 10000
         self.rollout.warm_start_n_steps = 0
 
         # training config
         # assuming 1 sec (10 steps) past, 2 sec (20 steps) future
-        self.training.batch_size = 4 # 4 # 100
-        self.training.num_steps = 1000 # 100000
-        self.training.num_data_workers = 8 # 8
+        self.training.batch_size =  100
+        self.training.num_steps =  100000
+        self.training.num_data_workers =  8
 
-        self.save.every_n_steps = 0 #10000
+        self.save.every_n_steps = 10000
         self.save.best_k = 10
 
         # validation config
         self.validation.enabled = True
-        self.validation.batch_size = 4 # 4 # 32
-        self.validation.num_data_workers = 0# 6
+        self.validation.batch_size =  32
+        self.validation.num_data_workers =  6
         self.validation.every_n_steps = 500
-        self.validation.num_steps_per_epoch = 50 # 50
+        self.validation.num_steps_per_epoch =  50
 
         self.on_ngc = False
         self.logging.terminal_output_to_txt = True  # whether to log stdout to txt file
