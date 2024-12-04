@@ -1199,8 +1199,8 @@ class TrajectoryDecoder(nn.Module):
             initial_states=current_states,
             actions=actions,
             step_time=self.step_time
-        )
-        traj = torch.cat((pos, yaw), dim=-1)
+        )#x(B,52,4) state
+        traj = torch.cat((pos, yaw), dim=-1)#(B,52,3--pos:2+yaw:1)
         return traj,x
 
     def forward(self, inputs, current_states=None, num_steps=None, with_guidance=False, data_batch=None, num_samp=1):

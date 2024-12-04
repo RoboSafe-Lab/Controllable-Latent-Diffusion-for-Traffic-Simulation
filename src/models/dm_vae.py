@@ -5,24 +5,93 @@ import  torch
 class DMVAE(DiffuserModel):
     def __init__(
         self,
+        map_encoder_model_arch,
+        input_image_shape,
+        map_feature_dim,
+        map_grid_feature_dim,
+        diffuser_model_arch,
+        horizon,
+        observation_dim,
+        action_dim,
+        output_dim,
+        cond_feature_dim,
+        curr_state_feature_dim,
+        rasterized_map,
+        use_map_feat_global,
+        use_map_feat_grid,
+        rasterized_hist,
+        hist_num_frames,
+        hist_feature_dim,
+        n_timesteps,
+        loss_type,
+        clip_denoised,
+        predict_epsilon,
+        action_weight,
+        loss_discount,
+        loss_weights,
+        dim_mults,
+        dynamics_type,
+        dynamics_kwargs,
+        base_dim,
+        diffuser_building_block,
+        action_loss_only,
+        diffuser_input_mode,
+        use_conditioning,
+        cond_fill_value,
+        disable_control_on_stationary,
+
         trajectory_shape: tuple,  # [T, D]
         condition_dim: int,
         latent_dim: int,
         step_time: int,
-        dynamics_type: str = None,
-        dynamics_kwargs: dict = None,
         vae_hidden_dims: tuple = (128, 256, 512),
         vae_loss_weight: float = 1.0,
         dm_loss_weight: float = 1.0,
-        **kwargs
+        diffuser_norm_info=([-17.5, 0, 0, 0, 0, 0], [22.5, 10, 40, 3.14, 500, 31.4]),
     ):
-        super(DMVAE, self).__init__(**kwargs)
+        super(DMVAE, self).__init__(map_encoder_model_arch,
+                                    input_image_shape,
+                                    map_feature_dim,
+                                    map_grid_feature_dim,
+                                    diffuser_model_arch,
+                                    horizon,
+                                    observation_dim,
+                                    action_dim,
+                                    output_dim,
+                                    cond_feature_dim,
+                                    curr_state_feature_dim,
+                                    rasterized_map,
+                                    use_map_feat_global,
+                                    use_map_feat_grid,
+                                    rasterized_hist,
+                                    hist_num_frames,
+                                    hist_feature_dim,
+                                    n_timesteps,
+                                    loss_type,
+                                    clip_denoised,
+                                    predict_epsilon,
+                                    action_weight,
+                                    loss_discount,
+                                    loss_weights,
+                                    dim_mults,
+                                    dynamics_type,
+                                    dynamics_kwargs,
+                                    base_dim,
+                                    diffuser_building_block,
+                                    action_loss_only,
+                                    diffuser_input_mode,
+                                    use_conditioning,
+                                    cond_fill_value,
+                                    disable_control_on_stationary,
+                                    dt=0.1,
+                                    )
         self.vae = HF_CVAE(
             trajectory_shape=trajectory_shape,
             condition_dim=condition_dim,
             latent_dim=latent_dim,
             mlp_layer_dims=vae_hidden_dims,
             step_time=step_time,
+            diffuser_norm_info=diffuser_norm_info,
             dynamics_type=dynamics_type,
             dynamics_kwargs=dynamics_kwargs,
         )
@@ -39,19 +108,13 @@ class DMVAE(DiffuserModel):
         if self.use_reconstructed_state and self.diffuser_input_mode in ['state_and_action', 'state_and_action_no_dyn']:#TODO:目前没有执行
             target_traj = self.convert_action_to_state_and_action(target_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
 
-        x = self.scale_traj(target_traj)
-        batch_size = len(x)
-
-        x_start = x
-        cond_feat = aux_info['cond_feat']
-        vae_output= self.vae(x_start,cond_feat)
+        x = self.scale_traj(target_traj)#(B,52,6)
+        vae_output= self.vae(x,aux_info)
         mu, logvar= vae_output['encoder_output']['mu'],vae_output['encoder_output']['logvar']
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
+        decoder_x = vae_output['decoder_output']['trajectories']
 
-        reconstructed_trajectory = vae_output['decoder_output']['states']
-        state_x = x[..., :4]
-
-        recon_loss = F.mse_loss(reconstructed_trajectory, state_x,reduction='mean')
+        recon_loss = F.mse_loss(x, decoder_x,reduction='mean')
 
         return kl_loss, recon_loss
 

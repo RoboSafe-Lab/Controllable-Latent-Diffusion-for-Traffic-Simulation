@@ -11,8 +11,8 @@ class HfCustomTrainConfig(NuscTrajdataTrainConfig):
         super(HfCustomTrainConfig, self).__init__()
 
 
-        self.trajdata_source_train = ["nusc_trainval-train", "nusc_trainval-train_val"]#["nusc_mini-mini_train"]
-        self.trajdata_source_valid = ["nusc_trainval-val"]#["nusc_mini-mini_val"]
+        #self.trajdata_source_train = ["nusc_mini-mini_train"]
+        #self.trajdata_source_valid = ["nusc_mini-mini_val"]
 
         self.trajdata_data_dirs = {
             "nusc_trainval" : "/home/visier/nuscenes",
@@ -24,7 +24,7 @@ class HfCustomTrainConfig(NuscTrajdataTrainConfig):
         self.training.batch_size = 100
         self.training.num_steps = 100000
 
-        self.validation.every_n_steps =4000
+        self.validation.every_n_steps =4000   #一个step就是一个epoch
 
         self.logging.log_tb = False
         self.logging.log_wandb = True
@@ -53,7 +53,7 @@ class HfCustomAlgoConfig(DiffuserConfig):
 
         self.trajectory_shape = (52,6)
         self.condition_dim = 256
-        self.latent_dim = 32
+        self.latent_dim = 64
 
         self.optim_params.dm = {
             "learning_rate": {

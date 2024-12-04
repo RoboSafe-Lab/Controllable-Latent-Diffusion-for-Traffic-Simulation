@@ -74,7 +74,7 @@ def forward_dynamics(
     for t in range(num_steps):
         x[t + 1] = dyn_model.step(x[t], actions[..., t, :], step_time)
 
-    x = torch.stack(x[1:], dim=-2)
-    pos = dyn_model.state2pos(x)
-    yaw = dyn_model.state2yaw(x)
+    x = torch.stack(x[1:], dim=-2) #(B,52,4)
+    pos = dyn_model.state2pos(x)#(B,52,2)
+    yaw = dyn_model.state2yaw(x)#(B,52,1)
     return x, pos, yaw

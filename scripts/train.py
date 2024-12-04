@@ -164,7 +164,6 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         limit_val_batches=cfg.train.validation.num_steps_per_epoch,
         # all callbacks
         callbacks=train_callbacks,
-        precision=16,
         num_sanity_val_steps=0,
     )
 
