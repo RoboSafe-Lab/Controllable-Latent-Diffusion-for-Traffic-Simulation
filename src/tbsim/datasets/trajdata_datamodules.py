@@ -191,6 +191,7 @@ class PassUnifiedDataModule(pl.LightningDataModule):
 
         gc.collect()
 
+
     def train_dataloader(self):
         return DataLoader(
             dataset=self.train_dataset,
@@ -199,7 +200,8 @@ class PassUnifiedDataModule(pl.LightningDataModule):
             num_workers=self._train_config.training.num_data_workers,
             drop_last=True,
             collate_fn=self.train_dataset.get_collate_fn(return_dict=True),
-            persistent_workers=False
+            persistent_workers=True,
+
         )
 
     def val_dataloader(self):
@@ -210,7 +212,8 @@ class PassUnifiedDataModule(pl.LightningDataModule):
             num_workers=self._train_config.validation.num_data_workers,
             drop_last=True,
             collate_fn=self.valid_dataset.get_collate_fn(return_dict=True),
-            persistent_workers=False
+            persistent_workers=True,
+
         )
 
     def test_dataloader(self):
@@ -218,3 +221,4 @@ class PassUnifiedDataModule(pl.LightningDataModule):
 
     def predict_dataloader(self):
         pass
+

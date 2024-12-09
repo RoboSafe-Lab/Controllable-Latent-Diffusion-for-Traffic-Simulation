@@ -2,6 +2,7 @@ from tbsim.models.diffuser import DiffuserModel
 from  models.vae import HF_CVAE
 import torch.nn.functional as F
 import  torch
+import matplotlib.pyplot as plt
 class DMVAE(DiffuserModel):
     def __init__(
         self,
@@ -41,13 +42,13 @@ class DMVAE(DiffuserModel):
         disable_control_on_stationary,
 
         trajectory_shape: tuple,  # [T, D]
-        condition_dim: int,
         latent_dim: int,
         step_time: int,
+        diffuser_norm_info,
         vae_hidden_dims: tuple = (128, 256, 512),
         vae_loss_weight: float = 1.0,
         dm_loss_weight: float = 1.0,
-        diffuser_norm_info=([-17.5, 0, 0, 0, 0, 0], [22.5, 10, 40, 3.14, 500, 31.4]),
+
     ):
         super(DMVAE, self).__init__(map_encoder_model_arch,
                                     input_image_shape,
@@ -83,11 +84,11 @@ class DMVAE(DiffuserModel):
                                     use_conditioning,
                                     cond_fill_value,
                                     disable_control_on_stationary,
+                                    diffuser_norm_info=diffuser_norm_info,
                                     dt=0.1,
                                     )
         self.vae = HF_CVAE(
             trajectory_shape=trajectory_shape,
-            condition_dim=condition_dim,
             latent_dim=latent_dim,
             mlp_layer_dims=vae_hidden_dims,
             step_time=step_time,
@@ -95,6 +96,7 @@ class DMVAE(DiffuserModel):
             dynamics_type=dynamics_type,
             dynamics_kwargs=dynamics_kwargs,
         )
+
         self.vae_loss_weight = vae_loss_weight
         self.dm_loss_weight = dm_loss_weight
 
@@ -105,10 +107,9 @@ class DMVAE(DiffuserModel):
     def get_vaeloss(self,data_batch):
         aux_info = self.get_aux_info(data_batch)
         target_traj = self.get_state_and_action_from_data_batch(data_batch)
-        if self.use_reconstructed_state and self.diffuser_input_mode in ['state_and_action', 'state_and_action_no_dyn']:#TODO:目前没有执行
-            target_traj = self.convert_action_to_state_and_action(target_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
-
         x = self.scale_traj(target_traj)#(B,52,6)
+
+
         vae_output= self.vae(x,aux_info)
         mu, logvar= vae_output['encoder_output']['mu'],vae_output['encoder_output']['logvar']
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()

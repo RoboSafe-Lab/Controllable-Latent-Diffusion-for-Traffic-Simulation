@@ -663,7 +663,7 @@ class DiffuserModel(nn.Module):
         target_traj = self.get_state_and_action_from_data_batch(data_batch)
         
         if self.use_reconstructed_state and self.diffuser_input_mode in ['state_and_action', 'state_and_action_no_dyn']:
-            target_traj = self.convert_action_to_state_and_action(target_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)        
+            target_traj = self.convert_action_to_state_and_action(target_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
 
 
         x = self.scale_traj(target_traj)

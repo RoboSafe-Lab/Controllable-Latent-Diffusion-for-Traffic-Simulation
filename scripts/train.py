@@ -3,14 +3,13 @@ import argparse
 import  sys
 import pytorch_lightning as pl
 from tbsim.utils.log_utils import PrintLogger
-from configs.my_config_registry import  EXP_CONFIG_REGISTRY
 from tbsim.utils.batch_utils import set_global_batch_type
 from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
 import tbsim.utils.train_utils as TrainUtils
 from tbsim.datasets.factory import datamodule_factory
-from my_config_registry import get_registered_experiment_config
+from configs.my_config_registry import get_registered_experiment_config
 from tbsim.utils.env_utils import RolloutCallback
-from tbsim.algos.factory import algo_factory
+
 import wandb
 from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
 from  models.algos import  UnifiedTrainer
@@ -41,24 +40,24 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
 
     train_callbacks = []
     # Training Parallelism
-    assert cfg.train.parallel_strategy in [
-        "dp",
-        "ddp_spawn",
-        None,
-    ]
-    if not cfg.devices.num_gpus > 1:
-
-        with cfg.train.unlocked():
-            cfg.train.parallel_strategy = None
-    if cfg.train.parallel_strategy in ["ddp_spawn"]:
-        with cfg.train.training.unlocked():
-            cfg.train.training.batch_size = int(
-                cfg.train.training.batch_size / cfg.devices.num_gpus
-            )
-        with cfg.train.validation.unlocked():
-            cfg.train.validation.batch_size = int(
-                cfg.train.validation.batch_size / cfg.devices.num_gpus
-            )
+    # assert cfg.train.parallel_strategy in [
+    #     "dp",
+    #     "ddp_spawn",
+    #     None,
+    # ]
+    # if not cfg.devices.num_gpus > 1:
+    #
+    #     with cfg.train.unlocked():
+    #         cfg.train.parallel_strategy = None
+    # if cfg.train.parallel_strategy in ["ddp_spawn"]:
+    #     with cfg.train.training.unlocked():
+    #         cfg.train.training.batch_size = int(
+    #             cfg.train.training.batch_size / cfg.devices.num_gpus
+    #         )
+    #     with cfg.train.validation.unlocked():
+    #         cfg.train.validation.batch_size = int(
+    #             cfg.train.validation.batch_size / cfg.devices.num_gpus
+    #         )
 
     datamodule = datamodule_factory(
         cls_name=cfg.train.datamodule_class, config=cfg
@@ -110,44 +109,26 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         ckpt_rollout_callback = pl.callbacks.ModelCheckpoint(
             dirpath=ckpt_dir,
             filename="iter{step}_ep{epoch}_simADE{rollout/metrics_ego_ADE:.2f}",
-            # explicitly spell out metric names, otherwise PL parses '/' in metric names to directories
             auto_insert_metric_name=False,
             save_top_k=cfg.train.save.best_k,  # save the best k models
             monitor="rollout/metrics_ego_ADE",
             mode="min",
             every_n_train_steps=cfg.train.save.every_n_steps,
             state_key='rollout_checkpoint',
-
             verbose=True,
         )
         train_callbacks.append(ckpt_rollout_callback)
 
 
-    # Logging
-    assert not (cfg.train.logging.log_tb and cfg.train.logging.log_wandb)
     logger = None
     if debug:
         print("Debugging mode, suppress logging.")
-    elif cfg.train.logging.log_tb:
-        logger = TensorBoardLogger(
-            save_dir=root_dir, version=version_key, name=None, sub_dir="logs/"
-        )
-        print("Tensorboard event will be saved at {}".format(logger.log_dir))
     elif cfg.train.logging.log_wandb:
-        assert (
-            "WANDB_APIKEY" in os.environ
-        ), "Set api key by `export WANDB_APIKEY=<your-apikey>`"
-        apikey = os.environ["WANDB_APIKEY"]
-        wandb.login(key=apikey)
-        logger = WandbLogger(
-            name=f"{cfg.name}_{current_time}",
-            project=cfg.train.logging.wandb_project_name
-        )
-        # record the entire config on wandb
+        wandb.login()
+        logger = WandbLogger(name=f"{cfg.name}_{current_time}",project=cfg.train.logging.wandb_project_name)
         logger.experiment.config.update(cfg.to_dict())
         logger.watch(model=model)
-    else:
-        print("WARNING: not logging training stats")
+
 
     trainer = pl.Trainer(
         default_root_dir=root_dir,
@@ -156,7 +137,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         # logging
         logger=logger,
         # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
-        log_every_n_steps=1,#cfg.train.logging.log_every_n_steps,
+        log_every_n_steps=cfg.train.logging.log_every_n_steps,
         # training
         max_steps=cfg.train.training.num_steps,
         # validation

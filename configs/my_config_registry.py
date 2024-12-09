@@ -1,6 +1,6 @@
-from tbsim.configs.base import ExperimentConfig
+from src.tbsim.configs.base import ExperimentConfig
 
-from custom_config import HfCustomTrainConfig,HfCustomEnvConfig,HfCustomAlgoConfig
+from configs.custom_config import HfCustomTrainConfig,HfCustomEnvConfig,HfCustomAlgoConfig
 
 
 MY_EXP_CONFIG_REGISTRY = dict()
@@ -13,7 +13,7 @@ MY_EXP_CONFIG_REGISTRY["nusc_hf"] = ExperimentConfig(
 )
 
 
-from tbsim.configs.registry import EXP_CONFIG_REGISTRY
+from src.tbsim.configs.registry import EXP_CONFIG_REGISTRY
 MY_EXP_CONFIG_REGISTRY.update(EXP_CONFIG_REGISTRY)
 
 def get_registered_experiment_config(registered_name):
