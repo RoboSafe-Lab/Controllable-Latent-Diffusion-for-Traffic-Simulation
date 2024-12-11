@@ -106,21 +106,20 @@ class DMVAE(DiffuserModel):
 
     def get_vaeloss(self,data_batch):
         aux_info = self.get_aux_info(data_batch)
-        target_traj = self.get_state_and_action_from_data_batch(data_batch)
+        target_traj = self.get_state_and_action_from_data_batch(data_batch)      
         x = self.scale_traj(target_traj)#(B,52,6)
-
-
         vae_output= self.vae(x,aux_info)
         mu, logvar= vae_output['encoder_output']['mu'],vae_output['encoder_output']['logvar']
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
         decoder_x = vae_output['decoder_output']['trajectories']
-
         recon_loss = F.mse_loss(x, decoder_x,reduction='mean')
 
         return kl_loss, recon_loss
 
 
-
+    def get_dmloss(self,data_batch):
+        losses = self.compute_losses(data_batch=data_batch)
+        return losses
 
     def forward(self, x, aux_info, time):
         """

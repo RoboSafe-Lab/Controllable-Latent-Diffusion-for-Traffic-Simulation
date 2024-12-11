@@ -185,7 +185,7 @@ class HF_CVAE(nn.Module):
             step_time=step_time,
             diffuser_norm_info=diffuser_norm_info,
         )
-        self.prior = FixedGaussianPrior(latent_dim=latent_dim)
+      
         self.latent_dim = latent_dim
         self.kl_loss_weight = kl_loss_weight
         self.recon_loss_weight = recon_loss_weight
@@ -193,7 +193,8 @@ class HF_CVAE(nn.Module):
     def forward(self, inputs: torch.Tensor,aux_info) -> Dict[str, Any]:
         #condition_features=None#aux_info['cond_feat']
         encoder_output = self.encoder(inputs={'trajectories': inputs})#{"mu":(B,128),"logvar":(B,128)}
-        z = self.prior.sample_with_parameters(encoder_output, n=1).squeeze(dim=1)#(B,128)
+        z=self.reparameterize(encoder_output['mu'],encoder_output['logvar'])
+        #z = self.prior.sample_with_parameters(encoder_output, n=1).squeeze(dim=1)#(B,128)
 
 
         initial_states = aux_info['curr_states'] #(B,4)
@@ -206,7 +207,11 @@ class HF_CVAE(nn.Module):
         )
         return {"decoder_output": decoder_output, "encoder_output": encoder_output, "z": z}
 
-
+    def reparameterize(self,mu, logvar):
+        # mu, logvar shape: [B, latent_dim]
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)      
+        return mu + eps * std
 
 
 

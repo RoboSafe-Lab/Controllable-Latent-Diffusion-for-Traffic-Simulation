@@ -2,44 +2,49 @@ import os
 import argparse
 import  sys
 import pytorch_lightning as pl
+
 from tbsim.utils.log_utils import PrintLogger
 from tbsim.utils.batch_utils import set_global_batch_type
 from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
 import tbsim.utils.train_utils as TrainUtils
 from tbsim.datasets.factory import datamodule_factory
-from configs.my_config_registry import get_registered_experiment_config
 from tbsim.utils.env_utils import RolloutCallback
 
-import wandb
-from pytorch_lightning.loggers import TensorBoardLogger, WandbLogger
+import wandb,json
+from pytorch_lightning.loggers import  WandbLogger
 from  models.algos import  UnifiedTrainer
 from datetime import  datetime
+from configs.custom_config import dict_to_config,ConfigBase,serialize_object
+from src.tbsim.configs.base import ExperimentConfig
+import yaml
 
-
-
-def main(cfg, auto_remove_exp_dir=True, debug=False):
+def main(cfg, auto_remove_exp_dir, debug=False):
     pl.seed_everything(cfg.seed)
-
     set_global_batch_type("trajdata")
     set_global_trajdata_batch_env(cfg.train.trajdata_source_train[0])
     set_global_trajdata_batch_raster_cfg(cfg.env.rasterizer)
     print("\n============= New Training Run with Config =============")
+
     root_dir, log_dir, ckpt_dir, video_dir, version_key = TrainUtils.get_exp_dir(
         exp_name=cfg.name,
         output_dir=cfg.root_dir,
         save_checkpoints=cfg.train.save.enabled,
-        auto_remove_exp_dir=True
+        auto_remove_exp_dir=auto_remove_exp_dir
     )
-    cfg.dump(os.path.join(root_dir, version_key, "config.json"))
+    with open(os.path.join(root_dir, version_key, "config.json"), "w") as f:
+        json.dump(serialize_object(default_config), f, indent=4)
+
     if cfg.train.logging.terminal_output_to_txt and not debug:
-        # log stdout and stderr to a text file
+
         logger = PrintLogger(os.path.join(log_dir, "log.txt"))
         sys.stdout = logger
         sys.stderr = logger
-    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     train_callbacks = []
     # Training Parallelism
+    #     with cfg.train.validation.unlocked():
+    #         cfg.train.validation
     # assert cfg.train.parallel_strategy in [
     #     "dp",
     #     "ddp_spawn",
@@ -53,9 +58,7 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
     #     with cfg.train.training.unlocked():
     #         cfg.train.training.batch_size = int(
     #             cfg.train.training.batch_size / cfg.devices.num_gpus
-    #         )
-    #     with cfg.train.validation.unlocked():
-    #         cfg.train.validation.batch_size = int(
+    #         ).batch_size = int(
     #             cfg.train.validation.batch_size / cfg.devices.num_gpus
     #         )
 
@@ -79,14 +82,13 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
     model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
                            modality_shapes=datamodule.modality_shapes,
                            registered_name=cfg.registered_name,
-                           train_mode=args.train_mode)
+                           train_mode=cfg.train.mode)
     # Checkpointing
-    if cfg.train.validation.enabled and cfg.train.save.save_best_validation:
-        assert (
-                cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps
-        ), "checkpointing frequency (" + str(
-            cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(
-            cfg.train.validation.every_n_steps) + ")"
+    if cfg.train.validation.enabled and cfg.train.save.save_best_validation:#NOTE:  first validation then save
+        assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
+            cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
+        
+        
         for metric_name, metric_key in model.checkpoint_monitor_keys.items():
             print(
                 "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
@@ -147,90 +149,36 @@ def main(cfg, auto_remove_exp_dir=True, debug=False):
         callbacks=train_callbacks,
         num_sanity_val_steps=0,
     )
-
+    # checkpoint_point = "/home/visier/hazardforge/visier_logs/test/run0/checkpoints/val_loss/iter4000_ep0_val_loss_val_dm_loss.ckpt"
     trainer.fit(model=model, datamodule=datamodule)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")
-
-
-
-    parser.add_argument(
-        "--config_name",
-        type=str,
-        default="nusc_hf",
-        help="(optional) create experiment config from a preregistered name (see configs/my_config_registry.py)",
-    )
-
-    parser.add_argument(
-        "--dataset_path",
-        type=str,
-        default=None,
-        help="(optional) if provided, override the dataset root path",
-    )
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="visier_logs/",
-        help="Root directory of training output (checkpoints, visualization, tensorboard log, etc.)",
-    )
-
-    parser.add_argument(
-        "--wandb_project_name",
-        type=str,
-        default=None,
-        help="(optional) if provided, override the wandb project name defined in the config",
-    )
-    parser.add_argument(
-        "--remove_exp_dir",
-        action="store_true",
-        help="Whether to automatically remove existing experiment directory of the same name (remember to set this to "
-             "True to avoid unexpected stall when launching cloud experiments).",
-    )
-    parser.add_argument(
-        "--debug", action="store_true", help="Debug mode, suppress wandb logging, etc."
-    )
-    parser.add_argument(
-        "--train_mode",
-        type=str,
-        choices=["vae", "dm"],
-        default="vae",
-        help="Specify which model to train: 'vae' for Variational Autoencoder, 'dm' for Diffusion Model",
-    )
-
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="./HazardForge/config.yaml", help="Path to YAML config")
     args = parser.parse_args()
-    default_config = get_registered_experiment_config(args.config_name)
-    print('args.config_name: ', args.config_name)
-    print('default_config', default_config)
+    with open(args.config, "r") as f:
+        config_dict = yaml.safe_load(f)
+    train_config = dict_to_config(ConfigBase, config_dict.get("train", {}))
+    env_config = dict_to_config(ConfigBase, config_dict.get("env", {}))
+    algo_config = dict_to_config(ConfigBase, config_dict.get("algo", {}))
+    default_config = ExperimentConfig(
+        train_config=train_config,
+        env_config=env_config,
+        algo_config=algo_config,
+        registered_name=config_dict.get("registered_name", "default_experiment"),
+    )
+  
 
-    if args.dataset_path is not None:
-        default_config.train.dataset_path = args.dataset_path
-        for key in default_config.eval.trajdata.trajdata_data_dirs:
-            default_config.eval.trajdata.trajdata_data_dirs[key] = args.dataset_path
-
-    if args.output_dir is not None:
-        default_config.root_dir = os.path.abspath(args.output_dir)
-
-    if args.wandb_project_name is not None:
-        default_config.train.logging.wandb_project_name = args.wandb_project_name
-
-    if args.debug:
-        # Test policy rollout
-        default_config.train.validation.every_n_steps = 5
-        default_config.train.save.every_n_steps = 10
-        default_config.train.rollout.every_n_steps = 10
-        default_config.train.rollout.num_episodes = 1
-
-    if default_config.train.rollout.enabled:
-        default_config.eval.env = default_config.env.name
-        assert default_config.algo.eval_class is not None, \
-            "Please set an eval_class for {}".format(default_config.algo.name)
-        default_config.eval.eval_class = default_config.algo.eval_class
-        default_config.eval.dataset_path = default_config.train.dataset_path
-        for k in default_config.eval[default_config.eval.env]:  # copy env-specific config to the global-level
-            default_config.eval[k] = default_config.eval[default_config.eval.env][k]
-        default_config.eval.pop("nusc")
-        default_config.eval.pop("l5kit")
+    if default_config.train.rollout.get("enabled", False):
+        default_config.env["eval"] = {"env": default_config.env["name"]}
+        assert default_config.algo["eval_class"], f"Please set an eval_class for {default_config.algo['name']}"
+        default_config.env["eval"]["eval_class"] = default_config.algo["eval_class"]
+        default_config.env["eval"]["dataset_path"] = default_config.train["trajdata_data_dirs"]["nusc_trainval"]
+        env_specific_config = default_config.env.get(default_config.env["eval"]["env"], {})
+        for key, value in env_specific_config.items():
+            default_config.env["eval"][key] = value
 
     default_config.lock()  # Make config read-only
-    main(default_config, auto_remove_exp_dir=args.remove_exp_dir, debug=args.debug)
+  
+    main(default_config, auto_remove_exp_dir=default_config.train.remove_exp_dir, debug=default_config.train.debug)

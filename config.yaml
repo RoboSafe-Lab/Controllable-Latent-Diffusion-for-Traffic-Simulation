@@ -1,79 +1,184 @@
-config_name: "custom_trajdata_diff_xyz"
-dataset_path: "/path/to/dataset"
-remove_exp_dir: true
-output_dir: "../logs"
-trajdata_source_train: ["nusc_mini-mini_train"]
-trajdata_source_valid: ["nusc_mini-mini_val"]
-trajdata_data_dirs:
-  nusc_mini: "/absolute/path/to/nuscenes/mini"
-  nusc_trainval: "/absolute/path/to/nuscenes"
-  nusc_test: "/absolute/path/to/nuscenes"
-
-algo:
-  name: "diffuser"
-  model_architecture: "TemporalMapUnet"
-  loss_type: "l2"
-  eval_class: "Diffuser"
-
 train:
-  trajdata_cache_location: "~/.unified_data_cache"
-  trajdata_source_train: ["nusc_mini-mini_train"]
-  trajdata_source_valid: ["nusc_mini-mini_val"]
+  mode: "vae"
+  debug: false
+  remove_exp_dir: true
+  trajdata_cache_location: "~/my_custom_cache_location"
+  
+  trajdata_source_train:
+    - "nusc_trainval-train"
+    - "nusc_trainval-train_val" #"nusc_mini-mini_train"
+  trajdata_source_valid:
+    - "nusc_trainval-val" #"nusc_mini-mini_val"
   trajdata_data_dirs:
-    nusc_trainval: "../behavior-generation-dataset/nuscenes"
-    nusc_test: "../behavior-generation-dataset/nuscenes"
-    nusc_mini: "../behavior-generation-dataset/nuscenes/mini"
+    nusc_trainval: "/home/visier/nuscenes"
+    nusc_test: "/home/visier/nuscenes"
+    nusc_mini: "/home/visier/nuscenes"
   trajdata_rebuild_cache: false
-  rollout_enabled: true
-  rollout_save_video: true
-  rollout_every_n_steps: 10000
-  rollout_warm_start_n_steps: 0
-  training_batch_size: 4
-  training_num_steps: 1000
-  training_num_data_workers: 8
-  save_every_n_steps: 10000
-  save_best_k: 10
-  validation_enabled: true
-  validation_batch_size: 4
-  validation_num_data_workers: 0
-  validation_every_n_steps: 500
-  validation_num_steps_per_epoch: 50
-  on_ngc: false
-  logging_terminal_output_to_txt: true
-  logging_log_tb: false
-  logging_log_wandb: false
-  logging_wandb_project_name: "tbsim"
-  logging_log_every_n_steps: 10
-  logging_flush_every_n_steps: 100
 
+  rollout:
+    enabled: false
+    save_video: false
+    every_n_steps: 10000
+    warm_start_n_steps: 0
+
+  training:
+    batch_size: 100
+    num_steps: 50000
+    num_data_workers: 20
+
+  save:
+    enabled: true
+    every_n_steps: 4000
+    best_k: 10
+    save_best_rollout: false
+    save_best_validation: true
+
+  validation:
+    enabled: true
+    batch_size: 32
+    num_data_workers: 18
+    every_n_steps: 1000
+    num_steps_per_epoch: 50
+
+  on_ngc: false
+
+  logging:
+    terminal_output_to_txt: true
+    log_tb: false
+    log_wandb: false
+    wandb_project_name: "hf_visier"
+    log_every_n_steps: 10
+    flush_every_n_steps: 100
+  datamodule_class: "PassUnifiedDataModule"
+  training_vec_map_params: 
+    S_seg: 15
+    S_point: 80
+    map_max_dist: 80
+    max_heading_error: 7853981633974483
+    ahead_threshold: -40
+    dist_weight: 1.0
+    heading_weight: 0.1
 env:
-  data_generation_trajdata_centric: agent
-  data_generation_trajdata_only_types:
-  - vehicle
-  data_generation_trajdata_predict_types:
-  - vehicle
-  data_generation_trajdata_scene_desc_contains: null
-  data_generation_trajdata_incl_map: true
-  data_generation_trajdata_max_agents_distance: .inf
-  data_generation_trajdata_standardize_data: true
-  data_generation_trajdata_other_agents_num: null
+  data_generation_params:
+    trajdata_centric: "agent"
+    trajdata_only_types:
+      - "vehicle"
+    trajdata_predict_types:
+      - "vehicle"
+    trajdata_scene_desc_contains: null
+    trajdata_incl_map: true
+    trajdata_max_agents_distance: "inf"
+    trajdata_standardize_data: true
+    other_agents_num: null
+
   rasterizer:
+    include_hist: true
     num_sem_layers: 3
+    drivable_layers: null
     rgb_idx_groups:
-    - - 0
-    - - 1
-    - - 2
+      - [0]
+      - [1]
+      - [2]
     raster_size: 224
     pixel_size: 0.5
     ego_center:
-    - -0.5
-    - 0.0
+      - -0.5
+      - 0.0
     no_map_fill_value: -1.0
-
-registered_name: "custom_trajdata_diff_xyz"
-
-
-eval:
-  env: "agent"
+algo:
+  trajectory_shape: [52,6]
+  latent_dim: 128
   eval_class: "Diffuser"
-  dataset_path: "/path/to/dataset"
+  name: "diffuser"
+  coordinate: "agent_centric"
+  scene_agent_max_neighbor_dist: 30
+  history_num_frames": 30
+  map_encoder_model_arch: "resnet18"
+  diffuser_model_arch: "TemporalMapUnet"
+  rasterized_history: true
+  rasterized_map: true
+  use_map_feat_global: true
+  use_map_feat_grid: false
+  base_dim: 32
+  horizon: 52
+  n_diffusion_steps: 100
+  action_weight: 1
+  diffusor_loss_weights: null
+  loss_discount: 1
+  predict_epsilon: false
+  dim_mults:
+    - 2
+    - 4
+    - 8
+  clip_denoised: false
+  loss_type: "l2"
+  use_ema: true
+  ema_step: 1
+  ema_decay: 0.995
+  ema_start_step: 4000
+  diffuser_building_block: "concat"
+  action_loss_only: false
+  diffuser_input_mode: "state_and_action"
+  use_reconstructed_state: false
+  conditioning_drop_map_p: 0.0
+  conditioning_drop_neighbor_p: 0.0
+  conditioning_drop_fill: 0.5
+  cond_feat_dim: 256
+  curr_state_feat_dim: 64
+  map_feature_dim: 256
+  map_grid_feature_dim: 32
+  history_feature_dim: 128
+  history_num_frames: 30
+  future_num_frames: 52
+  step_time: 0.1
+  render_ego_history: false
+  disable_control_on_stationary: "current_speed"
+  moving_speed_th: 0.5
+  dynamics:
+    type: "Unicycle"
+    max_steer: 0.5
+    max_yawvel: 6.283185307179586
+    acce_bound:
+      - -10
+      - 8
+    ddh_bound:
+      - -6.283185307179586
+      - 6.283185307179586
+    max_speed: 40.0
+
+  loss_weights:
+    diffusion_loss: 1.0
+
+  optim_params:
+    dm:
+      learning_rate:
+        initial: 0.0002
+        decay_factor: 0.1
+        epoch_schedule:
+          - 15
+          - 30
+      regularization:
+        L2: 0.0
+    vae:
+      learning_rate:
+        initial: 0.0002
+        decay_factor: 0.5
+        epoch_schedule:
+          - 10
+          - 20
+      regularization:
+        L2: 0.01
+
+  nusc_norm_info:
+    diffuser:
+      - [2.135494, 0.003704, 0.970226, 0.000573, -0.002965, 0.000309]
+      - [5.5444, 0.524067, 2.206522, 0.049049, 0.729327, 0.023765]
+    agent_hist:
+      - [-1.198923, 0.000128, 0.953161, 4.698113, 2.051664]
+      - [3.180241, 0.159182, 2.129779, 2.116855, 0.388149]
+    neighbor_hist:
+      - [-0.237441, 1.118636, 0.489575, 0.868664, 0.222984]
+      - [7.587311, 7.444489, 1.680952, 2.578202, 0.832563]
+
+root_dir: "/home/visier/hazardforge/visier_logs"
+name: "test"
