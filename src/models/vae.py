@@ -72,6 +72,12 @@ class Decoder(TrajectoryDecoder):
         #     nn.Dropout(p=0.4),
         #     nn.Linear(hidden_dim // 2, self.output_dim)  # 映射到动作维度
         # )
+
+    nlp:->
+    z: (64,128)->p(64,52,128)  p(:,0,:), p(:,1,:)
+    decoder_out: (64,52,2)
+
+
     def _forward_dynamics(self, current_states, actions):
         assert self.dyn is not None
         assert current_states.shape[-1] == self.dyn.xdim
@@ -90,13 +96,13 @@ class Decoder(TrajectoryDecoder):
     def _forward_networks(self, inputs, current_states=None, num_steps=None):
         # input:(B,64) z:64
         batch_size = inputs.size(0)
-        h0 = torch.tanh(self.z_to_h(inputs)).unsqueeze(0)  # [1, B, hidden_dim]
+        h0 = torch.tanh(self.z_to_h(inputs)).unsqueeze(0)  # [1, B, hidden_dim]#FIXME: 不需要這個?
         c0 = torch.tanh(self.z_to_c(inputs)).unsqueeze(0)  # [1, B, hidden_dim]
         zero_input = torch.zeros(batch_size, self.num_steps, self.output_dim, device=inputs.device)#[B,52,2]
-        lstm_out, _ = self.lstm(zero_input, (h0, c0))  # [B, 52, 128]
+        lstm_out, _ = self.lstm(zero_input, (h0, c0))  # [B, 52, 128]#NOTE:?? [b,104]->[b,52,2]
         hidden_state = self.relu(lstm_out)
-        output = self.h_to_out(hidden_state)  # [B, num_steps, output_dim]
-
+        output = self.h_to_out(hidden_state)  # [B, num_steps, output_dim] [B,52,2]
+        #TODO:不用管h0,c0,将z作作为astm的输入,维度用repeat,不不影响!!
         # num_steps = num_steps or self.num_steps #52
         # #action_dim = self.dyn.udim #2
         # decoder_inputs = inputs.unsqueeze(1).repeat(1, num_steps, 1)
@@ -190,9 +196,9 @@ class HF_CVAE(nn.Module):
         self.kl_loss_weight = kl_loss_weight
         self.recon_loss_weight = recon_loss_weight
 
-    def forward(self, inputs: torch.Tensor,aux_info) -> Dict[str, Any]:
+    def forward(self, inputs: torch.Tensor,aux_info) -> Dict[str, Any]:    (52,6)->encoder->128  (52,128)->decoder->(52,6)
         #condition_features=None#aux_info['cond_feat']
-        encoder_output = self.encoder(inputs={'trajectories': inputs})#{"mu":(B,128),"logvar":(B,128)}
+        encoder_output = self.encoder(inputs={'trajectories': inputs})#{"mu":(B,128),"logvar":(B,128)} (B,52,128)
         z=self.reparameterize(encoder_output['mu'],encoder_output['logvar'])
         #z = self.prior.sample_with_parameters(encoder_output, n=1).squeeze(dim=1)#(B,128)
 
