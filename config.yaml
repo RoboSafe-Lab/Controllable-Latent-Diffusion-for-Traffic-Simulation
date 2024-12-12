@@ -3,42 +3,45 @@ train:
   debug: false
   remove_exp_dir: true
   trajdata_cache_location: "~/my_custom_cache_location"
-  
-  trajdata_source_train:
-    - "nusc_trainval-train"
-    - "nusc_trainval-train_val" #"nusc_mini-mini_train"
-  trajdata_source_valid:
-    - "nusc_trainval-val" #"nusc_mini-mini_val"
-  trajdata_data_dirs:
-    nusc_trainval: "/home/visier/nuscenes"
-    nusc_test: "/home/visier/nuscenes"
-    nusc_mini: "/home/visier/nuscenes"
-  trajdata_rebuild_cache: false
-
-  rollout:
-    enabled: false
-    save_video: false
-    every_n_steps: 10000
-    warm_start_n_steps: 0
 
   training:
-    batch_size: 100
+    batch_size: 1
     num_steps: 50000
-    num_data_workers: 20
-
-  save:
-    enabled: true
-    every_n_steps: 4000
-    best_k: 10
-    save_best_rollout: false
-    save_best_validation: true
+    num_data_workers: 1
 
   validation:
     enabled: true
     batch_size: 32
     num_data_workers: 18
     every_n_steps: 1000
-    num_steps_per_epoch: 50
+    num_steps_per_epoch: 50  
+
+  trajdata_source_train:
+    # - "nusc_trainval-train"
+    # - "nusc_trainval-train_val"
+    - "nusc_mini-mini_train"
+  trajdata_source_valid:
+    # - "nusc_trainval-val" 
+    - "nusc_mini-mini_val"
+  trajdata_data_dirs:
+    nusc_trainval: "/home/visier/nuscenes"
+    nusc_test: "/home/visier/nuscenes"
+    nusc_mini: "/home/visier/nuscenes"
+
+  trajdata_rebuild_cache: false # 原来是false
+  parallel_strategy: "ddp"
+  rollout:
+    enabled: false
+    save_video: false
+    every_n_steps: 5000
+    warm_start_n_steps: 0
+
+  save:
+    enabled: true
+    every_n_steps: 4000
+    best_k: 3
+    save_best_rollout: false
+    save_best_validation: true
 
   on_ngc: false
 
@@ -47,8 +50,9 @@ train:
     log_tb: false
     log_wandb: false
     wandb_project_name: "hf_visier"
-    log_every_n_steps: 10
-    flush_every_n_steps: 100
+    log_every_n_steps: 200
+    flush_every_n_steps: 500
+  
   datamodule_class: "PassUnifiedDataModule"
   training_vec_map_params: 
     S_seg: 15
@@ -59,6 +63,7 @@ train:
     dist_weight: 1.0
     heading_weight: 0.1
 env:
+  name: "trajdata"
   data_generation_params:
     trajdata_centric: "agent"
     trajdata_only_types:
@@ -67,7 +72,7 @@ env:
       - "vehicle"
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
-    trajdata_max_agents_distance: "inf"
+    trajdata_max_agents_distance: !!float inf
     trajdata_standardize_data: true
     other_agents_num: null
 
@@ -86,15 +91,14 @@ env:
       - 0.0
     no_map_fill_value: -1.0
 algo:
-  trajectory_shape: [52,6]
-  latent_dim: 128
-  eval_class: "Diffuser"
-  name: "diffuser"
+  name: "dm_vae"
+  eval_class: "dm_vae"
   coordinate: "agent_centric"
   scene_agent_max_neighbor_dist: 30
-  history_num_frames": 30
   map_encoder_model_arch: "resnet18"
   diffuser_model_arch: "TemporalMapUnet"
+  disable_control_on_stationary: "current_speed"
+  moving_speed_th: 0.5
   rasterized_history: true
   rasterized_map: true
   use_map_feat_global: true
@@ -129,11 +133,15 @@ algo:
   map_grid_feature_dim: 32
   history_feature_dim: 128
   history_num_frames: 30
+  history_num_frames_ego: 30
+  history_num_frames_agents: 30
   future_num_frames: 52
   step_time: 0.1
   render_ego_history: false
-  disable_control_on_stationary: "current_speed"
-  moving_speed_th: 0.5
+  decoder: 
+    layer_dims: []
+    state_as_input: true
+        
   dynamics:
     type: "Unicycle"
     max_steer: 0.5
@@ -145,7 +153,6 @@ algo:
       - -6.283185307179586
       - 6.283185307179586
     max_speed: 40.0
-
   loss_weights:
     diffusion_loss: 1.0
 
@@ -179,6 +186,8 @@ algo:
     neighbor_hist:
       - [-0.237441, 1.118636, 0.489575, 0.868664, 0.222984]
       - [7.587311, 7.444489, 1.680952, 2.578202, 0.832563]
-
+  trajectory_shape: [52,6]
+  latent_dim: 128
 root_dir: "/home/visier/hazardforge/visier_logs"
 name: "test"
+seed: 1

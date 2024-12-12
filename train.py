@@ -42,30 +42,59 @@ def main(cfg, auto_remove_exp_dir, debug=False):
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     train_callbacks = []
-    # Training Parallelism
-    #     with cfg.train.validation.unlocked():
-    #         cfg.train.validation
-    # assert cfg.train.parallel_strategy in [
-    #     "dp",
-    #     "ddp_spawn",
-    #     None,
-    # ]
-    # if not cfg.devices.num_gpus > 1:
-    #
-    #     with cfg.train.unlocked():
-    #         cfg.train.parallel_strategy = None
-    # if cfg.train.parallel_strategy in ["ddp_spawn"]:
-    #     with cfg.train.training.unlocked():
-    #         cfg.train.training.batch_size = int(
-    #             cfg.train.training.batch_size / cfg.devices.num_gpus
-    #         ).batch_size = int(
-    #             cfg.train.validation.batch_size / cfg.devices.num_gpus
-    #         )
 
     datamodule = datamodule_factory(
         cls_name=cfg.train.datamodule_class, config=cfg
     )
     datamodule.setup()
+
+
+
+
+
+#     #NOTE:BEGIN
+#     from tbsim.utils.scene_edit_utils import UnifiedRenderer
+#     from trajdata import AgentBatch, UnifiedDataset
+#     from trajdata.data_structures.scene_metadata import Scene # Just for type annotations
+#     from trajdata.simulation import SimulationScene
+#     from typing import Dict
+#     import numpy as np
+#     dataset = datamodule.train_dataset
+#     num_scenes = dataset.num_scenes
+#     ras_pos = np.array([-0.5, 0]) 
+#     ras_yaw = 0 
+#     renderer = UnifiedRenderer(dataset, raster_size=224)
+    
+#     desired_scene: Scene = dataset.get_scene(scene_idx=0)
+#     sim_scene = SimulationScene(
+#     env_name="nusc_mini_sim",
+#     scene_name="sim_scene",
+#     scene=desired_scene,
+#     dataset=dataset,
+#     init_timestep=0,
+#     freeze_agents=True,
+# )
+#     obs: AgentBatch = sim_scene.reset()
+#     for t in range(1, sim_scene.scene.length_timesteps):
+#         new_xyh_dict: Dict[str, np.ndarray] = dict()
+#         for idx, agent_name in enumerate(obs.agent_name):
+#             curr_yaw = obs.curr_agent_state[idx, -1].numpy()
+#             curr_pos = obs.curr_agent_state[idx, :2].numpy()
+
+#             next_state = np.zeros((3,))
+#             next_state[:2] = curr_pos
+#             next_state[2] = curr_yaw
+#             new_xyh_dict[agent_name] = next_state
+
+#         obs = sim_scene.step(new_xyh_dict)
+
+#     #NOTE:END
+
+
+
+
+    print("-------------------------------------------------------------------------------------------")
+
 
     # Environment for close-loop evaluation
     if cfg.train.rollout.enabled:
@@ -154,7 +183,6 @@ def main(cfg, auto_remove_exp_dir, debug=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")
-    parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="./HazardForge/config.yaml", help="Path to YAML config")
     args = parser.parse_args()
     with open(args.config, "r") as f:
