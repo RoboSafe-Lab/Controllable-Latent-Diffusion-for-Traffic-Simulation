@@ -3,16 +3,16 @@ import argparse
 import  sys
 import pytorch_lightning as pl
 
-from tbsim.utils.log_utils import PrintLogger
-from tbsim.utils.batch_utils import set_global_batch_type
-from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
-import tbsim.utils.train_utils as TrainUtils
-from tbsim.datasets.factory import datamodule_factory
-from tbsim.utils.env_utils import RolloutCallback
+from src.tbsim.utils.log_utils import PrintLogger
+from src.tbsim.utils.batch_utils import set_global_batch_type
+from src.tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
+import src.tbsim.utils.train_utils as TrainUtils
+from src.tbsim.datasets.factory import datamodule_factory
+from src.tbsim.utils.env_utils import RolloutCallback
 
 import wandb,json
 from pytorch_lightning.loggers import  WandbLogger
-from  models.algos import  UnifiedTrainer
+from  src.models.algos import  UnifiedTrainer
 from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase,serialize_object
 from src.tbsim.configs.base import ExperimentConfig
@@ -183,7 +183,7 @@ def main(cfg, auto_remove_exp_dir, debug=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")
-    parser.add_argument("--config", type=str, default="./HazardForge/config.yaml", help="Path to YAML config")
+    parser.add_argument("--config", type=str, default="./config.yaml", help="Path to YAML config")
     args = parser.parse_args()
     with open(args.config, "r") as f:
         config_dict = yaml.safe_load(f)

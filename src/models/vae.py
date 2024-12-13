@@ -73,9 +73,9 @@ class Decoder(TrajectoryDecoder):
         #     nn.Linear(hidden_dim // 2, self.output_dim)  # 映射到动作维度
         # )
 
-    nlp:->
-    z: (64,128)->p(64,52,128)  p(:,0,:), p(:,1,:)
-    decoder_out: (64,52,2)
+    #nlp:->
+    #z: (64,128)->p(64,52,128)  p(:,0,:), p(:,1,:)
+    #decoder_out: (64,52,2)
 
 
     def _forward_dynamics(self, current_states, actions):
@@ -196,7 +196,7 @@ class HF_CVAE(nn.Module):
         self.kl_loss_weight = kl_loss_weight
         self.recon_loss_weight = recon_loss_weight
 
-    def forward(self, inputs: torch.Tensor,aux_info) -> Dict[str, Any]:    (52,6)->encoder->128  (52,128)->decoder->(52,6)
+    def forward(self, inputs: torch.Tensor,aux_info) -> Dict[str, Any]: #   (52,6)->encoder->128  (52,128)->decoder->(52,6)
         #condition_features=None#aux_info['cond_feat']
         encoder_output = self.encoder(inputs={'trajectories': inputs})#{"mu":(B,128),"logvar":(B,128)} (B,52,128)
         z=self.reparameterize(encoder_output['mu'],encoder_output['logvar'])

@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "train",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/visier/hazardforge/HazardForge/train.py",
+            "console": "internalConsole",
+            "env": {
+                "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
+            }
+        },
+        {
+            "name": "test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/home/visier/hazardforge/HazardForge/test.py",
+            "console": "internalConsole",
+            "env": {
+                "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
+            }
+        }
+    ]
+}
