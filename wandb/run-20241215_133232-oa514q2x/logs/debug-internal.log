@@ -1,0 +1,8 @@
+{"time":"2024-12-15T13:32:32.881307636Z","level":"INFO","msg":"using version","core version":"0.19.0"}
+{"time":"2024-12-15T13:32:32.881313667Z","level":"INFO","msg":"created symlink","path":"wandb/run-20241215_133232-oa514q2x/logs/debug-core.log"}
+{"time":"2024-12-15T13:32:32.983591552Z","level":"INFO","msg":"created new stream","id":"oa514q2x"}
+{"time":"2024-12-15T13:32:32.983610367Z","level":"INFO","msg":"stream: started","id":"oa514q2x"}
+{"time":"2024-12-15T13:32:32.983628822Z","level":"INFO","msg":"handler: started","stream_id":"oa514q2x"}
+{"time":"2024-12-15T13:32:32.983624233Z","level":"INFO","msg":"sender: started","stream_id":"oa514q2x"}
+{"time":"2024-12-15T13:32:32.983623412Z","level":"INFO","msg":"writer: Do: started","stream_id":"oa514q2x"}
+{"time":"2024-12-15T13:32:33.42071508Z","level":"INFO","msg":"Starting system monitor"}

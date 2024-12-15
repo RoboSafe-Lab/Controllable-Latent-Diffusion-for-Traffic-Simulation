@@ -6,23 +6,39 @@
         "remove_exp_dir": true,
         "trajdata_cache_location": "~/my_custom_cache_location",
         "training": {
-            "batch_size": 1,
+            "batch_size": 128,
             "num_steps": 50000,
-            "num_data_workers": 1
+            "num_data_workers": 16
         },
         "validation": {
             "enabled": true,
-            "batch_size": 32,
-            "num_data_workers": 18,
+            "batch_size": 128,
+            "num_data_workers": 16,
             "every_n_steps": 1000,
             "num_steps_per_epoch": 50
         },
+        "logging": {
+            "terminal_output_to_txt": true,
+            "log_tb": false,
+            "log_wandb": true,
+            "wandb_project_name": "hf_visier",
+            "log_every_n_steps": 50,
+            "flush_every_n_steps": 500
+        },
         "trajdata_source_train": [
-            "nusc_mini-mini_train"
+            "nusc_trainval-train",
+            "nusc_trainval-train_val"
         ],
         "trajdata_source_valid": [
-            "nusc_mini-mini_val"
+            "nusc_trainval-val"
         ],
+        "save": {
+            "enabled": true,
+            "every_n_steps": 4000,
+            "best_k": 3,
+            "save_best_rollout": false,
+            "save_best_validation": true
+        },
         "trajdata_data_dirs": {
             "nusc_trainval": "/home/visier/nuscenes",
             "nusc_test": "/home/visier/nuscenes",
@@ -36,22 +52,7 @@
             "every_n_steps": 5000,
             "warm_start_n_steps": 0
         },
-        "save": {
-            "enabled": true,
-            "every_n_steps": 4000,
-            "best_k": 3,
-            "save_best_rollout": false,
-            "save_best_validation": true
-        },
         "on_ngc": false,
-        "logging": {
-            "terminal_output_to_txt": true,
-            "log_tb": false,
-            "log_wandb": false,
-            "wandb_project_name": "hf_visier",
-            "log_every_n_steps": 200,
-            "flush_every_n_steps": 500
-        },
         "datamodule_class": "PassUnifiedDataModule",
         "training_vec_map_params": {
             "S_seg": 15,
@@ -152,9 +153,9 @@
         "future_num_frames": 52,
         "step_time": 0.1,
         "render_ego_history": false,
-        "decoder": {
-            "layer_dims": [],
-            "state_as_input": true
+        "vae": {
+            "hidden_size": 128,
+            "latent_size": 64
         },
         "dynamics": {
             "type": "Unicycle",
@@ -189,7 +190,7 @@
             },
             "vae": {
                 "learning_rate": {
-                    "initial": 0.0002,
+                    "initial": 0.0001,
                     "decay_factor": 0.5,
                     "epoch_schedule": [
                         10,
@@ -197,7 +198,7 @@
                     ]
                 },
                 "regularization": {
-                    "L2": 0.01
+                    "L2": 1e-05
                 }
             }
         },
@@ -256,8 +257,7 @@
         "trajectory_shape": [
             52,
             6
-        ],
-        "latent_dim": 128
+        ]
     },
     "eval": {
         "name": null,

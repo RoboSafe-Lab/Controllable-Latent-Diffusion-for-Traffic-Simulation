@@ -1,0 +1,699 @@
+_wandb:
+    value:
+        cli_version: 0.19.0
+        m:
+            - "1": validation_kld_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": trainer/global_step
+              "6":
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.weight.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.weight._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_hh_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_hh_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_hh_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_ih_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.weight._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_ih_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/kl_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.weight.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_ih_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.bias.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.bias.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": validation_reconstruction_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": validation_kld_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.weight.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.weight._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.weight._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.bias.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": validation_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/vae_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.bias.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_ih_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.bias._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_hh_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": validation_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_hh_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_hh_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/recon_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/vae_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_hh_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.bias._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.bias.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_ih_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.bias.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.weight.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_hh_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/recon_loss_step
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.bias.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_ih_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_ih_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.weight.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.var.bias.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": train/kl_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_hh_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.weight.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.weight.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.bias._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.bias.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_hh_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.weight.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": validation_reconstruction_loss_epoch
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_ih_l0.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_hh_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.mu.weight.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.bias._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_ih_l0.bins
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.weight.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.weight_ih_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.lstm.bias_ih_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_hidden.bias.values
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.weight_ih_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_dec.fc.weight._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.decoder_cell.bias._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+            - "1": gradients/vae.lstm_enc.lstm.bias_hh_l0._type
+              "5": 2
+              "6":
+                - 1
+                - 3
+              "7": []
+        python_version: 3.9.20
+        t:
+            "1":
+                - 1
+                - 5
+                - 9
+                - 41
+                - 53
+                - 55
+                - 79
+                - 103
+            "2":
+                - 1
+                - 5
+                - 9
+                - 41
+                - 53
+                - 55
+                - 79
+                - 103
+            "3":
+                - 1
+                - 7
+                - 13
+                - 23
+                - 55
+                - 66
+            "4": 3.9.20
+            "5": 0.19.0
+            "8":
+                - 5
+            "12": 0.19.0
+            "13": linux-x86_64
+algo:
+    value: <configs.custom_config.ConfigBase object at 0x7873bc1c9f70>
+devices:
+    value:
+        num_gpus: 1
+env:
+    value: <configs.custom_config.ConfigBase object at 0x7873bc1c9550>
+eval:
+    value:
+        adjustment:
+            initial_num_neighbors: 4
+            num_frame_per_new_agent: 20
+            random_init_plan: false
+            remove_existing_neighbors: false
+        agent_eval_class: null
+        ckpt:
+            cvae_metric:
+                ckpt_dir: null
+                ckpt_key: null
+                ngc_job_id: null
+            occupancy_metric:
+                ckpt_dir: null
+                ckpt_key: null
+                ngc_job_id: null
+            planner:
+                ckpt_dir: null
+                ckpt_key: null
+                ngc_job_id: null
+            policy:
+                ckpt_dir: null
+                ckpt_key: null
+                ngc_job_id: null
+            predictor:
+                ckpt_dir: null
+                ckpt_key: null
+                ngc_job_id: null
+        ckpt_root_dir: checkpoints/
+        cvae:
+            rolling: true
+            rolling_horizon:
+                - 5
+                - 10
+                - 20
+        dataset_path: null
+        denoising_params:
+            perturb_output_trajectory: false
+            stride: 1
+        ego_only: false
+        env: nusc
+        eval_class: ""
+        experience_hdf5_path: null
+        filtration: false
+        goal_conditional: false
+        guidance_optimization_params:
+            grad_steps: 1
+            lr: 0.3
+            optimizer: adam
+            perturb_th: null
+        l5kit:
+            eval_scenes:
+                - 9058
+                - 5232
+                - 14153
+                - 8173
+                - 10314
+                - 7027
+                - 9812
+                - 1090
+                - 9453
+                - 978
+                - 10263
+                - 874
+                - 5563
+                - 9613
+                - 261
+                - 2826
+                - 2175
+                - 9977
+                - 6423
+                - 1069
+                - 1836
+                - 8198
+                - 5034
+                - 6016
+                - 2525
+                - 927
+                - 3634
+                - 11806
+                - 4911
+                - 6192
+                - 11641
+                - 461
+                - 142
+                - 15493
+                - 4919
+                - 8494
+                - 14572
+                - 2402
+                - 308
+                - 1952
+                - 13287
+                - 15614
+                - 6529
+                - 12
+                - 11543
+                - 4558
+                - 489
+                - 6876
+                - 15279
+                - 6095
+                - 5877
+                - 8928
+                - 10599
+                - 16150
+                - 11296
+                - 9382
+                - 13352
+                - 1794
+                - 16122
+                - 12429
+                - 15321
+                - 8614
+                - 12447
+                - 4502
+                - 13235
+                - 2919
+                - 15893
+                - 12960
+                - 7043
+                - 9278
+                - 952
+                - 4699
+                - 768
+                - 13146
+                - 8827
+                - 16212
+                - 10777
+                - 15885
+                - 11319
+                - 9417
+                - 14092
+                - 14873
+                - 6740
+                - 11847
+                - 15331
+                - 15639
+                - 11361
+                - 14784
+                - 13448
+                - 10124
+                - 4872
+                - 3567
+                - 5543
+                - 2214
+                - 7624
+                - 10193
+                - 7297
+                - 1308
+                - 3951
+                - 14001
+            n_step_action: 5
+            num_simulation_steps: 200
+            skimp_rollout: false
+            skip_first_n: 1
+        metrics:
+            compute_analytical_metrics: true
+            compute_learned_metrics: false
+        name: null
+        num_episode_repeats: 1
+        num_filtration_samples: 5
+        num_scenes_per_batch: 1
+        num_scenes_to_evaluate: 1
+        nusc:
+            eval_scenes:
+                - 30
+            future_sec: 5.2
+            history_sec: 3
+            n_step_action: 5
+            num_simulation_steps: 200
+            skip_first_n: 0
+            trajdata_data_dirs:
+                nusc_trainval: ../behavior-generation-dataset/nuscenes
+            trajdata_source_test:
+                - nusc_trainval-val
+        occupancy:
+            rolling: true
+            rolling_horizon:
+                - 5
+                - 10
+                - 20
+        perturb:
+            OU:
+                scale:
+                    - 1
+                    - 1
+                    - 0.2
+                sigma:
+                    - 0
+                    - 0.1
+                    - 0.2
+                    - 0.5
+                    - 1
+                    - 2
+                    - 4
+                theta: 0.8
+            enabled: false
+        perturb_opt_params:
+            grad_steps: 30
+            optimizer: adam
+            optimizer_params:
+                lr: 0.001
+            perturb_th: 100
+        perturb_output_trajectory: false
+        policy:
+            class_free_guide_w: 0
+            cost_weights:
+                collision_weight: 10
+                lane_weight: 1
+                likelihood_weight: 0
+                progress_weight: 0
+            diversification_clearance: null
+            guide_as_filter_only: false
+            guide_clean: video_diff
+            mask_drivable: true
+            num_action_samples: 2
+            num_plan_samples: 50
+            pos_to_yaw: true
+            sample: false
+            use_ema: false
+            yaw_correction_speed: 1
+        results_dir: results/
+        rolling_perturb:
+            OU:
+                scale:
+                    - 1
+                    - 1
+                    - 0.2
+                sigma: 0.5
+                theta: 0.8
+            enabled: false
+        seed: 0
+        seed_each_episode: null
+        start_frame_index_each_episode: null
+        trajdata:
+            trajdata_cache_location: ~/.unified_data_cache
+            trajdata_rebuild_cache: false
+name:
+    value: test
+registered_name:
+    value: default_experiment
+root_dir:
+    value: dm_vae_trained_models/
+seed:
+    value: 1
+train:
+    value: <configs.custom_config.ConfigBase object at 0x7873bc1c97f0>

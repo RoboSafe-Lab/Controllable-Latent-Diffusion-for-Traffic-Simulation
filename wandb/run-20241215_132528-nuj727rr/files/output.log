@@ -1,0 +1,143 @@
+wandb: logging graph, to disable use `wandb.watch(log_graph=False)`
+data_cfg.trajdata_predict_types ['vehicle']
+{'cache_location': '~/my_custom_cache_location', 'desired_data': ['nusc_trainval-train', 'nusc_trainval-train_val'], 'desired_dt': 0.1, 'future_sec': (5.2, 5.2), 'history_sec': (3.0, 3.0), 'data_dirs': <configs.custom_config.ConfigBase object at 0x7babd87cac40>, 'only_types': [<AgentType.VEHICLE: 1>], 'only_predict': [<AgentType.VEHICLE: 1>], 'agent_interaction_distances': defaultdict(<function PassUnifiedDataModule.setup.<locals>.<lambda> at 0x7babcdae6f70>, {}), 'incl_raster_map': True, 'raster_map_params': {'px_per_m': 2, 'map_size_px': 224, 'return_rgb': False, 'offset_frac_xy': [-0.5, 0.0], 'no_map_fill_value': -1.0}, 'incl_vector_map': True, 'centric': 'agent', 'scene_description_contains': None, 'standardize_data': True, 'verbose': True, 'max_agent_num': None, 'num_workers': 24, 'rebuild_cache': False, 'rebuild_maps': False, 'extras': {'closest_lane_point': <function get_closest_lane_point_wrapper.<locals>.get_closest_lane_point at 0x7babcdae6e50>, 'full_fut_traj': <function get_full_fut_traj at 0x7bab83f801f0>, 'full_fut_valid': <function get_full_fut_valid at 0x7bab83f80280>}}
+/home/visier/ctg_project/trajdata/src/trajdata/dataset_specific/nusc/nusc_dataset.py:62: UserWarning: Beware, nusc_test has no annotations!
+  warnings.warn("Beware, nusc_test has no annotations!")
+Loading data for matched scene tags: ['boston-nusc_trainval-train', 'nusc_trainval-singapore-train', 'train_val-nusc_trainval-boston', 'train_val-nusc_trainval-singapore']
+Calculating Agent Data (Serially): 100%|##########| 700/700 [00:00<00:00, 136222.93it/s]
+700 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|##########| 700/700 [00:00<00:00, 18465.14it/s]
+Structuring Agent Data Index: 100%|##########| 700/700 [00:00<00:00, 71959.33it/s]
+Loading data for matched scene tags: ['val-nusc_trainval-boston', 'val-nusc_trainval-singapore']
+Calculating Agent Data (Serially): 100%|##########| 150/150 [00:00<00:00, 123847.56it/s]
+150 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|##########| 150/150 [00:00<00:00, 15698.42it/s]
+Structuring Agent Data Index: 100%|##########| 150/150 [00:00<00:00, 63996.09it/s]
+Epoch 0:   0%|          | 0/7447 [00:00<?, ?it/s] Traceback (most recent call last):
+  File "/home/visier/hazardforge/HazardForge/train.py", line 212, in <module>
+    main(default_config, auto_remove_exp_dir=default_config.train.remove_exp_dir, debug=default_config.train.debug)
+  File "/home/visier/hazardforge/HazardForge/train.py", line 182, in main
+    trainer.fit(model=model, datamodule=datamodule)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 545, in fit
+    call._call_and_handle_interrupt(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 581, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 990, in _run
+    results = self._run_stage()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1036, in _run_stage
+    self.fit_loop.run()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 202, in run
+    self.advance()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 359, in advance
+    self.epoch_loop.run(self._data_fetcher)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 136, in run
+    self.advance(data_fetcher)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 240, in advance
+    batch_output = self.automatic_optimization.run(trainer.optimizers[0], batch_idx, kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 187, in run
+    self._optimizer_step(batch_idx, closure)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 265, in _optimizer_step
+    call._call_lightning_module_hook(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 157, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/core/module.py", line 1282, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/core/optimizer.py", line 151, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 230, in optimizer_step
+    return self.precision_plugin.optimizer_step(optimizer, model=model, closure=closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 117, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/optimizer.py", line 140, in wrapper
+    out = func(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/optimizer.py", line 23, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/adam.py", line 183, in step
+    loss = closure()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 104, in _wrap_closure
+    closure_result = closure()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 140, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/autograd/grad_mode.py", line 27, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 126, in closure
+    step_output = self._step_fn()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 315, in _training_step
+    training_step_output = call._call_strategy_hook(trainer, "training_step", *kwargs.values())
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 309, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 382, in training_step
+    return self.lightning_module.training_step(*args, **kwargs)
+  File "/home/visier/hazardforge/HazardForge/src/models/algos.py", line 271, in training_step
+    scaled_actions,mu,logvar = self.vae(scaled_traj)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1208, in _call_impl
+    result = forward_call(*input, **kwargs)
+  File "/home/visier/hazardforge/HazardForge/src/models/vae.py", line 330, in forward
+    reconstruct_output, _ = self.lstm_dec(z, hidden)
+ValueError: too many values to unpack (expected 2)
+Traceback (most recent call last):
+  File "/home/visier/hazardforge/HazardForge/train.py", line 212, in <module>
+    main(default_config, auto_remove_exp_dir=default_config.train.remove_exp_dir, debug=default_config.train.debug)
+  File "/home/visier/hazardforge/HazardForge/train.py", line 182, in main
+    trainer.fit(model=model, datamodule=datamodule)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 545, in fit
+    call._call_and_handle_interrupt(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 581, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 990, in _run
+    results = self._run_stage()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1036, in _run_stage
+    self.fit_loop.run()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 202, in run
+    self.advance()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 359, in advance
+    self.epoch_loop.run(self._data_fetcher)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 136, in run
+    self.advance(data_fetcher)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 240, in advance
+    batch_output = self.automatic_optimization.run(trainer.optimizers[0], batch_idx, kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 187, in run
+    self._optimizer_step(batch_idx, closure)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 265, in _optimizer_step
+    call._call_lightning_module_hook(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 157, in _call_lightning_module_hook
+    output = fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/core/module.py", line 1282, in optimizer_step
+    optimizer.step(closure=optimizer_closure)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/core/optimizer.py", line 151, in step
+    step_output = self._strategy.optimizer_step(self._optimizer, closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 230, in optimizer_step
+    return self.precision_plugin.optimizer_step(optimizer, model=model, closure=closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 117, in optimizer_step
+    return optimizer.step(closure=closure, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/optimizer.py", line 140, in wrapper
+    out = func(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/optimizer.py", line 23, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/optim/adam.py", line 183, in step
+    loss = closure()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/plugins/precision/precision_plugin.py", line 104, in _wrap_closure
+    closure_result = closure()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 140, in __call__
+    self._result = self.closure(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/autograd/grad_mode.py", line 27, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 126, in closure
+    step_output = self._step_fn()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/optimization/automatic.py", line 315, in _training_step
+    training_step_output = call._call_strategy_hook(trainer, "training_step", *kwargs.values())
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 309, in _call_strategy_hook
+    output = fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/strategies/strategy.py", line 382, in training_step
+    return self.lightning_module.training_step(*args, **kwargs)
+  File "/home/visier/hazardforge/HazardForge/src/models/algos.py", line 271, in training_step
+    scaled_actions,mu,logvar = self.vae(scaled_traj)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1208, in _call_impl
+    result = forward_call(*input, **kwargs)
+  File "/home/visier/hazardforge/HazardForge/src/models/vae.py", line 330, in forward
+    reconstruct_output, _ = self.lstm_dec(z, hidden)
+ValueError: too many values to unpack (expected 2)

@@ -3,19 +3,19 @@ import argparse
 import  sys
 import pytorch_lightning as pl
 
-from src.tbsim.utils.log_utils import PrintLogger
-from src.tbsim.utils.batch_utils import set_global_batch_type
-from src.tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
-import src.tbsim.utils.train_utils as TrainUtils
-from src.tbsim.datasets.factory import datamodule_factory
-from src.tbsim.utils.env_utils import RolloutCallback
+from tbsim.utils.log_utils import PrintLogger
+from tbsim.utils.batch_utils import set_global_batch_type
+from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
+import tbsim.utils.train_utils as TrainUtils
+from tbsim.datasets.factory import datamodule_factory
+from tbsim.utils.env_utils import RolloutCallback
 
 import wandb,json
 from pytorch_lightning.loggers import  WandbLogger
-from  src.models.algos import  UnifiedTrainer
+from  models.algos import  UnifiedTrainer
 from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase,serialize_object
-from src.tbsim.configs.base import ExperimentConfig
+from tbsim.configs.base import ExperimentConfig
 import yaml
 
 def main(cfg, auto_remove_exp_dir, debug=False):
@@ -47,54 +47,6 @@ def main(cfg, auto_remove_exp_dir, debug=False):
         cls_name=cfg.train.datamodule_class, config=cfg
     )
     datamodule.setup()
-
-
-
-
-
-#     #NOTE:BEGIN
-#     from tbsim.utils.scene_edit_utils import UnifiedRenderer
-#     from trajdata import AgentBatch, UnifiedDataset
-#     from trajdata.data_structures.scene_metadata import Scene # Just for type annotations
-#     from trajdata.simulation import SimulationScene
-#     from typing import Dict
-#     import numpy as np
-#     dataset = datamodule.train_dataset
-#     num_scenes = dataset.num_scenes
-#     ras_pos = np.array([-0.5, 0]) 
-#     ras_yaw = 0 
-#     renderer = UnifiedRenderer(dataset, raster_size=224)
-    
-#     desired_scene: Scene = dataset.get_scene(scene_idx=0)
-#     sim_scene = SimulationScene(
-#     env_name="nusc_mini_sim",
-#     scene_name="sim_scene",
-#     scene=desired_scene,
-#     dataset=dataset,
-#     init_timestep=0,
-#     freeze_agents=True,
-# )
-#     obs: AgentBatch = sim_scene.reset()
-#     for t in range(1, sim_scene.scene.length_timesteps):
-#         new_xyh_dict: Dict[str, np.ndarray] = dict()
-#         for idx, agent_name in enumerate(obs.agent_name):
-#             curr_yaw = obs.curr_agent_state[idx, -1].numpy()
-#             curr_pos = obs.curr_agent_state[idx, :2].numpy()
-
-#             next_state = np.zeros((3,))
-#             next_state[:2] = curr_pos
-#             next_state[2] = curr_yaw
-#             new_xyh_dict[agent_name] = next_state
-
-#         obs = sim_scene.step(new_xyh_dict)
-
-#     #NOTE:END
-
-
-
-
-    print("-------------------------------------------------------------------------------------------")
-
 
     # Environment for close-loop evaluation
     if cfg.train.rollout.enabled:

@@ -5,36 +5,31 @@ train:
   trajdata_cache_location: "~/my_custom_cache_location"
 
   training:
-    batch_size: 1
+    batch_size: 128
     num_steps: 50000
-    num_data_workers: 1
+    num_data_workers: 16
 
   validation:
     enabled: true
-    batch_size: 32
-    num_data_workers: 18
+    batch_size: 128
+    num_data_workers: 16
     every_n_steps: 1000
-    num_steps_per_epoch: 50  
+    num_steps_per_epoch: 50   #每次validation时,运行多少step
 
+  logging:
+    terminal_output_to_txt: true
+    log_tb: false
+    log_wandb: true
+    wandb_project_name: "hf_visier"
+    log_every_n_steps: 50               #the frequency of wandb refresh
+    flush_every_n_steps: 500
   trajdata_source_train:
-    # - "nusc_trainval-train"
-    # - "nusc_trainval-train_val"
-    - "nusc_mini-mini_train"
+    - "nusc_trainval-train"
+    - "nusc_trainval-train_val"
+    # - "nusc_mini-mini_train"
   trajdata_source_valid:
-    # - "nusc_trainval-val" 
-    - "nusc_mini-mini_val"
-  trajdata_data_dirs:
-    nusc_trainval: "/home/visier/nuscenes"
-    nusc_test: "/home/visier/nuscenes"
-    nusc_mini: "/home/visier/nuscenes"
-
-  trajdata_rebuild_cache: false # 原来是false
-  parallel_strategy: "ddp"
-  rollout:
-    enabled: false
-    save_video: false
-    every_n_steps: 5000
-    warm_start_n_steps: 0
+    - "nusc_trainval-val" 
+    # - "nusc_mini-mini_val"
 
   save:
     enabled: true
@@ -43,15 +38,24 @@ train:
     save_best_rollout: false
     save_best_validation: true
 
+  trajdata_data_dirs:
+    nusc_trainval: "/home/visier/nuscenes"
+    nusc_test: "/home/visier/nuscenes"
+    nusc_mini: "/home/visier/nuscenes"
+
+  trajdata_rebuild_cache: false
+  parallel_strategy: "ddp"
+  rollout:
+    enabled: false
+    save_video: false
+    every_n_steps: 5000
+    warm_start_n_steps: 0
+
+  
+
   on_ngc: false
 
-  logging:
-    terminal_output_to_txt: true
-    log_tb: false
-    log_wandb: false
-    wandb_project_name: "hf_visier"
-    log_every_n_steps: 200
-    flush_every_n_steps: 500
+ 
   
   datamodule_class: "PassUnifiedDataModule"
   training_vec_map_params: 
@@ -73,7 +77,7 @@ env:
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
     trajdata_max_agents_distance: !!float inf
-    trajdata_standardize_data: true
+    trajdata_standardize_data: true            #设置为true则采用局部坐标系,以agent为原点
     other_agents_num: null
 
   rasterizer:
@@ -138,10 +142,11 @@ algo:
   future_num_frames: 52
   step_time: 0.1
   render_ego_history: false
-  decoder: 
-    layer_dims: []
-    state_as_input: true
-        
+
+  vae:
+    
+    hidden_size: 128
+    latent_size: 64
   dynamics:
     type: "Unicycle"
     max_steer: 0.5
@@ -168,13 +173,13 @@ algo:
         L2: 0.0
     vae:
       learning_rate:
-        initial: 0.0002
+        initial: 0.0001
         decay_factor: 0.5
         epoch_schedule:
           - 10
           - 20
       regularization:
-        L2: 0.01
+        L2:  0.00001
 
   nusc_norm_info:
     diffuser:
@@ -187,7 +192,7 @@ algo:
       - [-0.237441, 1.118636, 0.489575, 0.868664, 0.222984]
       - [7.587311, 7.444489, 1.680952, 2.578202, 0.832563]
   trajectory_shape: [52,6]
-  latent_dim: 128
+  
 root_dir: "/home/visier/hazardforge/visier_logs"
 name: "test"
 seed: 1

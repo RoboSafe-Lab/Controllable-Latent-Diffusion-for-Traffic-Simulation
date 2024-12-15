@@ -1,0 +1,16 @@
+wandb: logging graph, to disable use `wandb.watch(log_graph=False)`
+data_cfg.trajdata_predict_types ['vehicle']
+{'cache_location': '~/my_custom_cache_location', 'desired_data': ['nusc_trainval-train', 'nusc_trainval-train_val'], 'desired_dt': 0.1, 'future_sec': (5.2, 5.2), 'history_sec': (3.0, 3.0), 'data_dirs': <configs.custom_config.ConfigBase object at 0x7c635a2b0280>, 'only_types': [<AgentType.VEHICLE: 1>], 'only_predict': [<AgentType.VEHICLE: 1>], 'agent_interaction_distances': defaultdict(<function PassUnifiedDataModule.setup.<locals>.<lambda> at 0x7c635a62fc10>, {}), 'incl_raster_map': True, 'raster_map_params': {'px_per_m': 2, 'map_size_px': 224, 'return_rgb': False, 'offset_frac_xy': [-0.5, 0.0], 'no_map_fill_value': -1.0}, 'incl_vector_map': True, 'centric': 'agent', 'scene_description_contains': None, 'standardize_data': True, 'verbose': True, 'max_agent_num': None, 'num_workers': 24, 'rebuild_cache': False, 'rebuild_maps': False, 'extras': {'closest_lane_point': <function get_closest_lane_point_wrapper.<locals>.get_closest_lane_point at 0x7c634ae75a60>, 'full_fut_traj': <function get_full_fut_traj at 0x7c630a575160>, 'full_fut_valid': <function get_full_fut_valid at 0x7c630a5751f0>}}
+/home/visier/ctg_project/trajdata/src/trajdata/dataset_specific/nusc/nusc_dataset.py:62: UserWarning: Beware, nusc_test has no annotations!
+  warnings.warn("Beware, nusc_test has no annotations!")
+Loading data for matched scene tags: ['train-boston-nusc_trainval', 'singapore-train-nusc_trainval', 'boston-train_val-nusc_trainval', 'singapore-train_val-nusc_trainval']
+Calculating Agent Data (Serially): 100%|##########| 700/700 [00:00<00:00, 31629.55it/s]
+700 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|##########| 700/700 [00:00<00:00, 1462.31it/s]
+Structuring Agent Data Index: 100%|##########| 700/700 [00:00<00:00, 46350.29it/s]
+Loading data for matched scene tags: ['boston-nusc_trainval-val', 'singapore-nusc_trainval-val']
+Calculating Agent Data (Serially): 100%|##########| 150/150 [00:00<00:00, 31193.69it/s]
+150 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|##########| 150/150 [00:00<00:00, 405.00it/s]
+Structuring Agent Data Index: 100%|##########| 150/150 [00:00<00:00, 42504.09it/s]
+Epoch 0:   0%|          | 0/7447 [00:00<?, ?it/s] 

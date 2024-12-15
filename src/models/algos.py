@@ -1,8 +1,8 @@
 import wandb
-
+from models.vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
-from models.dm_vae import  DMVAE
+from models.dm import  DM
 from tbsim.utils.batch_utils import batch_utils
 from tbsim.utils.trajdata_utils import convert_scene_data_to_agent_coordinates,  add_scene_dim_to_agent_data, get_stationary_mask
 import pytorch_lightning as pl
@@ -20,7 +20,7 @@ class UnifiedTrainer(pl.LightningModule):
         super(UnifiedTrainer, self).__init__()
         self.algo_config = algo_config
         self.train_config = train_config
-        self.nets = nn.ModuleDict()
+        #self.nets = nn.ModuleDict()
         self._do_log = do_log
 
         # assigned at run-time according to the given data batch
@@ -81,7 +81,7 @@ class UnifiedTrainer(pl.LightningModule):
                 print('DIFFUSER: Dropping neighbor traj input conditioning with p = %f during training...' % (
                     self.cond_drop_neighbor_p))
 
-        self.nets['dm_vae'] = DMVAE(
+        self.dm = DM(
             map_encoder_model_arch=algo_config.map_encoder_model_arch,
             input_image_shape=modality_shapes["image"],  # [C, H, W]
             map_feature_dim=algo_config.map_feature_dim,
@@ -119,7 +119,7 @@ class UnifiedTrainer(pl.LightningModule):
 
             trajectory_shape = algo_config.trajectory_shape,
             #condition_dim=algo_config.condition_dim,
-            latent_dim=algo_config.latent_dim,
+          
             step_time = algo_config.step_time,
             diffuser_norm_info=diffuser_norm_info,
 
@@ -134,42 +134,51 @@ class UnifiedTrainer(pl.LightningModule):
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
             self.ema = EMA(algo_config.ema_decay)
-            self.ema_policy = copy.deepcopy(self.nets["dm_vae"])
+            self.ema_policy = copy.deepcopy(self.dm)
             self.ema_policy.requires_grad_(False)
             self.ema_update_every = algo_config.ema_step
             self.ema_start_step = algo_config.ema_start_step
             self.reset_parameters()
+        vae_config = algo_config.vae
+        self.vae = LSTMVAE(input_size=observation_dim+action_dim,
+                           hidden_size=vae_config.hidden_size,
+                           latent_size=vae_config.latent_size,
+                           output_size=output_dim,
+                           )
 
 
         self.train_mode = train_mode  # "vae" or "dm"
+
         if train_mode == "dm":
             # Load pre-trained VAE model and freeze parameters
             if vae_model_path:
-                self.nets["dm_vae"].vae.load_state_dict(torch.load(vae_model_path))
-                for param in self.nets["dm_vae"].vae.parameters():
+                self.vae.load_state_dict(torch.load(vae_model_path))
+                for param in self.dm.vae.parameters():
                     param.requires_grad = False
-        self.total_annealing_steps=10000# vae 退火策略
-        self.beta=0.0
-        self.beta_max=10
-        self.beta_inc = self.beta_max / self.total_annealing_steps
+
+        self.beta=0.1
+     
         self.batch_size = self.train_config.training.batch_size
         self.val_batch_size = self.train_config.validation.batch_size
 
 
+        
+
+        
+
+
 
     def configure_optimizers(self):
-        """
-        Configure optimizers based on training mode.
-        """
+        
         if self.train_mode == "vae":
             optim_params_vae = self.algo_config.optim_params["vae"]
-
             optimizer = optim.Adam(
-                params=self.nets["dm_vae"].vae.parameters(),
+                params=self.vae.parameters(),
                 lr=optim_params_vae["learning_rate"]["initial"],
                 weight_decay=optim_params_vae["regularization"]["L2"],
+              
             )
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.6,patience=1)
+            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
             return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -177,10 +186,11 @@ class UnifiedTrainer(pl.LightningModule):
                 "monitor": "train/vae_loss",
             },
         }
+
         elif self.train_mode == "dm":
             optim_params_dm = self.algo_config.optim_params["dm"]
             optimizer = optim.Adam(
-                params=self.nets["dm_vae"].parameters(),
+                params=self.dm.parameters(),
                 lr=optim_params_dm["learning_rate"]["initial"],
                 weight_decay=optim_params_dm["regularization"]["L2"],
             )
@@ -202,71 +212,37 @@ class UnifiedTrainer(pl.LightningModule):
             raise ValueError(f"Unknown training mode: {self.train_mode}")
         
 
-    def forward(self, batch, plan=None, step_index=0, num_samp=1, class_free_guide_w=0.0, guide_as_filter_only=False, guide_clean=False, global_t=0):
-        """
-        Forward pass based on training mode.
-        """
-        if self.train_mode == "vae":
-            kl_loss, recon_loss= self.nets["dm_vae"].get_vaeloss(batch)
-
-            return kl_loss, recon_loss
-        elif self.train_mode == "dm":
-            dm_losses = self.nets["dm_vae"].get_dmloss(batch)
-            return dm_losses
-
-
-
+    def forward(self, *args, **kwargs):
+        return super().forward(*args, **kwargs)
   
     def training_step(self, batch):
         if self.use_ema and self.global_step % self.ema_update_every == 0:
             self.step_ema(self.global_step)
-        if self.data_centric is None:
-            if "num_agents" in batch:
-                self.data_centric = 'scene'
-            else:
-                self.data_centric = 'agent'
+            self.data_centric = 'agent'
 
         batch = batch_utils().parse_batch(batch)
+        #TODO:加上判断静止车辆筛选
+        
 
-        if self.use_cond:
-            if self.use_rasterized_map:
-                num_sem_layers = batch['maps'].size(
-                    1)  # NOTE: this assumes a trajdata-based loader. Will not work with lyft-specific loader.
-                if self.cond_drop_map_p > 0:
-                    drop_mask = torch.rand((batch["image"].size(0))) < self.cond_drop_map_p
-                    # only fill the last num_sem_layers as these correspond to semantic map
-                    batch["image"][drop_mask, -num_sem_layers:] = self.cond_fill_val
-
-            if self.use_rasterized_hist:
-                # drop layers of map corresponding to histories
-                # NOTE: this assumes a trajdata-based loader. Will not work with lyft-specific loader.
-                num_sem_layers = batch['maps'].size(1) if batch['maps'] is not None else None
-                if self.cond_drop_neighbor_p > 0:
-                    # sample different mask so sometimes both get dropped, sometimes only one
-                    drop_mask = torch.rand((batch["image"].size(0))) < self.cond_drop_neighbor_p
-                    if num_sem_layers is None:
-                        batch["image"][drop_mask] = self.cond_fill_val
-                    else:
-                        # only fill the layers before semantic map corresponding to trajectories (neighbors and ego)
-                        batch["image"][drop_mask, :-num_sem_layers] = self.cond_fill_val
-            else:
-                if self.cond_drop_neighbor_p > 0:
-                    # drop actual neighbor trajectories instead
-                    # set availability to False, will be zeroed out in model
-                    B = batch["all_other_agents_history_availabilities"].size(0)
-                    drop_mask = torch.rand((B)) < self.cond_drop_neighbor_p
-                    batch["all_other_agents_history_availabilities"][drop_mask] = 0
         if self.train_mode == "vae":
 
-            if self.beta < self.beta_max:
-                self.beta += self.beta_inc
-            else:
-                self.beta = self.beta_max
-            kl_loss, recon_loss=self(batch)
-            loss = self.compute_vae_loss(kl_loss,recon_loss)
-            self.log("train/kl_loss", kl_loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
-            self.log("train/recon_loss", recon_loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
-            self.log("train/vae_loss", loss, on_step=True, on_epoch=True,batch_size=self.batch_size)
+            # if self.beta < self.beta_max:
+            #     self.beta += self.beta_inc
+            # else:
+            #     self.beta = self.beta_max
+            aux_info, scaled_traj = self.pre_vae(batch)
+           
+            scaled_actions,mu,logvar = self.vae(scaled_traj)
+            recon_state = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+            losses = self.vae.loss_function(recon_state,scaled_traj,mu,logvar,self.beta)
+            loss = losses["loss"]
+            recon_loss = losses["Reconstruction_Loss"]
+            kl_loss = losses["KLD"]
+          
+            
+            self.log("train/kl_loss", kl_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("train/recon_loss", recon_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("train/vae_loss", loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
 
 
             return loss
@@ -277,31 +253,40 @@ class UnifiedTrainer(pl.LightningModule):
             self.log("dm_loss", dm_loss,on_step=True,on_epoch=True,batch_size=self.batch_size)
             return dm_loss
 
+    def pre_vae(self,batch):
+        aux_info = self.dm.get_aux_info(batch)
+        tar_traj = self.dm.get_state_and_action_from_data_batch(batch)
+        #TODO:检查是否应用这个代码, 重构轨迹
+        tar_traj = self.dm.convert_action_to_state_and_action(tar_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
 
-
-    def on_train_epoch_end(self):
-        print(f"-----Epoch {self.current_epoch} has ended. Total Steps: {self.global_step}")
-
-
-    def validation_step(self, batch, batch_idx):
-        cur_policy = self.nets["dm_vae"]
-        if self.data_centric is None:
-            if "num_agents" in batch:
-                self.data_centric = 'scene'
-            else:
-                self.data_centric = 'agent'
-
-        batch = batch_utils().parse_batch(batch)
+        scaled_traj = self.dm.scale_traj(tar_traj)
+        return aux_info,scaled_traj
 
     
 
-        if self.train_mode == "vae":
-            kl_loss, recon_loss = self(batch)
+    def validation_step(self, batch, batch_idx):
+        if self.use_ema and self.global_step % self.ema_update_every == 0:
+            self.step_ema(self.global_step)
+            self.data_centric = 'agent'
 
-            val_vae_loss = TensorUtils.detach(self.compute_vae_loss(kl_loss, recon_loss))
-            self.log("val/kl_loss",kl_loss,        on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
-            self.log("val/recon_loss", recon_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
-            self.log("val/vae_loss", val_vae_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
+        batch = batch_utils().parse_batch(batch)
+        if self.train_mode == "vae":
+            aux_info, scaled_traj = self.pre_vae(batch)
+            scaled_actions,mu,logvar = self.vae(scaled_traj)
+            recon_state = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+            losses = self.vae.loss_function(recon_state,scaled_traj,mu,logvar,self.beta)
+            validation_loss = losses["loss"].detach().item() 
+            recons_loss = losses["Reconstruction_Loss"].item() 
+            kld_loss = losses["KLD"].item()  
+
+            self.log("validation_loss", validation_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("validation_reconstruction_loss", recons_loss, on_step=False, on_epoch=True,batch_size=self.batch_size)
+            self.log("validation_kld_loss", kld_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+
+
+
+
+        
 
         elif self.train_mode == "dm":
             dm_losses_dict = TensorUtils.detach(cur_policy.get_dmloss(batch))
@@ -324,15 +309,12 @@ class UnifiedTrainer(pl.LightningModule):
         else:
             pass
 
-    def compute_vae_loss(self, kl,recon):
-        total_loss = recon + self.beta * kl
-        return total_loss
+    def on_train_epoch_end(self):
+        print(f"-----Epoch {self.current_epoch} has ended. Total Steps: {self.global_step}")
 
 
     def compute_dm_loss(self, dm_output, batch):
-        """
-        Compute DM loss.
-        """
+       
         pass
 
     @property
@@ -342,7 +324,7 @@ class UnifiedTrainer(pl.LightningModule):
         if self.train_mode == "vae":
             # Monitor metrics specific to VAE training
             monitor_keys = {
-                "ema_loss": "val/ema_loss",
+                # "ema_loss": "val/ema_loss",
                 "vae_loss": "train/vae_loss"
             }
         elif self.train_mode == "dm":
@@ -355,147 +337,12 @@ class UnifiedTrainer(pl.LightningModule):
 
         return monitor_keys
     def reset_parameters(self):
-        self.ema_policy.load_state_dict(self.nets["dm_vae"].state_dict())
+        self.ema_policy.load_state_dict(self.dm.state_dict())
     def step_ema(self, step):
         if step < self.ema_start_step:
             self.reset_parameters()
             return
-        self.ema.update_model_average(self.ema_policy, self.nets["dm_vae"])
+        self.ema.update_model_average(self.ema_policy, self.dm)
 
-
-
-
-
-    def get_plan(self, obs_dict, **kwargs):
-        plan = kwargs.get("plan", None)
-        preds = self(obs_dict, plan)
-        plan = Plan(
-            positions=preds["positions"],
-            yaws=preds["yaws"],
-            availabilities=torch.ones(preds["positions"].shape[:-1]).to(
-                preds["positions"].device
-            ),  # [B, T]
-        )
-        return plan, {}
-
-    def get_action(self, obs_dict,
-                   num_action_samples=1,
-                   class_free_guide_w=0.0,
-                   guide_as_filter_only=False,
-                   guide_with_gt=False,
-                   guide_clean=False,
-                   **kwargs):
-        plan = kwargs.get("plan", None)
-
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-
-            # sanity chech that policies are different
-            # for current_params, ma_params in zip(self.nets["policy"].parameters(), self.ema_policy.parameters()):
-            #     old_weight, up_weight = ma_params.data, current_params.data
-            #     print(torch.sum(old_weight - up_weight))
-            # exit()
-
-        # already called in policy_composer, but just for good measure...
-        cur_policy.eval()
-
-        # update with current "global" timestep
-        cur_policy.update_guidance(global_t=kwargs['step_index'])
-
-        preds = self(obs_dict, plan, num_samp=num_action_samples,
-                     class_free_guide_w=class_free_guide_w, guide_as_filter_only=guide_as_filter_only,
-                     guide_clean=guide_clean, global_t=kwargs['step_index'])
-        # [B, N, T, 2]
-        B, N, _, _ = preds["positions"].size()
-
-        # arbitrarily use the first sample as the action by default
-        act_idx = torch.zeros((B), dtype=torch.long, device=preds["positions"].device)
-        if guide_with_gt and "target_positions" in obs_dict:
-            act_idx = choose_action_from_gt(preds, obs_dict)
-        elif cur_policy.current_perturbation_guidance.current_guidance is not None:
-            # choose sample closest to desired guidance
-            guide_losses = preds.pop("guide_losses", None)
-
-            # from tbsim.models.diffuser_helpers import choose_act_using_guide_loss
-            # act_idx = choose_act_using_guide_loss(guide_losses, cur_policy.current_perturbation_guidance.current_guidance.guide_configs, act_idx)
-            act_idx = choose_action_from_guidance(preds, obs_dict,
-                                                  cur_policy.current_perturbation_guidance.current_guidance.guide_configs,
-                                                  guide_losses)
-
-        action_preds = TensorUtils.map_tensor(preds, lambda x: x[torch.arange(B), act_idx])
-
-        preds_positions = preds["positions"]
-        preds_yaws = preds["yaws"]
-
-        action_preds_positions = action_preds["positions"]
-        action_preds_yaws = action_preds["yaws"]
-
-        if self.disable_control_on_stationary and self.stationary_mask is not None:
-            stationary_mask_expand = self.stationary_mask.unsqueeze(1).expand(B, N)
-
-            preds_positions[stationary_mask_expand] = 0
-            preds_yaws[stationary_mask_expand] = 0
-
-            action_preds_positions[self.stationary_mask] = 0
-            action_preds_yaws[self.stationary_mask] = 0
-
-        info = dict(
-            action_samples=Action(
-                positions=preds_positions,
-                yaws=preds_yaws
-            ).to_dict(),
-            # diffusion_steps={
-            #     'traj' : action_preds["diffusion_steps"] # full state for the first sample
-            # },
-        )
-        action = Action(
-            positions=action_preds_positions,
-            yaws=action_preds_yaws
-        )
-        return action, info
-
-    def set_guidance(self, guidance_config, example_batch=None):
-
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-        cur_policy.set_guidance(guidance_config, example_batch)
-
-    def clear_guidance(self):
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-        cur_policy.clear_guidance()
-
-    def set_constraints(self, constraint_config):
-        '''
-        Resets the test-time hard constraints to follow during prediction.
-        '''
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-        cur_policy.set_constraints(constraint_config)
-
-    def set_guidance_optimization_params(self, guidance_optimization_params):
-        '''
-        Resets the test-time guidance_optimization_params.
-        '''
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-        cur_policy.set_guidance_optimization_params(guidance_optimization_params)
-
-    def set_diffusion_specific_params(self, diffusion_specific_params):
-        cur_policy = self.nets["dm_vae"]
-        # use EMA for val
-        if self.use_ema:
-            cur_policy = self.ema_policy
-        cur_policy.set_diffusion_specific_params(diffusion_specific_params)
 
 
