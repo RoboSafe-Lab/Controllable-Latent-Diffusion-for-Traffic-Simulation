@@ -17,53 +17,73 @@ from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase,serialize_object
 from tbsim.configs.base import ExperimentConfig
 import yaml
+from configs.visualize_traj import TrajectoryVisualizationCallback
 
-def main(cfg, auto_remove_exp_dir, debug=False):
+
+def create_wandb_dir(base_dir="wandb"):
+    """
+    Create a directory under the wandb base directory with a timestamp as the name.
+    """
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    run_dir = os.path.join(base_dir, timestamp)
+    os.makedirs(run_dir, exist_ok=True)
+    return run_dir
+
+def main(cfg, debug=False):
     pl.seed_everything(cfg.seed)
     set_global_batch_type("trajdata")
     set_global_trajdata_batch_env(cfg.train.trajdata_source_train[0])
     set_global_trajdata_batch_raster_cfg(cfg.env.rasterizer)
+    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     print("\n============= New Training Run with Config =============")
 
-    root_dir, log_dir, ckpt_dir, video_dir, version_key = TrainUtils.get_exp_dir(
-        exp_name=cfg.name,
-        output_dir=cfg.root_dir,
-        save_checkpoints=cfg.train.save.enabled,
-        auto_remove_exp_dir=auto_remove_exp_dir
-    )
-    with open(os.path.join(root_dir, version_key, "config.json"), "w") as f:
-        json.dump(serialize_object(default_config), f, indent=4)
+    wandb_base_dir = "logs"
+    wandb_run_dir = create_wandb_dir(base_dir=wandb_base_dir)
+    config_path = os.path.join(wandb_run_dir, "config.json")
+    with open(config_path, "w") as f:
+        json.dump(serialize_object(cfg), f, indent=4)
 
-    if cfg.train.logging.terminal_output_to_txt and not debug:
 
-        logger = PrintLogger(os.path.join(log_dir, "log.txt"))
-        sys.stdout = logger
-        sys.stderr = logger
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    datamodule = datamodule_factory(cls_name=cfg.train.datamodule_class, config=cfg)
+    datamodule.setup()
+    
+  
+    model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
+                           modality_shapes=datamodule.modality_shapes,
+                           registered_name=cfg.registered_name,
+                           train_mode=cfg.train.mode)
+    
+
+    logger = None
+    if debug:
+        print("Debugging mode, suppress logging.")
+    elif cfg.train.logging.log_wandb:
+        wandb.login()
+        logger = WandbLogger(
+            name=f"{cfg.name}_{current_time}",
+            project=cfg.train.logging.wandb_project_name,
+            save_dir=wandb_run_dir
+            )
+        logger.watch(model=model)
+        logger.experiment.config.update(cfg.to_dict())
+
+    checkpoint_dir = os.path.join(wandb_run_dir, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+       
 
     train_callbacks = []
-
-    datamodule = datamodule_factory(
-        cls_name=cfg.train.datamodule_class, config=cfg
-    )
-    datamodule.setup()
-
-    # Environment for close-loop evaluation
     if cfg.train.rollout.enabled:
-        # Run rollout at regular intervals
+      
         rollout_callback = RolloutCallback(
             exp_config=cfg,
             every_n_steps=cfg.train.rollout.every_n_steps,
             warm_start_n_steps=cfg.train.rollout.warm_start_n_steps,
             verbose=True,
             save_video=cfg.train.rollout.save_video,
-            video_dir=video_dir
+            video_dir=os.path.join(wandb_run_dir, "videos")
         )
         train_callbacks.append(rollout_callback)
-    model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
-                           modality_shapes=datamodule.modality_shapes,
-                           registered_name=cfg.registered_name,
-                           train_mode=cfg.train.mode)
+    
     # Checkpointing
     if cfg.train.validation.enabled and cfg.train.save.save_best_validation:#NOTE:  first validation then save
         assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
@@ -75,7 +95,7 @@ def main(cfg, auto_remove_exp_dir, debug=False):
                 "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
             )
             ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=f"{ckpt_dir}/{metric_name}",
+                dirpath=f"{checkpoint_dir}/{metric_name}",
                 filename=f"iter{{step}}_ep{{epoch}}_{metric_name}_{metric_key}",
                 auto_insert_metric_name=False,
                 save_top_k=cfg.train.save.best_k,
@@ -90,7 +110,7 @@ def main(cfg, auto_remove_exp_dir, debug=False):
             cfg.train.save.every_n_steps > cfg.train.rollout.every_n_steps
         ), "checkpointing frequency needs to be greater than rollout frequency"
         ckpt_rollout_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=ckpt_dir,
+            dirpath=checkpoint_dir,
             filename="iter{step}_ep{epoch}_simADE{rollout/metrics_ego_ADE:.2f}",
             auto_insert_metric_name=False,
             save_top_k=cfg.train.save.best_k,  # save the best k models
@@ -102,19 +122,22 @@ def main(cfg, auto_remove_exp_dir, debug=False):
         )
         train_callbacks.append(ckpt_rollout_callback)
 
+    class WandbCheckpointCallback(pl.callbacks.Callback):
+        def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+          
+            if trainer.checkpoint_callback and trainer.checkpoint_callback.best_model_path:
+                latest_ckpt = trainer.checkpoint_callback.best_model_path
+                if latest_ckpt:
+                    wandb.save(latest_ckpt)
+    visualization_callback = TrajectoryVisualizationCallback(plot_interval=200)
 
-    logger = None
-    if debug:
-        print("Debugging mode, suppress logging.")
-    elif cfg.train.logging.log_wandb:
-        wandb.login()
-        logger = WandbLogger(name=f"{cfg.name}_{current_time}",project=cfg.train.logging.wandb_project_name)
-        logger.experiment.config.update(cfg.to_dict())
-        logger.watch(model=model)
+
+    train_callbacks.append(WandbCheckpointCallback())
+    train_callbacks.append(visualization_callback)
 
 
     trainer = pl.Trainer(
-        default_root_dir=root_dir,
+        default_root_dir=checkpoint_dir,
         # checkpointing
         enable_checkpointing=cfg.train.save.enabled,
         # logging
@@ -161,4 +184,4 @@ if __name__ == '__main__':
 
     default_config.lock()  # Make config read-only
   
-    main(default_config, auto_remove_exp_dir=default_config.train.remove_exp_dir, debug=default_config.train.debug)
+    main(default_config, debug=default_config.train.debug)

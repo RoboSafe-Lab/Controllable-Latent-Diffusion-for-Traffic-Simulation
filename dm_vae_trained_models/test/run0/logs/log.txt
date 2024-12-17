@@ -1,47 +1,0 @@
-data_cfg.trajdata_predict_types ['vehicle']
-{'cache_location': '~/my_custom_cache_location', 'desired_data': ['nusc_trainval-train', 'nusc_trainval-train_val'], 'desired_dt': 0.1, 'future_sec': (5.2, 5.2), 'history_sec': (3.0, 3.0), 'data_dirs': <configs.custom_config.ConfigBase object at 0x70efe56f07f0>, 'only_types': [<AgentType.VEHICLE: 1>], 'only_predict': [<AgentType.VEHICLE: 1>], 'agent_interaction_distances': defaultdict(<function PassUnifiedDataModule.setup.<locals>.<lambda> at 0x70efe5647af0>, {}), 'incl_raster_map': True, 'raster_map_params': {'px_per_m': 2, 'map_size_px': 224, 'return_rgb': False, 'offset_frac_xy': [-0.5, 0.0], 'no_map_fill_value': -1.0}, 'incl_vector_map': True, 'centric': 'agent', 'scene_description_contains': None, 'standardize_data': True, 'verbose': True, 'max_agent_num': None, 'num_workers': 24, 'rebuild_cache': False, 'rebuild_maps': False, 'extras': {'closest_lane_point': <function get_closest_lane_point_wrapper.<locals>.get_closest_lane_point at 0x70efe5647b80>, 'full_fut_traj': <function get_full_fut_traj at 0x70ef95667160>, 'full_fut_valid': <function get_full_fut_valid at 0x70ef956671f0>}}
-/home/visier/ctg_project/trajdata/src/trajdata/dataset_specific/nusc/nusc_dataset.py:62: UserWarning: Beware, nusc_test has no annotations!
-  warnings.warn("Beware, nusc_test has no annotations!")
-Loading data for matched scene tags: ['boston-train-nusc_trainval', 'train-nusc_trainval-singapore', 'boston-nusc_trainval-train_val', 'nusc_trainval-singapore-train_val']
-Calculating Agent Data (Serially):   0%|          | 0/700 [00:00<?, ?it/s]Calculating Agent Data (Serially): 100%|##########| 700/700 [00:00<00:00, 30012.91it/s]
-700 scenes in the scene index.
-Creating Agent Data Index (24 CPUs):   0%|          | 0/700 [00:00<?, ?it/s]Creating Agent Data Index (24 CPUs):   0%|          | 1/700 [00:00<04:10,  2.79it/s]Creating Agent Data Index (24 CPUs):  26%|##6       | 185/700 [00:00<00:00, 526.28it/s]Creating Agent Data Index (24 CPUs):  59%|#####8    | 410/700 [00:00<00:00, 1024.69it/s]Creating Agent Data Index (24 CPUs):  90%|######### | 631/700 [00:00<00:00, 1370.82it/s]Creating Agent Data Index (24 CPUs): 100%|##########| 700/700 [00:00<00:00, 1020.84it/s]
-Structuring Agent Data Index:   0%|          | 0/700 [00:00<?, ?it/s]Structuring Agent Data Index: 100%|##########| 700/700 [00:00<00:00, 47848.97it/s]
-Loading data for matched scene tags: ['boston-val-nusc_trainval', 'val-nusc_trainval-singapore']
-Calculating Agent Data (Serially):   0%|          | 0/150 [00:00<?, ?it/s]Calculating Agent Data (Serially): 100%|##########| 150/150 [00:00<00:00, 32375.11it/s]
-150 scenes in the scene index.
-Creating Agent Data Index (24 CPUs):   0%|          | 0/150 [00:00<?, ?it/s]Creating Agent Data Index (24 CPUs):   1%|          | 1/150 [00:00<00:55,  2.70it/s]Creating Agent Data Index (24 CPUs):  66%|######6   | 99/150 [00:00<00:00, 204.38it/s]Creating Agent Data Index (24 CPUs): 100%|##########| 150/150 [00:00<00:00, 242.82it/s]
-Structuring Agent Data Index:   0%|          | 0/150 [00:00<?, ?it/s]Structuring Agent Data Index: 100%|##########| 150/150 [00:00<00:00, 43083.31it/s]
-algo_config_diffuser_input_mode: state_and_action
-outputdim=4, actiondim=2, outputdim=2
-disable_control_on_stationary False
-self.add_coeffs [ 2.135494e+00  3.704000e-03  9.702260e-01  5.730000e-04 -2.965000e-03
-  3.090000e-04]
-self.div_coeffs [5.5444   0.524067 2.206522 0.049049 0.729327 0.023765]
-[ models/temporal ] Channel dimensions: [(6, 64), (64, 128), (128, 256)]
-DIFFUSER: using EMA... val and get_action will use ema model
-Monitoring metrics train/vae_loss under alias vae_loss
-wandb: Using wandb-core as the SDK backend.  Please refer to https://wandb.me/wandb-core for more information.
-wandb: Currently logged in as: yx3006 (yx3006-heriot-watt-university). Use `wandb login --relogin` to force relogin
-wandb: Tracking run with wandb version 0.19.0
-wandb: Run data is saved locally in ./wandb/run-20241215_201453-xxdx2gv9
-wandb: Run `wandb offline` to turn off syncing.
-wandb: Syncing run test_2024-12-15 20:14:49
-wandb:  View project at https://wandb.ai/yx3006-heriot-watt-university/Hf_visier
-wandb:  View run at https://wandb.ai/yx3006-heriot-watt-university/Hf_visier/runs/xxdx2gv9
-wandb: logging graph, to disable use `wandb.watch(log_graph=False)`
-data_cfg.trajdata_predict_types ['vehicle']
-{'cache_location': '~/my_custom_cache_location', 'desired_data': ['nusc_trainval-train', 'nusc_trainval-train_val'], 'desired_dt': 0.1, 'future_sec': (5.2, 5.2), 'history_sec': (3.0, 3.0), 'data_dirs': <configs.custom_config.ConfigBase object at 0x70efe56f07f0>, 'only_types': [<AgentType.VEHICLE: 1>], 'only_predict': [<AgentType.VEHICLE: 1>], 'agent_interaction_distances': defaultdict(<function PassUnifiedDataModule.setup.<locals>.<lambda> at 0x70efe5a37040>, {}), 'incl_raster_map': True, 'raster_map_params': {'px_per_m': 2, 'map_size_px': 224, 'return_rgb': False, 'offset_frac_xy': [-0.5, 0.0], 'no_map_fill_value': -1.0}, 'incl_vector_map': True, 'centric': 'agent', 'scene_description_contains': None, 'standardize_data': True, 'verbose': True, 'max_agent_num': None, 'num_workers': 24, 'rebuild_cache': False, 'rebuild_maps': False, 'extras': {'closest_lane_point': <function get_closest_lane_point_wrapper.<locals>.get_closest_lane_point at 0x70efd8276af0>, 'full_fut_traj': <function get_full_fut_traj at 0x70ef95667160>, 'full_fut_valid': <function get_full_fut_valid at 0x70ef956671f0>}}
-/home/visier/ctg_project/trajdata/src/trajdata/dataset_specific/nusc/nusc_dataset.py:62: UserWarning: Beware, nusc_test has no annotations!
-  warnings.warn("Beware, nusc_test has no annotations!")
-Loading data for matched scene tags: ['boston-train-nusc_trainval', 'train-nusc_trainval-singapore', 'boston-nusc_trainval-train_val', 'nusc_trainval-singapore-train_val']
-Calculating Agent Data (Serially):   0%|          | 0/700 [00:00<?, ?it/s]Calculating Agent Data (Serially): 100%|##########| 700/700 [00:00<00:00, 31781.22it/s]
-700 scenes in the scene index.
-Creating Agent Data Index (24 CPUs):   0%|          | 0/700 [00:00<?, ?it/s]Creating Agent Data Index (24 CPUs):   0%|          | 1/700 [00:00<03:57,  2.95it/s]Creating Agent Data Index (24 CPUs):  47%|####7     | 330/700 [00:00<00:00, 975.83it/s]Creating Agent Data Index (24 CPUs): 100%|##########| 700/700 [00:00<00:00, 1331.93it/s]
-Structuring Agent Data Index:   0%|          | 0/700 [00:00<?, ?it/s]Structuring Agent Data Index: 100%|##########| 700/700 [00:00<00:00, 46457.37it/s]
-Loading data for matched scene tags: ['boston-val-nusc_trainval', 'val-nusc_trainval-singapore']
-Calculating Agent Data (Serially):   0%|          | 0/150 [00:00<?, ?it/s]Calculating Agent Data (Serially): 100%|##########| 150/150 [00:00<00:00, 29352.69it/s]
-150 scenes in the scene index.
-Creating Agent Data Index (24 CPUs):   0%|          | 0/150 [00:00<?, ?it/s]Creating Agent Data Index (24 CPUs):   1%|          | 1/150 [00:00<00:49,  3.02it/s]Creating Agent Data Index (24 CPUs): 100%|##########| 150/150 [00:00<00:00, 400.52it/s]
-Structuring Agent Data Index:   0%|          | 0/150 [00:00<?, ?it/s]Structuring Agent Data Index: 100%|##########| 150/150 [00:00<00:00, 38132.35it/s]
-Training: |          | 0/? [00:00<?, ?it/s]Training:   0%|          | 0/7447 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/7447 [00:00<?, ?it/s] 

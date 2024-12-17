@@ -1,4 +1,4 @@
-import wandb
+from configs.visualize_traj import visualize_multiple_trajectories_scatter
 from models.vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
@@ -160,7 +160,8 @@ class UnifiedTrainer(pl.LightningModule):
      
         self.batch_size = self.train_config.training.batch_size
         self.val_batch_size = self.train_config.validation.batch_size
-
+        self.latest_origin_traj=None
+        self.latest_origin_traj=None
 
         
 
@@ -222,7 +223,8 @@ class UnifiedTrainer(pl.LightningModule):
 
         batch = batch_utils().parse_batch(batch)
         #TODO:加上判断静止车辆筛选
-        
+        # from visulize import    plot_trajectories
+        # plot_trajectories(batch['agent_fut'],1)
 
         if self.train_mode == "vae":
 
@@ -230,11 +232,12 @@ class UnifiedTrainer(pl.LightningModule):
             #     self.beta += self.beta_inc
             # else:
             #     self.beta = self.beta_max
-            aux_info, scaled_traj = self.pre_vae(batch)
+            aux_info, scaled_traj,origin_traj = self.pre_vae(batch)
            
             scaled_actions,mu,logvar = self.vae(scaled_traj)
-            recon_state = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-            losses = self.vae.loss_function(recon_state,scaled_traj,mu,logvar,self.beta)
+            recon_state_descaled = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'],descaled_output=True)
+            # visualize_multiple_trajectories_scatter(origin_traj,recon_state_descaled)
+            losses = self.vae.loss_function(recon_state_descaled,origin_traj,mu,logvar,self.beta)
             loss = losses["loss"]
             recon_loss = losses["Reconstruction_Loss"]
             kl_loss = losses["KLD"]
@@ -244,6 +247,8 @@ class UnifiedTrainer(pl.LightningModule):
             self.log("train/recon_loss", recon_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
             self.log("train/vae_loss", loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
 
+            self.latest_origin_traj = origin_traj.detach().cpu()
+            self.latest_recon_traj = recon_state_descaled.detach().cpu()
 
             return loss
 
@@ -257,10 +262,10 @@ class UnifiedTrainer(pl.LightningModule):
         aux_info = self.dm.get_aux_info(batch)
         tar_traj = self.dm.get_state_and_action_from_data_batch(batch)
         #TODO:检查是否应用这个代码, 重构轨迹
-        tar_traj = self.dm.convert_action_to_state_and_action(tar_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
+        # tar_traj = self.dm.convert_action_to_state_and_action(tar_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
 
         scaled_traj = self.dm.scale_traj(tar_traj)
-        return aux_info,scaled_traj
+        return aux_info,scaled_traj,tar_traj
 
     
 

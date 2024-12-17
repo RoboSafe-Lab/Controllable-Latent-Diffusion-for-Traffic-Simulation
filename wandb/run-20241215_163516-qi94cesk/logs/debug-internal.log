@@ -1,8 +1,0 @@
-{"time":"2024-12-15T16:35:16.08978281Z","level":"INFO","msg":"using version","core version":"0.19.0"}
-{"time":"2024-12-15T16:35:16.089795434Z","level":"INFO","msg":"created symlink","path":"wandb/run-20241215_163516-qi94cesk/logs/debug-core.log"}
-{"time":"2024-12-15T16:35:16.191712732Z","level":"INFO","msg":"created new stream","id":"qi94cesk"}
-{"time":"2024-12-15T16:35:16.19173283Z","level":"INFO","msg":"stream: started","id":"qi94cesk"}
-{"time":"2024-12-15T16:35:16.191762957Z","level":"INFO","msg":"sender: started","stream_id":"qi94cesk"}
-{"time":"2024-12-15T16:35:16.191763177Z","level":"INFO","msg":"writer: Do: started","stream_id":"qi94cesk"}
-{"time":"2024-12-15T16:35:16.191797181Z","level":"INFO","msg":"handler: started","stream_id":"qi94cesk"}
-{"time":"2024-12-15T16:35:16.66949353Z","level":"INFO","msg":"Starting system monitor"}
