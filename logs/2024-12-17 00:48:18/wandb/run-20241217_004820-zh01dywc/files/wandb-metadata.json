@@ -1,0 +1,43 @@
+{
+  "os": "Linux-6.8.0-49-generic-x86_64-with-glibc2.39",
+  "python": "CPython 3.9.20",
+  "startedAt": "2024-12-17T00:48:20.588991Z",
+  "program": "/home/visier/hazardforge/HazardForge/train.py",
+  "codePath": "train.py",
+  "git": {
+    "remote": "https://github.com/RoboSafe-Lab/HazardForge.git",
+    "commit": "92d63964673883b967ae153c5b21ea8427e4c23c"
+  },
+  "email": "yx3006@hw.ac.uk",
+  "root": "logs/2024-12-17 00:48:18",
+  "host": "Visier-Ubuntu",
+  "username": "visier",
+  "executable": "/home/visier/anaconda3/envs/hf/bin/python",
+  "codePathLocal": "train.py",
+  "cpu_count": 12,
+  "cpu_count_logical": 24,
+  "gpu": "NVIDIA GeForce RTX 4090",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "294149980160",
+      "used": "11847761920"
+    }
+  },
+  "memory": {
+    "total": "64908312576"
+  },
+  "cpu": {
+    "count": 12,
+    "countLogical": 24
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4090",
+      "memoryTotal": "25757220864",
+      "cudaCores": 16384,
+      "architecture": "Ada"
+    }
+  ],
+  "cudaVersion": "12.4"
+}

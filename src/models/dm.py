@@ -40,15 +40,7 @@ class DM(DiffuserModel):
         use_conditioning,
         cond_fill_value,
         disable_control_on_stationary,
-
-        trajectory_shape: tuple,  # [T, D]
-        
-        step_time: int,
         diffuser_norm_info,
-        vae_hidden_dims: tuple = (128, 256, 512),
-        vae_loss_weight: float = 1.0,
-        dm_loss_weight: float = 1.0,
-
     ):
         super(DM, self).__init__(map_encoder_model_arch,
                                     input_image_shape,
@@ -89,29 +81,9 @@ class DM(DiffuserModel):
                                     )
       
 
-        self.vae_loss_weight = vae_loss_weight
-        self.dm_loss_weight = dm_loss_weight
+       
 
-
-
-        self.vae_loss_weight = vae_loss_weight
-
-    # def get_vaeloss(self,data_batch):
-    #     aux_info = self.get_aux_info(data_batch)
-    #     target_traj = self.get_state_and_action_from_data_batch(data_batch)      
-    #     x = self.scale_traj(target_traj)#(B,52,6)
-    #     vae_output= self.vae(x,aux_info)
-    #     mu, logvar= vae_output['encoder_output']['mu'],vae_output['encoder_output']['logvar']
-    #     kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1).mean()
-    #     decoder_x = vae_output['decoder_output']['trajectories']
-    #     recon_loss = F.mse_loss(x, decoder_x,reduction='mean')
-
-    #     return kl_loss, recon_loss
-
-
-    # def get_dmloss(self,data_batch):
-    #     losses = self.compute_losses(data_batch=data_batch)
-    #     return losses
+    
 
     def forward(self, x, aux_info, time):
         """
@@ -139,32 +111,4 @@ class DM(DiffuserModel):
             "vae_outputs": outputs,
         }
 
-    # def compute_dmvae_loss(self, dm_output, vae_outputs, target):
-    #     """
-    #     Compute the combined loss for DM and VAE.
-
-    #     Args:
-    #         dm_output (torch.Tensor): Output of the diffusion model.
-    #         vae_outputs (dict): Output of the VAE.
-    #         target (torch.Tensor): Ground truth trajectory.
-
-    #     Returns:
-    #         torch.Tensor: Combined loss.
-    #     """
-    #     # VAE loss
-    #     vae_loss_dict = self.vae.compute_loss(vae_outputs, target)
-    #     vae_loss = vae_loss_dict["total_loss"]
-
-    #     # DM loss
-    #     dm_loss = F.mse_loss(dm_output, target, reduction="mean")
-
-    #     # Combined loss
-    #     total_loss = self.vae_loss_weight * vae_loss + self.dm_loss_weight * dm_loss
-
-    #     return {
-    #         "total_loss": total_loss,
-    #         "vae_loss": vae_loss,
-    #         "dm_loss": dm_loss,
-    #     }
-        
-
+   

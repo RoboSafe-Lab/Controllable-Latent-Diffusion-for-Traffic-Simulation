@@ -1,18 +1,15 @@
-from configs.visualize_traj import visualize_multiple_trajectories_scatter
+from configs.visualize_traj import vis_in_out
 from models.vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
 from models.dm import  DM
 from tbsim.utils.batch_utils import batch_utils
-from tbsim.utils.trajdata_utils import convert_scene_data_to_agent_coordinates,  add_scene_dim_to_agent_data, get_stationary_mask
 import pytorch_lightning as pl
 import torch.nn as nn
 import tbsim.utils.tensor_utils as TensorUtils
-from torch.optim.lr_scheduler import CosineAnnealingLR
-from tbsim.policies.common import Plan, Action
-from tbsim.utils.guidance_loss import choose_action_from_guidance, choose_action_from_gt
 from tbsim.models.diffuser_helpers import EMA
 import matplotlib.pyplot as plt
+import os
 class UnifiedTrainer(pl.LightningModule):
     def __init__(self, algo_config,train_config, modality_shapes, registered_name,
                  do_log=True, guidance_config=None, constraint_config=None,train_mode="vae", vae_model_path=None):
@@ -116,11 +113,6 @@ class UnifiedTrainer(pl.LightningModule):
             use_conditioning=self.use_cond,
             cond_fill_value=self.cond_fill_val,
             disable_control_on_stationary=self.disable_control_on_stationary,
-
-            trajectory_shape = algo_config.trajectory_shape,
-            #condition_dim=algo_config.condition_dim,
-          
-            step_time = algo_config.step_time,
             diffuser_norm_info=diffuser_norm_info,
 
         )
@@ -156,14 +148,16 @@ class UnifiedTrainer(pl.LightningModule):
                 for param in self.dm.vae.parameters():
                     param.requires_grad = False
 
-        self.beta=0.1
+        
      
         self.batch_size = self.train_config.training.batch_size
-        self.val_batch_size = self.train_config.validation.batch_size
-        self.latest_origin_traj=None
-        self.latest_origin_traj=None
+        self.beta = 0.1
+        self.beta_max = 1.0
+        self.anneal_steps = self.train_config.training.num_steps/3
+        self.beta_inc = (self.beta_max - self.beta) / self.anneal_steps
 
-        
+        self.val_batch_size = self.train_config.validation.batch_size
+        self.plot_interval = self.train_config.plt_interval
 
         
 
@@ -184,7 +178,7 @@ class UnifiedTrainer(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "monitor": "train/vae_loss",
+                "monitor": "val/loss",
             },
         }
 
@@ -217,76 +211,72 @@ class UnifiedTrainer(pl.LightningModule):
         return super().forward(*args, **kwargs)
   
     def training_step(self, batch):
+        import matplotlib.pyplot as plt
+        import matplotlib
+        import numpy as np
         if self.use_ema and self.global_step % self.ema_update_every == 0:
             self.step_ema(self.global_step)
             self.data_centric = 'agent'
-
-        batch = batch_utils().parse_batch(batch)
-        #TODO:加上判断静止车辆筛选
-        # from visulize import    plot_trajectories
-        # plot_trajectories(batch['agent_fut'],1)
-
+        batch = batch_utils().parse_batch(batch)                 
+        
         if self.train_mode == "vae":
 
-            # if self.beta < self.beta_max:
-            #     self.beta += self.beta_inc
-            # else:
-            #     self.beta = self.beta_max
-            aux_info, scaled_traj,origin_traj = self.pre_vae(batch)
-           
-            scaled_actions,mu,logvar = self.vae(scaled_traj)
-            recon_state_descaled = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'],descaled_output=True)
-            # visualize_multiple_trajectories_scatter(origin_traj,recon_state_descaled)
-            losses = self.vae.loss_function(recon_state_descaled,origin_traj,mu,logvar,self.beta)
+          
+            aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
+            scaled_actions,mu,logvar = self.vae(scaled_input)
+            scaled_output = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+            unscaled_ouput = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'],descaled_output=True)
+
+            losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,self.beta)
             loss = losses["loss"]
             recon_loss = losses["Reconstruction_Loss"]
             kl_loss = losses["KLD"]
           
-            
-            self.log("train/kl_loss", kl_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
-            self.log("train/recon_loss", recon_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
-            self.log("train/vae_loss", loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("train/kl_loss", kl_loss,          on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("train/recon_loss", recon_loss,    on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("train/vae_loss", loss,            on_step=True, on_epoch=False,batch_size=self.batch_size)
 
-            self.latest_origin_traj = origin_traj.detach().cpu()
-            self.latest_recon_traj = recon_state_descaled.detach().cpu()
-
-            return loss
+          
+            return {"loss": loss, 
+                    "input": unscaled_input,
+                    "output":unscaled_ouput,
+                    "raster_from_agent":batch['raster_from_agent'],
+                    "maps":batch['maps'],
+                    }
 
         elif self.train_mode == "dm":
             dm_losses_dict = self(batch)
             dm_loss = dm_losses_dict['diffusion_loss']
             self.log("dm_loss", dm_loss,on_step=True,on_epoch=True,batch_size=self.batch_size)
             return dm_loss
+     
 
     def pre_vae(self,batch):
         aux_info = self.dm.get_aux_info(batch)
-        tar_traj = self.dm.get_state_and_action_from_data_batch(batch)
-        #TODO:检查是否应用这个代码, 重构轨迹
-        # tar_traj = self.dm.convert_action_to_state_and_action(tar_traj[..., [4, 5]], aux_info['curr_states'], scaled_input=False)
-
-        scaled_traj = self.dm.scale_traj(tar_traj)
-        return aux_info,scaled_traj,tar_traj
+        unscaled_input = self.dm.get_state_and_action_from_data_batch(batch)
+        scaled_input = self.dm.scale_traj(unscaled_input)
+        return aux_info,unscaled_input,scaled_input
 
     
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch):
         if self.use_ema and self.global_step % self.ema_update_every == 0:
             self.step_ema(self.global_step)
             self.data_centric = 'agent'
 
         batch = batch_utils().parse_batch(batch)
         if self.train_mode == "vae":
-            aux_info, scaled_traj = self.pre_vae(batch)
+            _, scaled_traj,origin_traj = self.pre_vae(batch)
             scaled_actions,mu,logvar = self.vae(scaled_traj)
-            recon_state = self.dm.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-            losses = self.vae.loss_function(recon_state,scaled_traj,mu,logvar,self.beta)
+            recon_state_descaled = self.dm.convert_action_to_state_and_action(scaled_actions,origin_traj[:,0,:],descaled_output=True)
+            losses = self.vae.loss_function(recon_state_descaled,origin_traj,mu,logvar,self.beta)
             validation_loss = losses["loss"].detach().item() 
             recons_loss = losses["Reconstruction_Loss"].item() 
             kld_loss = losses["KLD"].item()  
 
-            self.log("validation_loss", validation_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
-            self.log("validation_reconstruction_loss", recons_loss, on_step=False, on_epoch=True,batch_size=self.batch_size)
-            self.log("validation_kld_loss", kld_loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            self.log("val/loss", validation_loss,      on_step=False, on_epoch=True,batch_size=self.batch_size)
+            self.log("val/decoder_loss", recons_loss,  on_step=False, on_epoch=True,batch_size=self.batch_size)
+            self.log("val/kl", kld_loss,               on_step=False, on_epoch=True,batch_size=self.batch_size)
 
 
 
@@ -306,13 +296,42 @@ class UnifiedTrainer(pl.LightningModule):
             self.log("val_dm_loss", dm_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
             return dm_loss
 
-    def on_validation_epoch_end(self) -> None:
-        if self.train_mode=='vae':
-            kl_loss = self.trainer.callback_metrics.get("val/kl_loss")
-            recon_loss=self.trainer.callback_metrics.get("val/recon_loss",)
-            vae_loss = self.trainer.callback_metrics.get("val/vae_loss")
-        else:
-            pass
+ 
+    def on_train_batch_end(self, outputs, batch, batch_idx):
+        current_lr = self.trainer.optimizers[0].param_groups[0]['lr']
+        if self.beta < self.beta_max:
+            self.beta += self.beta_inc
+            self.beta = min(self.beta, self.beta_max)
+        self.log("lr", current_lr, on_step=True, on_epoch=False)
+        self.log("beta", self.beta, on_step=True, on_epoch=False)
+
+        if (self.global_step % self.plot_interval == 0) and (self.global_step > 0):
+            
+            origin_traj = outputs['input'].detach().cpu().numpy()
+            recon_traj = outputs['output'].detach().cpu().numpy()
+            raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
+            maps = outputs['maps'].detach().cpu().numpy()
+            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[5, 50, 100, 111])
+
+            save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
+            fig.savefig(save_path, dpi=300)
+
+            # Close the figure to free memory
+            plt.close(fig)
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
 
     def on_train_epoch_end(self):
         print(f"-----Epoch {self.current_epoch} has ended. Total Steps: {self.global_step}")
@@ -324,23 +343,17 @@ class UnifiedTrainer(pl.LightningModule):
 
     @property
     def checkpoint_monitor_keys(self):
-        monitor_keys = {}
+    
 
         if self.train_mode == "vae":
             # Monitor metrics specific to VAE training
-            monitor_keys = {
-                # "ema_loss": "val/ema_loss",
-                "vae_loss": "train/vae_loss"
-            }
+            return {"val_loss": "val/loss"}
         elif self.train_mode == "dm":
-            # Monitor metrics specific to DM training
-            monitor_keys = {
-                "val_loss": "val_dm_loss",
-            }
+            return {"val_loss": "val/loss"}
         else:
             raise ValueError(f"Unknown train mode: {self.train_mode}")
 
-        return monitor_keys
+  
     def reset_parameters(self):
         self.ema_policy.load_state_dict(self.dm.state_dict())
     def step_ema(self, step):

@@ -87,6 +87,8 @@ dataloader = DataLoader(
         collate_fn=dataset.get_collate_fn(),
         num_workers=4,
     )
+import matplotlib
+matplotlib.use('TkAgg') 
 batch: AgentBatch
  # Enable interactive mode
 for batch in tqdm(dataloader):

@@ -1,0 +1,86 @@
+[34m[1mwandb[0m: logging graph, to disable use `wandb.watch(log_graph=False)`
+Monitoring metrics val/loss under alias val_loss
+GPU available: True (cuda), used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+HPU available: False, using: 0 HPUs
+You are using a CUDA device ('NVIDIA GeForce RTX 4090') that has Tensor Cores. To properly utilize them, you should set `torch.set_float32_matmul_precision('medium' | 'high')` which will trade-off precision for performance. For more details, read https://pytorch.org/docs/stable/generated/torch.set_float32_matmul_precision.html#torch.set_float32_matmul_precision
+data_cfg.trajdata_predict_types ['vehicle']
+{'cache_location': '~/my_custom_cache_location', 'desired_data': ['nusc_trainval-train', 'nusc_trainval-train_val'], 'desired_dt': 0.1, 'future_sec': (5.2, 5.2), 'history_sec': (3.0, 3.0), 'data_dirs': <configs.custom_config.ConfigBase object at 0x78e2b21f2040>, 'only_types': [<AgentType.VEHICLE: 1>], 'only_predict': [<AgentType.VEHICLE: 1>], 'agent_interaction_distances': defaultdict(<function PassUnifiedDataModule.setup.<locals>.<lambda> at 0x78e2a74dff70>, {}), 'incl_raster_map': True, 'raster_map_params': {'px_per_m': 2, 'map_size_px': 224, 'return_rgb': False, 'offset_frac_xy': [-0.5, 0.0], 'no_map_fill_value': -1.0}, 'incl_vector_map': True, 'centric': 'agent', 'scene_description_contains': None, 'standardize_data': True, 'verbose': True, 'max_agent_num': None, 'num_workers': 24, 'rebuild_cache': False, 'rebuild_maps': False, 'extras': {'closest_lane_point': <function get_closest_lane_point_wrapper.<locals>.get_closest_lane_point at 0x78e2a74dfdc0>, 'full_fut_traj': <function get_full_fut_traj at 0x78e25d9c2280>, 'full_fut_valid': <function get_full_fut_valid at 0x78e25d9c2310>}}
+/home/visier/ctg_project/trajdata/src/trajdata/dataset_specific/nusc/nusc_dataset.py:62: UserWarning: Beware, nusc_test has no annotations!
+  warnings.warn("Beware, nusc_test has no annotations!")
+Loading data for matched scene tags: ['train-boston-nusc_trainval', 'train-nusc_trainval-singapore', 'boston-train_val-nusc_trainval', 'train_val-nusc_trainval-singapore']
+Calculating Agent Data (Serially): 100%|██████████████████████████████████████████████████████████████████████████████████████████████| 700/700 [00:00<00:00, 126863.97it/s]
+700 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 700/700 [00:00<00:00, 18118.17it/s]
+Structuring Agent Data Index: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 700/700 [00:00<00:00, 71055.49it/s]
+Loading data for matched scene tags: ['boston-nusc_trainval-val', 'nusc_trainval-singapore-val']
+Calculating Agent Data (Serially): 100%|██████████████████████████████████████████████████████████████████████████████████████████████| 150/150 [00:00<00:00, 103324.95it/s]
+150 scenes in the scene index.
+Creating Agent Data Index (24 CPUs): 100%|█████████████████████████████████████████████████████████████████████████████████████████████| 150/150 [00:00<00:00, 17237.81it/s]
+Structuring Agent Data Index: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████| 150/150 [00:00<00:00, 62076.53it/s]
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name       | Type    | Params
+---------------------------------------
+0 | dm         | DM      | 16.2 M
+1 | ema_policy | DM      | 16.2 M
+2 | vae        | LSTMVAE | 235 K
+---------------------------------------
+16.4 M    Trainable params
+16.2 M    Non-trainable params
+32.6 M    Total params
+130.424   Total estimated model params size (MB)
+Epoch 0: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████| 7447/7447 [29:12<00:00,  4.25it/s, v_num=1j5z]-----Epoch 0 has ended. Total Steps: 7447
+                                                                                                                                                                            
+Epoch 0, global step 2000: 'val/loss' reached 16.27277 (best 16.27277), saving model to 'logs/2024-12-17 11:26:14/checkpoints/val_loss/iter2000_ep0_val_loss_val/loss.ckpt' as top 1
+Epoch 0, global step 4000: 'val/loss' reached 12.97874 (best 12.97874), saving model to 'logs/2024-12-17 11:26:14/checkpoints/val_loss/iter4000_ep0_val_loss_val/loss.ckpt' as top 1
+Epoch 0, global step 6000: 'val/loss' reached 11.61765 (best 11.61765), saving model to 'logs/2024-12-17 11:26:14/checkpoints/val_loss/iter6000_ep0_val_loss_val/loss.ckpt' as top 1
+Traceback (most recent call last):
+  File "/home/visier/hazardforge/HazardForge/train.py", line 187, in <module>
+    main(default_config, debug=default_config.train.debug)
+  File "/home/visier/hazardforge/HazardForge/train.py", line 157, in main
+    trainer.fit(model=model, datamodule=datamodule)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 545, in fit
+    call._call_and_handle_interrupt(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 581, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 990, in _run
+    results = self._run_stage()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1036, in _run_stage
+    self.fit_loop.run()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 203, in run
+    self.on_advance_end()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 382, in on_advance_end
+    self.epoch_loop.update_lr_schedulers("epoch", update_plateau_schedulers=not self.restarting)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 337, in update_lr_schedulers
+    self._update_learning_rates(interval=interval, update_plateau_schedulers=update_plateau_schedulers)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 372, in _update_learning_rates
+    raise MisconfigurationException(
+lightning_fabric.utilities.exceptions.MisconfigurationException: ReduceLROnPlateau conditioned on metric val|loss which is not available. Available metrics are: ['train/kl_loss', 'train/recon_loss', 'train/vae_loss', 'lr', 'beta', 'val/loss', 'val/decoder_loss', 'val/kl']. Condition can be set using `monitor` key in lr scheduler dict
+Traceback (most recent call last):
+  File "/home/visier/hazardforge/HazardForge/train.py", line 187, in <module>
+    main(default_config, debug=default_config.train.debug)
+  File "/home/visier/hazardforge/HazardForge/train.py", line 157, in main
+    trainer.fit(model=model, datamodule=datamodule)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 545, in fit
+    call._call_and_handle_interrupt(
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/call.py", line 44, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 581, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 990, in _run
+    results = self._run_stage()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/trainer/trainer.py", line 1036, in _run_stage
+    self.fit_loop.run()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 203, in run
+    self.on_advance_end()
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/fit_loop.py", line 382, in on_advance_end
+    self.epoch_loop.update_lr_schedulers("epoch", update_plateau_schedulers=not self.restarting)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 337, in update_lr_schedulers
+    self._update_learning_rates(interval=interval, update_plateau_schedulers=update_plateau_schedulers)
+  File "/home/visier/anaconda3/envs/hf/lib/python3.9/site-packages/pytorch_lightning/loops/training_epoch_loop.py", line 372, in _update_learning_rates
+    raise MisconfigurationException(
+lightning_fabric.utilities.exceptions.MisconfigurationException: ReduceLROnPlateau conditioned on metric val|loss which is not available. Available metrics are: ['train/kl_loss', 'train/recon_loss', 'train/vae_loss', 'lr', 'beta', 'val/loss', 'val/decoder_loss', 'val/kl']. Condition can be set using `monitor` key in lr scheduler dict

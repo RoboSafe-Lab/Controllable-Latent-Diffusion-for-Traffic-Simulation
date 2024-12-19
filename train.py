@@ -34,7 +34,7 @@ def main(cfg, debug=False):
     set_global_batch_type("trajdata")
     set_global_trajdata_batch_env(cfg.train.trajdata_source_train[0])
     set_global_trajdata_batch_raster_cfg(cfg.env.rasterizer)
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print("\n============= New Training Run with Config =============")
 
     wandb_base_dir = "logs"
@@ -57,7 +57,7 @@ def main(cfg, debug=False):
     logger = None
     if debug:
         print("Debugging mode, suppress logging.")
-    elif cfg.train.logging.log_wandb:
+    else:
         wandb.login()
         logger = WandbLogger(
             name=f"{cfg.name}_{current_time}",
@@ -103,6 +103,7 @@ def main(cfg, debug=False):
                 mode="min",
                 every_n_train_steps=cfg.train.save.every_n_steps,
                 verbose=True,
+                
             )
             train_callbacks.append(ckpt_valid_callback)
     if cfg.train.rollout.enabled and cfg.train.save.save_best_rollout:
@@ -122,20 +123,27 @@ def main(cfg, debug=False):
         )
         train_callbacks.append(ckpt_rollout_callback)
 
-    class WandbCheckpointCallback(pl.callbacks.Callback):
-        def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+    # class WandbCheckpointCallback(pl.callbacks.Callback):
+    #     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
           
-            if trainer.checkpoint_callback and trainer.checkpoint_callback.best_model_path:
-                latest_ckpt = trainer.checkpoint_callback.best_model_path
-                if latest_ckpt:
-                    wandb.save(latest_ckpt)
-    visualization_callback = TrajectoryVisualizationCallback(plot_interval=200)
+    #         if trainer.checkpoint_callback and trainer.checkpoint_callback.best_model_path:
+    #             latest_ckpt = trainer.checkpoint_callback.best_model_path
+    #             if latest_ckpt:
+    #                 wandb.save(latest_ckpt)
 
 
-    train_callbacks.append(WandbCheckpointCallback())
-    train_callbacks.append(visualization_callback)
+
+    images_dir = os.path.join(wandb_run_dir, "images")
+    os.makedirs(images_dir, exist_ok=True)
+    # visualization_callback = TrajectoryVisualizationCallback(plot_interval=cfg.train.plt_interval, save_dir=images_dir)
+    # train_callbacks.append(visualization_callback)
+   
 
 
+    # train_callbacks.append(WandbCheckpointCallback())
+    # train_callbacks.append(visualization_callback)
+
+    model.image_dir = images_dir
     trainer = pl.Trainer(
         default_root_dir=checkpoint_dir,
         # checkpointing
@@ -153,8 +161,8 @@ def main(cfg, debug=False):
         callbacks=train_callbacks,
         num_sanity_val_steps=0,
     )
-    # checkpoint_point = "/home/visier/hazardforge/visier_logs/test/run0/checkpoints/val_loss/iter4000_ep0_val_loss_val_dm_loss.ckpt"
-    trainer.fit(model=model, datamodule=datamodule)
+    checkpoint_point = "logs/2024-12-17 11:58:12/checkpoints/val_loss/iter8000_ep1_val_loss_val/loss.ckpt"
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_point)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")

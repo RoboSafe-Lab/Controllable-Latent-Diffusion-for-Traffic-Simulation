@@ -1,0 +1,16 @@
+{"time":"2024-12-17T11:58:14.092023846Z","level":"INFO","msg":"using version","core version":"0.19.0"}
+{"time":"2024-12-17T11:58:14.092032663Z","level":"INFO","msg":"created symlink","path":"logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/logs/debug-core.log"}
+{"time":"2024-12-17T11:58:14.193650518Z","level":"INFO","msg":"created new stream","id":"ghpn5z4t"}
+{"time":"2024-12-17T11:58:14.19366252Z","level":"INFO","msg":"stream: started","id":"ghpn5z4t"}
+{"time":"2024-12-17T11:58:14.193689762Z","level":"INFO","msg":"sender: started","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T11:58:14.19368885Z","level":"INFO","msg":"writer: Do: started","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T11:58:14.193710551Z","level":"INFO","msg":"handler: started","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T11:58:14.621623384Z","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-12-17T12:55:00.211325853Z","level":"INFO","msg":"stream: closing","id":"ghpn5z4t"}
+{"time":"2024-12-17T12:55:00.211381387Z","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-12-17T12:55:00.212727588Z","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-12-17T12:55:00.761889056Z","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-12-17T12:55:01.168320801Z","level":"INFO","msg":"handler: closed","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T12:55:01.168347191Z","level":"INFO","msg":"writer: Close: closed","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T12:55:01.168372829Z","level":"INFO","msg":"sender: closed","stream_id":"ghpn5z4t"}
+{"time":"2024-12-17T12:55:01.168376105Z","level":"INFO","msg":"stream: closed","id":"ghpn5z4t"}
