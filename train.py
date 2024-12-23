@@ -161,8 +161,8 @@ def main(cfg, debug=False):
         callbacks=train_callbacks,
         num_sanity_val_steps=0,
     )
-    checkpoint_point = "logs/2024-12-17 11:58:12/checkpoints/val_loss/iter8000_ep1_val_loss_val/loss.ckpt"
-    trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_point)
+    # checkpoint_point = "logs/2024-12-17 11:58:12/checkpoints/val_loss/iter8000_ep1_val_loss_val/loss.ckpt"
+    trainer.fit(model=model, datamodule=datamodule)#,ckpt_path=checkpoint_point)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")

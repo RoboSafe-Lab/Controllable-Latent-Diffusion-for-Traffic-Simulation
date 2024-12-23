@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers):
+    def __init__(self, input_size, hidden_size, num_layers,cond_dim=256):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -15,10 +15,15 @@ class Encoder(nn.Module):
             batch_first=True,
             bidirectional=False,
         )
-
-    def forward(self, x):
+        self.cond2hidden = nn.Linear(cond_dim, hidden_size)
+    def forward(self, x,cond_feature):
         # x: tensor of shape (batch_size, seq_length, feature_dim)
-        outputs, _ = self.lstm(x)
+        batch_size = x.size(0)
+        cond_hidden = self.cond2hidden(cond_feature)
+        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        h0[0, :, :] = cond_hidden
+        outputs, (hn, cn) = self.lstm(x, (h0, c0))
         return outputs
 
 class Decoder(nn.Module):
@@ -60,7 +65,7 @@ class LSTMVAE(nn.Module):
 
         # lstm ae
         self.lstm_enc = Encoder(
-            input_size=input_size, hidden_size=hidden_size, num_layers=self.num_layers
+            input_size=input_size, hidden_size=hidden_size, num_layers=self.num_layers,
         )
         self.lstm_dec = Decoder(
             input_size=latent_size,
@@ -74,7 +79,7 @@ class LSTMVAE(nn.Module):
         self.var = nn.Conv1d(self.hidden_size, self.latent_size, kernel_size=3, padding=1)
         self.decoder_hidden = nn.Linear(self.latent_size, self.hidden_size)
         self.decoder_cell = nn.Linear(self.latent_size, self.hidden_size)
-
+      
         # self.scale = scale
         # self.descale = descale
     def reparametize(self, mu, logvar):
@@ -83,11 +88,12 @@ class LSTMVAE(nn.Module):
         z = mu + noise * std
         return z
 
-    def forward(self, x):
+    def forward(self, x,aux_info):
         batch_size, _, _ = x.shape
-
+        cond_feature = aux_info['cond_feat']
+        
         # encode input space to hidden space
-        enc_outputs = self.lstm_enc(x)
+        enc_outputs = self.lstm_enc(x,cond_feature)
 
         # Prepare for latent space
         enc_outputs = enc_outputs.permute(0, 2, 1)  # [B, hidden_size, seq_len]
