@@ -101,6 +101,9 @@ class UnifiedTrainer(pl.LightningModule):
             if self.cond_drop_neighbor_p > 0:
                 print('DIFFUSER: Dropping neighbor traj input conditioning with p = %f during training...' % (
                     self.cond_drop_neighbor_p))
+                
+        self.horizon = algo_config.horizon
+        self.dt = 0.1
         '''
         self.dm = DM(
             map_encoder_model_arch=algo_config.map_encoder_model_arch,
@@ -334,7 +337,7 @@ class UnifiedTrainer(pl.LightningModule):
         aux_info = self.get_aux_info(batch)
 
 
-        unscaled_input = self.get_state_and_action_from_data_batch(batch)
+        unscaled_input = self.get_state_and_action_from_data_batch(batch)#[B,52,6]
         scaled_input = self.scale_traj(unscaled_input)
         return aux_info,unscaled_input,scaled_input
 
@@ -343,18 +346,18 @@ class UnifiedTrainer(pl.LightningModule):
         device = data_batch["history_positions"].device
         cond_feat_in = torch.empty((N,0)).to(device)
 
-        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())
-        curr_states_input = self.scale_traj(curr_states,[0,1,2,3])
-        curr_state_feat = self.agent_state_encoder(curr_states_input)
-        cond_feat_in = torch.cat([cond_feat_in, curr_state_feat], dim=-1)
+        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())#[B,4]
+        curr_states_input = self.scale_traj(curr_states,[0,1,2,3])#[B,4]
+        curr_state_feat = self.agent_state_encoder(curr_states_input)#[B,64]
+        cond_feat_in = torch.cat([cond_feat_in, curr_state_feat], dim=-1)#[B,0+64]
 
-        image_batch = data_batch["image"]
-        map_global_feat, map_grid_feat = self.map_encoder(image_batch)
-        cond_feat_in = torch.cat([cond_feat_in, map_global_feat], dim=-1)
-        cond_feat = self.process_cond_mlp(cond_feat_in)
+        image_batch = data_batch["image"]#[B,34,224,224]包含历史轨迹和邻居轨迹
+        map_global_feat, map_grid_feat = self.map_encoder(image_batch)#[B,256]
+        cond_feat_in = torch.cat([cond_feat_in, map_global_feat], dim=-1)#[B,64+256=320]
+        cond_feat = self.process_cond_mlp(cond_feat_in)#[B,256]
         aux_info = {
-            'cond_feat': cond_feat, 
-            'curr_states': curr_states,
+            'cond_feat': cond_feat, #已经归一化输入
+            'curr_states': curr_states, #没有归一化
         }
         return aux_info
     
@@ -381,15 +384,24 @@ class UnifiedTrainer(pl.LightningModule):
         '''
         if len(chosen_inds) == 0:
             chosen_inds = self.default_chosen_inds
-        add_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D
-        div_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D
+
+        squeeze_time_dim = False
+        if target_traj_orig.dim() == 2:
+        # 变成 [B, 1, D]
+            target_traj_orig = target_traj_orig.unsqueeze(1)#[B,1,4]
+            squeeze_time_dim = True
+
+
+        add_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
+        div_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
 
         # TODO make these a buffer so they're put on the device automatically
         device = target_traj_orig.get_device()
         dx_add = torch.tensor(add_coeffs, device=device)
         dx_div = torch.tensor(div_coeffs, device=device)
         target_traj = (target_traj_orig + dx_add) / dx_div
-
+        if squeeze_time_dim:
+            target_traj = target_traj.squeeze(1) 
         return target_traj 
 
     def descale_traj(self, target_traj_orig, chosen_inds=[]):
@@ -406,20 +418,9 @@ class UnifiedTrainer(pl.LightningModule):
         dx_div = torch.tensor(div_coeffs, device=device) 
 
         target_traj = target_traj_orig * dx_div - dx_add
+        
 
         return target_traj
-
-
-
-
-
-
-
-
-
-
-
-
 
     def validation_step(self, batch):
         if self.use_ema and self.global_step % self.ema_update_every == 0:
@@ -428,13 +429,15 @@ class UnifiedTrainer(pl.LightningModule):
 
         batch = batch_utils().parse_batch(batch)
         if self.train_mode == "vae":
-            _, scaled_traj,origin_traj = self.pre_vae(batch)
-            scaled_actions,mu,logvar = self.vae(scaled_traj)
-            recon_state_descaled = self.dm.convert_action_to_state_and_action(scaled_actions,origin_traj[:,0,:],descaled_output=True)
-            losses = self.vae.loss_function(recon_state_descaled,origin_traj,mu,logvar,self.beta)
-            validation_loss = losses["loss"].detach().item() 
-            recons_loss = losses["Reconstruction_Loss"].item() 
-            kld_loss = losses["KLD"].item()  
+            aux_info, scaled_traj,scaled_input = self.pre_vae(batch)
+            scaled_actions,mu,logvar = self.vae(scaled_traj,aux_info)
+            descaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+            scaled_output = self.scale_traj(descaled_output)
+
+            losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,self.beta)
+            validation_loss = losses["loss"]
+            recons_loss = losses["Reconstruction_Loss"]
+            kld_loss = losses["KLD"] 
 
             self.log("val/loss", validation_loss,      on_step=False, on_epoch=True,batch_size=self.batch_size)
             self.log("val/decoder_loss", recons_loss,  on_step=False, on_epoch=True,batch_size=self.batch_size)
@@ -446,17 +449,8 @@ class UnifiedTrainer(pl.LightningModule):
         
 
         elif self.train_mode == "dm":
-            dm_losses_dict = TensorUtils.detach(cur_policy.get_dmloss(batch))
-            dm_loss = dm_losses_dict['diffusion_loss']
-            # pout = cur_policy(batch,
-            #             num_samp=self.algo_config.diffuser.num_eval_samples,
-            #             return_diffusion=False,
-            #             return_guidance_losses=False)
-            # metrics = self._compute_metrics(pout, batch)
-            # # return_dict =  {"losses": dm_loss, "metrics": metrics}
-
-            self.log("val_dm_loss", dm_loss, on_step=False, on_epoch=True, prog_bar=True,batch_size=self.val_batch_size)
-            return dm_loss
+           pass
+            
 
  
     def on_train_batch_end(self, outputs, batch, batch_idx):
@@ -522,7 +516,7 @@ class UnifiedTrainer(pl.LightningModule):
         if step < self.ema_start_step:
             self.reset_parameters()
             return
-        self.ema.update_model_average(self.ema_policy, self.dm)
+        self.ema.update_model_average(self.ema_policy, self.vae)
 
 
 

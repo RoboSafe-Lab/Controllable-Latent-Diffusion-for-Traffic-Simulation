@@ -1,8 +1,8 @@
 train:
   mode: "vae"
-  debug: flase
+  debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 300
+  plt_interval: 500
   training:
     batch_size: 128
     num_steps: 100000
@@ -12,7 +12,7 @@ train:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 1000
+    every_n_steps: 2000
     num_steps_per_epoch: 300   #每次validation时,运行多少step
 
   logging:
@@ -30,7 +30,7 @@ train:
 
   save:
     enabled: true
-    every_n_steps: 2000
+    every_n_steps: 5000
     best_k: 1
     save_best_rollout: false
     save_best_validation: true
