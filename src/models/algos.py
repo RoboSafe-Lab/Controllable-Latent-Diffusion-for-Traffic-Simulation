@@ -214,7 +214,7 @@ class UnifiedTrainer(pl.LightningModule):
     def configure_optimizers(self):
         
         if self.train_mode == "vae":
-            optim_params_vae = self.algo_config.optim_params["vae"]#TODO:自己写context encoder,不要用别人的!!!
+            optim_params_vae = self.algo_config.optim_params["vae"]
 
             all_params = (list(self.vae.parameters())+ 
                           list(self.map_encoder.parameters())+ 
