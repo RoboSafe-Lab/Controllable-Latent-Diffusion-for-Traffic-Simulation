@@ -1,24 +1,24 @@
 train:
   mode: "vae"
-  debug: true
+  debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 1
+  plt_interval: 500
   training:
     batch_size: 128
-    num_steps: 30000
-    num_data_workers: 8
+    num_steps: 100000
+    num_data_workers: 20
 
   validation:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 10
-    num_steps_per_epoch: 100   #每次validation时,运行多少step
+    every_n_steps: 2000
+    num_steps_per_epoch: 300   #每次validation时,运行多少step
 
   logging:
     terminal_output_to_txt: true
     wandb_project_name: "hf_visier"
-    log_every_n_steps: 1             #the frequency of wandb refresh
+    log_every_n_steps: 50             #the frequency of wandb refresh
     flush_every_n_steps: 500
   trajdata_source_train:
     - "nusc_trainval-train"
@@ -30,7 +30,7 @@ train:
 
   save:
     enabled: true
-    every_n_steps: 2000
+    every_n_steps: 5000
     best_k: 1
     save_best_rollout: false
     save_best_validation: true

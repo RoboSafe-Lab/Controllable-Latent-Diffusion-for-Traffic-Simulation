@@ -9,9 +9,447 @@ train_test.ipynb
 .vscode/launch.json
 .vscode/settings.json
 configs/custom_config.py
-dm_vae_trained_models/test/lightning_logs/version_0/hparams.yaml
-dm_vae_trained_models/test/run0/config.json
-dm_vae_trained_models/test/run0/logs/log.txt
+configs/visualize_traj.py
+logs/2024-12-17 00:48:18/config.json
+logs/2024-12-17 00:48:18/wandb/debug-internal.log
+logs/2024-12-17 00:48:18/wandb/debug.log
+logs/2024-12-17 00:48:18/wandb/latest-run
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/run-zh01dywc.wandb
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/config.yaml
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/output.log
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/requirements.txt
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/wandb-metadata.json
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/wandb-summary.json
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1000_5d635ca72616b4e21c9e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1003_fe9d7f7ba25b8caceee2.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1006_d813bcd5138a5c71009e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1009_675c203c20c94217a2ed.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_100_f3b8a4b500ced51cad5b.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1012_caadbb99c7467fcfe6bd.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_103_a5dbc92648ff857580d0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1066_9806e700c06f954c97a7.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1069_85923e41ef9db03c097c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_106_dee5ae1cf91795f107b6.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1072_d941313fe3f6775dc0c8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1075_842ac6a768f301c63902.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1078_79007331d2db335cd474.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1081_152b0991a30627731ce6.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1084_0af5dde89413e8fdff0b.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1087_5fe94646986238e088e7.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1090_89952dbf2f77c24dd38d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1093_6c7f3c8366303e8923b1.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_109_b5440fd1433347b2f2c1.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_10_b1a945f92bb779640cae.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1147_d14896dccf782352eab1.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1150_b6baec419dc6c01d9573.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1153_3922a998bed1ed4d4ffc.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1156_37787cce593998d0037c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1159_e4401af2cd85bc2cf9b0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1162_46975396dba394ea2c46.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1165_616aefa37667a17a925a.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1168_1d85030103dee649b115.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1171_002f1f2aa0dd07411171.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1174_d830bd700a2f3c8f3501.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1177_d6dd83103fc17fb4610f.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1180_23c69856f6b386ce4317.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1183_41e5b3a0d8826148c859.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1186_223cd4f49bb565257d4b.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1240_9847a9b4b45dda0db0ca.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1243_37843c0f9379d93efa95.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1246_d8b2c2bd3dc26b8b6982.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1249_de3e28d8c7e29a14d3e5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1252_3aa618d4203550f2ef07.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1255_04822c0dd69d54c0e3a4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1258_3ee8f57f0986a1314ae4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1261_8675ac09d1b5c6919a40.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1264_8aa552eac12c1a713138.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1267_80c29ac89cccdd9c9c8c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1321_4325e8597d729f31053e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1324_a699097f4c00eb77dfb2.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1327_29620ddca4d0a4240fa4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1330_ef988b5ecf4fd562960b.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1333_2e6e9aacd5b06e3e9cdb.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1336_e946729b8a115c3273ee.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1339_7563240dbe740acb3aed.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1342_388a4fbcf3e9d97ff9d9.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1345_8bc16cafedb3243a8c04.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1348_6fff2cb6f106ae2bbfc5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_13_9718cd272817e623a79b.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1402_61461a247ccc66a132dc.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1405_d0771d75fe50fd0fff23.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1408_462fb0d194a976e8e5bf.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1411_8a2a109b31abff90fe33.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1414_416f80a0cd5a6195c4ac.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1417_f8f64c597e687aaa6856.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1420_1e7b2c3209379a00fe68.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1423_3fb6e4107056b6b91708.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_163_bbeb700355e18ccb02f9.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_166_b2fb647ec2257508d152.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_169_03b189c09c5a655d1b65.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_16_280894b0d11d6b6af4ec.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_172_6d88f37ff18c06b8b8a4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_175_d245e8f24bb4c34040d3.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_178_ecb18114582f48ae252c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_181_7d078ed73023722a7876.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_184_4de8878bf8f3ffb19394.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_187_189b1b1db3d6b8a283b2.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_190_42b49e6073f72827fcb3.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_19_34cd41d4236383ca7351.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_1_bdc8c5fc1b8a781648fe.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_22_bd1cc5928a3857b1ff65.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_244_92c4fdbbbb775f60bcab.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_247_7868762df9be5f9ed261.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_250_209ed4555dfa8e69dcf8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_253_3ae8a802c50414dec4d2.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_256_485fad179a3b4f3ab29f.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_259_01bb279d7fa53af56139.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_25_0fc498b09c8ac442938f.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_262_ad51100b76aa425b800e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_265_a991c2ec9441991f6c39.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_268_1fb5828bcb1b2af50883.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_271_8ea8855e00d837d4bdba.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_28_61b3f16a17615d3c95e0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_325_e7853fd6e4bfcc40672d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_328_48b61c4c7e2559dbffc1.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_331_881d114c890fd650fea8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_334_88e29de37d9c43a63ea9.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_337_b93f93389785ccd47aa5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_340_f89243fffe08986bb583.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_343_ec42b2bc6d1409b1527d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_346_aef9df62e5101fbaf2c5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_349_6f0b6a0372253dd3e8f2.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_352_5879bc8b6f2e20a800fb.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_406_e63335e646d330a90075.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_409_05eb70d4ac4476028f73.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_412_414d8afaceb346654e86.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_415_265fae380a4cf981a3eb.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_418_98f836f16a49899dd1f8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_421_bcba7852430d63e15376.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_424_7ed88fe0a1a7df28b7c5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_427_286d7a96fad17a5681db.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_430_b3ea9b2302e6d58e6967.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_433_f42ca66ff9e1d525f398.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_487_91922c6284b805b95f0a.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_490_3d6e43bd5559a7451cfd.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_493_214186e6a348223a6542.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_496_c3dc78194bc455720c5d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_499_b2de7b9ef644d5e751a4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_4_27b40a99cae8918286c1.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_502_ee7350bb1afd7cc58176.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_505_b00e0d65fffb3d4f538f.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_508_10ebc3ea1d11d29bce0c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_511_0f37799be84193c04538.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_514_dc569de39b7ab457d666.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_568_89640c895e031147dcb5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_571_928464913d89ef11cadd.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_574_c5bedfbc220c23ba5132.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_577_b609d56a3d72f58faf51.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_580_7be227408612c44b83bd.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_583_f6cad25896a636867270.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_586_e8b6499005127afa67e8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_589_a011fba778635cbcb438.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_592_6fef62c3c0513cec3eff.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_595_d5ff69aa1bbe6b15c914.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_598_02137fa96f7aae8868a0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_601_e1c0695add7de57443e8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_604_33acf65c8a8da26df672.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_607_de839e710c421d9eaac4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_661_7aa806aa52895a86d4e8.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_664_c1ab943abce13c82f19d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_667_65ec9cba02cdbe3dc16c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_670_a6c96cc8ab363c08f559.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_673_d21c8970ecbe954711d7.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_676_30f61f600dc95197ee2e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_679_6ad7bfd3cf4fc16be22a.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_682_0621925aebc68956464a.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_685_b38286e08511f8914a33.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_688_5709a9986c8ac30d6f56.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_742_2e5ab515f5d20d099533.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_745_41c9ae45651959b41118.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_748_6dba779c61e507450a21.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_751_3ba7d25c7994ff6185f6.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_754_2e0db3c01bd71e38d9fc.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_757_4cd69d31271b523d67c6.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_760_5c51234e7c73bdf8ee87.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_763_41bd824bb6ed629c3ad3.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_766_3ffeafd437ad1d609f99.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_769_0e05edf4437355d384e5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_7_dd7e22408f6a19d36714.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_823_b9b01bab490686a20af4.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_826_fb1f89abe2b958ef1190.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_829_fa9a76c1e56c5437e6ce.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_82_fa35e956ac463b24bac5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_832_93882db27b569bacd72e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_835_745d988f5e2b2d214b0d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_838_8672df37fe0406c69860.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_841_f043610a225bf5b6d5d6.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_844_dc0faa595fbf1a836b1e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_847_685d726dc1b47905345c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_850_a9b5c3be26a70079da98.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_85_e9438fd9c5548b5c231d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_88_e332a22f1fa77f34f13e.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_904_dd348477d68adc1108e5.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_907_e1a02983ef01adab9141.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_910_8b5a977e8872e8d96f55.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_913_edf257a23023e6c55673.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_916_dc0347b117cea7b85bda.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_919_ee42561b8a68487e3d10.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_91_c820349335aa1896fc5c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_922_8447ab4ae82380564790.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_925_25849b3c6e465408993c.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_928_b372587e700e6d8f6503.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_931_5152bd8c802845907a89.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_94_c04f3c7a0c33681609b0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_97_8e0cfcea5eec4f39beb0.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_985_3f013eacbf153d027d4f.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_988_6300122f69ff6847364a.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_991_f1722e110c9e18e8b364.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_994_58e7b1e24b95b0d3249d.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/files/media/images/trajectory_fig_997_2dcbdce66f6950dcb7c7.png
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/logs/debug-internal.log
+logs/2024-12-17 00:48:18/wandb/run-20241217_004820-zh01dywc/logs/debug.log
+logs/2024-12-17 11:26:14/config.json
+logs/2024-12-17 11:26:14/wandb/debug-internal.log
+logs/2024-12-17 11:26:14/wandb/debug.log
+logs/2024-12-17 11:26:14/wandb/latest-run
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/run-pr1e1j5z.wandb
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/config.yaml
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/output.log
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/requirements.txt
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/wandb-metadata.json
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/wandb-summary.json
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_101_979f868e4e73b39a24ff.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_107_98064321064b7b0531de.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_10_d1fdd07d11cd7fd73e7c.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_113_846ee2621645083c2e76.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_119_c68b181f1f150d3c85ed.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_126_6a9c3be2e21cbd11f817.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_132_7525e582004c4784af57.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_138_4361716089e63135c255.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_144_8ac66e060fe5cec3a0a1.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_150_d01d0c2ba67f843f1968.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_156_c6d49c8c9a1b444372a7.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_162_58c2d1715e7be95d061c.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_168_8300b4e9f00407d84338.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_16_bb3967df8c18ab86585e.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_174_eb5b8ab89acda822791d.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_180_9cd6f4dc8d432813cec7.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_187_e2803543e973899747c1.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_193_b44a68d66bcb74ddc42b.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_199_584b1e5e7e7175e09c6d.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_205_66c13e410dff5e59b332.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_211_762548c0885566a9344a.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_217_93c066585a1d92e12ba8.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_223_91c6a119a9a98d59407f.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_229_076e618b4ff152a7d548.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_22_2f5cce271ad884f70e8f.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_235_48af28572749d6caf153.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_241_87e1370950793e8eed1c.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_248_842b47dca56d4700c598.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_254_8d750ee540b149a59257.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_260_6a2519411ad4b08bcbdf.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_266_da4989d579412d2d9e25.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_272_714e10c7b6a54f641e0e.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_278_a405bfe6f2b3b1f7a5f4.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_284_27669db49fe4ce4da83d.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_28_4f435afa6e0c62aee54e.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_290_1f6990d319ffc3fe49a3.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_296_d8e42672697b44ee63ca.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_302_038840d53d4a55a86ad5.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_309_f5f0d20b7a74d431281c.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_315_e0769149a7d6ded86740.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_321_7cdf1258ceca2fca0aae.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_327_8648cce274a105f4bd89.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_333_1e80b41d022c97590ff2.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_339_ad4bec16d875e335d437.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_345_26ea14ee6360c3444d20.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_34_67de0cafcde610d4a349.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_351_5495730e0036000e4976.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_357_dc8f1de915aa9987b224.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_363_ce4811d8cab70e28dc7b.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_370_1c3a18907271ac105145.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_376_776f0f339e58ad7190b6.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_382_737edb9084352fa3bff5.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_388_7bd9ebeec60f313cd38a.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_394_2afd40803e1f393c411a.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_400_f214a9dadaca15e78a3a.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_406_49664ae971327724a362.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_40_3961a04fbdedc2019b62.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_412_41338ee78985fd1bb89d.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_418_1891173b1e42d6029eee.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_424_877201a9403b20d0a321.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_431_0d6801c8bb0a70b144c5.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_437_4626da018d87fb97158c.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_443_3a0ddc9a6669258cda99.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_449_520eb2abe438a1bba55f.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_46_7ac2ad355355b899069f.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_4_4057432e4acec6d84378.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_52_532f7090b69944fb4a2e.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_58_b2e1b0dfa5d659f671d6.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_65_0a17e35430372010e758.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_71_d53f58e3d30ced05ffc9.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_77_11667a13889ff3c18c25.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_83_4d7ae5e7a1861ccbf2c8.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_89_b657d750df7acc1e3760.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/files/media/images/trajectory_fig_95_66a5d877e6fc5c1b6f06.png
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/logs/debug-internal.log
+logs/2024-12-17 11:26:14/wandb/run-20241217_112616-pr1e1j5z/logs/debug.log
+logs/2024-12-17 11:58:12/config.json
+logs/2024-12-17 11:58:12/wandb/debug-internal.log
+logs/2024-12-17 11:58:12/wandb/debug.log
+logs/2024-12-17 11:58:12/wandb/latest-run
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/run-ghpn5z4t.wandb
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/config.yaml
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/output.log
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/requirements.txt
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/wandb-metadata.json
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/wandb-summary.json
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_103_4e7dc78f47b45979a720.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_109_50ec012688238c5ebea1.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_115_33611d8896e0f7509375.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_121_e6107ad4aaf2bc1cb40f.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_127_4b8ee38836887712bb8c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_12_a5730b38bc51cf62ce99.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_133_2be70e19d2dc755f8849.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_139_d63a22ef7a3c736191bf.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_145_5ac8524044632043b23a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_152_db006b4b1bcba9f7ab14.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_158_cb61f36d0dcac33d9a23.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_164_7c71d032d9ac675046a1.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_170_71b5150e646b2a095f04.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_176_c9d2fd6f9cdc22998539.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_182_4009957e70237c229546.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_188_225620ca8be3936a8c6c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_18_9023cbb97c0617aa8c2b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_194_6ba6ba6ab6c0ce939a02.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_200_e084b13694c9744e8f11.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_206_ae2e374967c38bae183b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_213_50b2001c686ebda759fb.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_219_77188a12caa69d8c827a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_225_067af33eddf02dbab9a5.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_231_7cdc55b7000d73e39623.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_237_c03d1f1f42ed97fde843.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_243_5bacffb0417342bfa891.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_249_d9e716f51be384e85c83.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_24_e709b1aeb4e49c04a53d.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_255_ed2f5a8c7118fb6e217b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_261_32b781013ca86ee63c24.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_267_db0e38ae4fab3bdbcf86.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_274_9dc7b98a9180df58013a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_280_a0e8e7b22902a2b00ddb.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_286_871bf7f77d93496f3b43.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_292_e438e9d8aebcab92471b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_298_503855e24a12e6059351.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_304_42d9b4550c60ad6da735.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_30_51fdce21d4067236ac3b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_310_1155075ff86acc43d4c0.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_316_1fe6bdbfba4c782bd0df.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_322_640fe4058d103e2ad18b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_328_8ea9027831c717d3a379.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_335_4cfde39b0a4dfd865870.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_341_b1d81933d95c0db2e959.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_347_faa5d12fa8e2892b9441.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_353_7dc289a2a197497fab05.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_359_76573f79eb9537771582.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_365_0f4d5ec207434623ee5b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_36_6bcbdae8674db8b0ea38.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_371_85b2dd1eecdf6ece6e4e.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_377_d1ded9d006286d48985f.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_383_4b02782357ce7be32397.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_389_c3c5c53889dfc96231a2.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_396_658b79816f65f5d5c73c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_402_4da3c88143441956d46c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_408_26254dbf291909f07420.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_414_56cc5bb519a42ecc5e90.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_420_6236e8487378cd4f7f90.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_426_341e231712e942d48bc2.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_42_fd5356dccdc084dfde37.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_432_a204be93d18ec5195eb1.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_438_042898d9f029f3747d04.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_444_3bf781910f0918429473.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_450_35faaf5ad4dc6441e37c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_457_352878ecc966534e042b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_463_2b7cb17af57655cd700c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_469_e13e3b3527984d7ab20c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_475_ffaf6d85c17eb9ec973c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_481_78b3a35dc169c93b12b0.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_487_3f5ca18526342cbd325c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_48_a36475f3e09529fc99e1.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_493_e6bc0ead8af01792ad93.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_499_00936ad3cdb8102dc8d2.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_505_6d8c21b545fc60c3483a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_511_23d58d04ccc647c43c40.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_518_0cd49ba36aeaa3c2ef37.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_524_1a0622adef3fb376c16b.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_530_9fccc30603a30e4f7152.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_536_70ca06dffe779f21b7ac.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_542_81c33b9be83ef14f5505.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_548_7a3f2572f02265873380.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_54_2c6b9ee76ac57feb7789.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_554_39f64711b3a302b21260.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_560_0e4673dd7a6d9569bbdd.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_566_e6c111969470c00ab33c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_572_919e5a0703072163e86f.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_578_98b643d50ac7fc962287.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_584_ac8aa922270fd900eadb.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_590_d2fee84c7d04c41da4fc.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_596_7cedd79044b4c2c52795.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_603_1a263008c177984493f4.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_609_a0bd7685b0ab7b1ec92e.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_60_1c568dbdd497a194e093.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_615_0db099f4a7c165648e0f.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_621_89c936f06f8320b5ac92.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_627_1af07c6686f3c82de499.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_633_de71bb52f791b88c6910.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_639_ac0a7644715d34bb0f44.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_645_72dfef032688894a69c2.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_651_25fb7eeb0295d21446ce.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_657_fa3312b8ec5eb70f594d.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_664_9842cd4785a820680b5c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_670_f0345709a4f0eb72a8b0.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_676_491302e459590d7634d2.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_67_20af78d4ef563f655581.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_682_d6075df99f2af7679e46.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_688_bab4cd66e739c7da7f36.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_694_6532cc87d94f72b97171.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_6_8ad6ec9f50dad3fc865d.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_700_0d418620a5c62b5c8c72.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_706_af4839aa0733236d939e.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_712_4334507c2b5130709f58.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_718_d7cb697b1e60ebb63360.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_725_70ecbc8d61cdcaa463d5.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_731_b771e561daa2dc4bb6b1.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_737_df0e6ab8920da5349def.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_73_daec3d7f0e8ed215d70f.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_743_3cd71b44609808af330c.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_749_22a5e7026e7abaf2f523.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_755_ca1086bcbc34874a79de.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_761_cc3b1f3c3cdbf4320eb5.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_767_ebdc54f57c745423c376.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_773_ded86f8a29f537e77949.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_779_509db1b58c6ad8267647.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_786_bf2c48d1238a27274543.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_792_bd563c9f2cc754aaf789.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_798_2e28a5a6f1b4ff277d42.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_79_fe4cb0e2a58eee33efb6.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_804_187c7debd9a0c133cfb6.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_810_ee41914975d7c9674414.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_816_c3b238eeab5e844a4d2a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_822_f7a42fe8a1494eed7239.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_828_d60361d2e38afc3c2b7a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_834_06e6a004eebdb978ac4a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_840_de53868a1ac624c3fa36.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_847_d02536f2de7d3cdd5ac4.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_853_9487b5b205e20f992340.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_859_bec9a69aa4cb1af0d66e.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_85_03af824918b6e4cb3fd4.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_865_7de100c2f0508387f1f4.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_871_382ab25a4661e13d3e58.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_877_bf294cd3136c3308d59e.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_91_0909cb91d5d6f2f713de.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/files/media/images/trajectory_fig_97_5870e4af653d1c10fa0a.png
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/logs/debug-internal.log
+logs/2024-12-17 11:58:12/wandb/run-20241217_115814-ghpn5z4t/logs/debug.log
 src/__init__.py
 src/l5kit/__init__.py
 src/l5kit/cle/__init__.py
@@ -200,114 +638,115 @@ src/l5kit/visualization/visualizer/common.py
 src/l5kit/visualization/visualizer/visualizer.py
 src/l5kit/visualization/visualizer/zarr_utils.py
 src/models/algos.py
+src/models/dm.py
 src/models/vae.py
+src/models/tbsim/algos/__init__.py
+src/models/tbsim/algos/algo_utils.py
+src/models/tbsim/algos/algos.py
+src/models/tbsim/algos/factory.py
+src/models/tbsim/algos/metric_algos.py
+src/models/tbsim/algos/multiagent_algos.py
+src/models/tbsim/configs/__init__.py
+src/models/tbsim/configs/algo_config.py
+src/models/tbsim/configs/base.py
+src/models/tbsim/configs/config.py
+src/models/tbsim/configs/eval_config.py
+src/models/tbsim/configs/l5kit_config.py
+src/models/tbsim/configs/nusc_config.py
+src/models/tbsim/configs/orca_config.py
+src/models/tbsim/configs/registry.py
+src/models/tbsim/configs/scene_edit_config.py
+src/models/tbsim/configs/trajdata_config.py
+src/models/tbsim/configs/trajdata_drivesim_config.py
+src/models/tbsim/configs/trajdata_eupeds_config.py
+src/models/tbsim/configs/trajdata_l5kit_config.py
+src/models/tbsim/configs/trajdata_nuplan_all_config.py
+src/models/tbsim/configs/trajdata_nuplan_config.py
+src/models/tbsim/configs/trajdata_nuplan_ped_config.py
+src/models/tbsim/configs/trajdata_nuplan_scene_config.py
+src/models/tbsim/configs/trajdata_nusc_all_config.py
+src/models/tbsim/configs/trajdata_nusc_config.py
+src/models/tbsim/configs/trajdata_nusc_ped_config.py
+src/models/tbsim/configs/trajdata_nusc_scene_config.py
+src/models/tbsim/datasets/__init__.py
+src/models/tbsim/datasets/factory.py
+src/models/tbsim/datasets/l5kit_datamodules.py
+src/models/tbsim/datasets/trajdata_datamodules.py
+src/models/tbsim/dynamics/__init__.py
+src/models/tbsim/dynamics/base.py
+src/models/tbsim/dynamics/bicycle.py
+src/models/tbsim/dynamics/double_integrator.py
+src/models/tbsim/dynamics/single_integrator.py
+src/models/tbsim/dynamics/unicycle.py
+src/models/tbsim/envs/base.py
+src/models/tbsim/envs/env_avdata.py
+src/models/tbsim/envs/env_l5kit.py
+src/models/tbsim/envs/env_metrics.py
+src/models/tbsim/envs/env_trajdata.py
+src/models/tbsim/evaluation/__init__.py
+src/models/tbsim/evaluation/env_builders.py
+src/models/tbsim/evaluation/metric_composers.py
+src/models/tbsim/evaluation/policy_composers.py
+src/models/tbsim/l5kit/agent_sampling_mixed.py
+src/models/tbsim/l5kit/l5_agent_dataset.py
+src/models/tbsim/l5kit/l5_ego_dataset.py
+src/models/tbsim/l5kit/simulation_dataset.py
+src/models/tbsim/l5kit/vectorizer.py
+src/models/tbsim/l5kit/vis_rasterizer.py
+src/models/tbsim/l5kit/visualizer.py
+src/models/tbsim/models/GAN_regularizer.py
+src/models/tbsim/models/Transformer.py
+src/models/tbsim/models/__init__.py
+src/models/tbsim/models/base_models.py
+src/models/tbsim/models/cnn_roi_encoder.py
+src/models/tbsim/models/context_encoders.py
+src/models/tbsim/models/diffuser.py
+src/models/tbsim/models/diffuser_helpers.py
+src/models/tbsim/models/learned_metrics.py
+src/models/tbsim/models/multiagent_models.py
+src/models/tbsim/models/rasterized_models.py
+src/models/tbsim/models/roi_align.py
+src/models/tbsim/models/scenediffuser.py
+src/models/tbsim/models/scenetemporal.py
+src/models/tbsim/models/strive.py
+src/models/tbsim/models/temporal.py
+src/models/tbsim/models/transformer_model.py
+src/models/tbsim/models/vaes.py
+src/models/tbsim/policies/__init__.py
+src/models/tbsim/policies/base.py
+src/models/tbsim/policies/common.py
+src/models/tbsim/policies/differential_stack_policy.py
+src/models/tbsim/policies/hardcoded.py
+src/models/tbsim/policies/wrappers.py
+src/models/tbsim/rules/stl_traffic_rules.py
+src/models/tbsim/utils/__init__.py
+src/models/tbsim/utils/batch_utils.py
+src/models/tbsim/utils/config_utils.py
+src/models/tbsim/utils/ema.py
+src/models/tbsim/utils/env_utils.py
+src/models/tbsim/utils/experiment_utils.py
+src/models/tbsim/utils/ftocp.py
+src/models/tbsim/utils/geometry_utils.py
+src/models/tbsim/utils/gpt_utils.py
+src/models/tbsim/utils/guidance_loss.py
+src/models/tbsim/utils/guidance_metrics.py
+src/models/tbsim/utils/l5_utils.py
+src/models/tbsim/utils/lane_utils.py
+src/models/tbsim/utils/log_utils.py
+src/models/tbsim/utils/loss_utils.py
+src/models/tbsim/utils/metrics.py
+src/models/tbsim/utils/planning_utils.py
+src/models/tbsim/utils/rollout_logger.py
+src/models/tbsim/utils/scene_edit_utils.py
+src/models/tbsim/utils/tensor_utils.py
+src/models/tbsim/utils/timer.py
+src/models/tbsim/utils/torch_utils.py
+src/models/tbsim/utils/train_utils.py
+src/models/tbsim/utils/trajdata_utils.py
+src/models/tbsim/utils/vis_utils.py
+src/models/tbsim/utils/diffuser_utils/arrays.py
+src/models/tbsim/utils/diffuser_utils/progress.py
 src/tbsim.egg-info/PKG-INFO
 src/tbsim.egg-info/SOURCES.txt
 src/tbsim.egg-info/dependency_links.txt
 src/tbsim.egg-info/top_level.txt
-src/tbsim/algos/__init__.py
-src/tbsim/algos/algo_utils.py
-src/tbsim/algos/algos.py
-src/tbsim/algos/factory.py
-src/tbsim/algos/metric_algos.py
-src/tbsim/algos/multiagent_algos.py
-src/tbsim/configs/__init__.py
-src/tbsim/configs/algo_config.py
-src/tbsim/configs/base.py
-src/tbsim/configs/config.py
-src/tbsim/configs/eval_config.py
-src/tbsim/configs/l5kit_config.py
-src/tbsim/configs/nusc_config.py
-src/tbsim/configs/orca_config.py
-src/tbsim/configs/registry.py
-src/tbsim/configs/scene_edit_config.py
-src/tbsim/configs/trajdata_config.py
-src/tbsim/configs/trajdata_drivesim_config.py
-src/tbsim/configs/trajdata_eupeds_config.py
-src/tbsim/configs/trajdata_l5kit_config.py
-src/tbsim/configs/trajdata_nuplan_all_config.py
-src/tbsim/configs/trajdata_nuplan_config.py
-src/tbsim/configs/trajdata_nuplan_ped_config.py
-src/tbsim/configs/trajdata_nuplan_scene_config.py
-src/tbsim/configs/trajdata_nusc_all_config.py
-src/tbsim/configs/trajdata_nusc_config.py
-src/tbsim/configs/trajdata_nusc_ped_config.py
-src/tbsim/configs/trajdata_nusc_scene_config.py
-src/tbsim/datasets/__init__.py
-src/tbsim/datasets/factory.py
-src/tbsim/datasets/l5kit_datamodules.py
-src/tbsim/datasets/trajdata_datamodules.py
-src/tbsim/dynamics/__init__.py
-src/tbsim/dynamics/base.py
-src/tbsim/dynamics/bicycle.py
-src/tbsim/dynamics/double_integrator.py
-src/tbsim/dynamics/single_integrator.py
-src/tbsim/dynamics/unicycle.py
-src/tbsim/envs/base.py
-src/tbsim/envs/env_avdata.py
-src/tbsim/envs/env_l5kit.py
-src/tbsim/envs/env_metrics.py
-src/tbsim/envs/env_trajdata.py
-src/tbsim/evaluation/__init__.py
-src/tbsim/evaluation/env_builders.py
-src/tbsim/evaluation/metric_composers.py
-src/tbsim/evaluation/policy_composers.py
-src/tbsim/l5kit/agent_sampling_mixed.py
-src/tbsim/l5kit/l5_agent_dataset.py
-src/tbsim/l5kit/l5_ego_dataset.py
-src/tbsim/l5kit/simulation_dataset.py
-src/tbsim/l5kit/vectorizer.py
-src/tbsim/l5kit/vis_rasterizer.py
-src/tbsim/l5kit/visualizer.py
-src/tbsim/models/GAN_regularizer.py
-src/tbsim/models/Transformer.py
-src/tbsim/models/__init__.py
-src/tbsim/models/base_models.py
-src/tbsim/models/cnn_roi_encoder.py
-src/tbsim/models/context_encoders.py
-src/tbsim/models/diffuser.py
-src/tbsim/models/diffuser_helpers.py
-src/tbsim/models/learned_metrics.py
-src/tbsim/models/multiagent_models.py
-src/tbsim/models/rasterized_models.py
-src/tbsim/models/roi_align.py
-src/tbsim/models/scenediffuser.py
-src/tbsim/models/scenetemporal.py
-src/tbsim/models/strive.py
-src/tbsim/models/temporal.py
-src/tbsim/models/transformer_model.py
-src/tbsim/models/vaes.py
-src/tbsim/policies/__init__.py
-src/tbsim/policies/base.py
-src/tbsim/policies/common.py
-src/tbsim/policies/differential_stack_policy.py
-src/tbsim/policies/hardcoded.py
-src/tbsim/policies/wrappers.py
-src/tbsim/rules/stl_traffic_rules.py
-src/tbsim/utils/__init__.py
-src/tbsim/utils/batch_utils.py
-src/tbsim/utils/config_utils.py
-src/tbsim/utils/ema.py
-src/tbsim/utils/env_utils.py
-src/tbsim/utils/experiment_utils.py
-src/tbsim/utils/ftocp.py
-src/tbsim/utils/geometry_utils.py
-src/tbsim/utils/gpt_utils.py
-src/tbsim/utils/guidance_loss.py
-src/tbsim/utils/guidance_metrics.py
-src/tbsim/utils/l5_utils.py
-src/tbsim/utils/lane_utils.py
-src/tbsim/utils/log_utils.py
-src/tbsim/utils/loss_utils.py
-src/tbsim/utils/metrics.py
-src/tbsim/utils/planning_utils.py
-src/tbsim/utils/rollout_logger.py
-src/tbsim/utils/scene_edit_utils.py
-src/tbsim/utils/tensor_utils.py
-src/tbsim/utils/timer.py
-src/tbsim/utils/torch_utils.py
-src/tbsim/utils/train_utils.py
-src/tbsim/utils/trajdata_utils.py
-src/tbsim/utils/vis_utils.py
-src/tbsim/utils/diffuser_utils/arrays.py
-src/tbsim/utils/diffuser_utils/progress.py
