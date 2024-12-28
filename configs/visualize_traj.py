@@ -87,7 +87,7 @@ class TrajectoryVisualizationCallback(pl.Callback):
                 recon_traj = pl_module.latest_recon_traj
                 raster_from_agent = pl_module.raster_from_agent
                 maps = pl_module.maps
-                fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[5, 50, 100, 111])
+                fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[15, 52, 86, 108])
 
                 save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
                 fig.savefig(save_path, dpi=300)
