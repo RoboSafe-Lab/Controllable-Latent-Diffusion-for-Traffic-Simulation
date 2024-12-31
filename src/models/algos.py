@@ -104,48 +104,7 @@ class UnifiedTrainer(pl.LightningModule):
                 
         self.horizon = algo_config.horizon
         self.dt = 0.1
-        '''
-        self.dm = DM(
-            map_encoder_model_arch=algo_config.map_encoder_model_arch,
-            input_image_shape=modality_shapes["image"],  # [C, H, W]
-            map_feature_dim=algo_config.map_feature_dim,
-            map_grid_feature_dim=algo_config.map_grid_feature_dim,
-            diffuser_model_arch=algo_config.diffuser_model_arch,
-            horizon=algo_config.horizon,
-            observation_dim=observation_dim,
-            action_dim=action_dim,
-            output_dim=output_dim,
-            cond_feature_dim=algo_config.cond_feat_dim,
-            curr_state_feature_dim=algo_config.curr_state_feat_dim,
-            rasterized_map=algo_config.rasterized_map,
-            use_map_feat_global=algo_config.use_map_feat_global,
-            use_map_feat_grid=algo_config.use_map_feat_grid,
-            rasterized_hist=algo_config.rasterized_history,
-            hist_num_frames=algo_config.history_num_frames + 1,  # the current step is concat to the history
-            hist_feature_dim=algo_config.history_feature_dim,
-            n_timesteps=algo_config.n_diffusion_steps,
-            loss_type=algo_config.loss_type,
-            clip_denoised=algo_config.clip_denoised,
-            predict_epsilon=algo_config.predict_epsilon,
-            action_weight=algo_config.action_weight,
-            loss_discount=algo_config.loss_discount,
-            loss_weights=algo_config.diffusor_loss_weights,
-            dim_mults=algo_config.dim_mults,
-            dynamics_type=algo_config.dynamics.type,
-            dynamics_kwargs=algo_config.dynamics,
-            base_dim=algo_config.base_dim,
-            diffuser_building_block=algo_config.diffuser_building_block,
-            action_loss_only=algo_config.action_loss_only,
-            diffuser_input_mode=algo_config.diffuser_input_mode,
-            use_conditioning=self.use_cond,
-            cond_fill_value=self.cond_fill_val,
-            disable_control_on_stationary=self.disable_control_on_stationary,
-            diffuser_norm_info=diffuser_norm_info,
-
-        )
-        
-        '''
-        
+    
         self._dynamics_type = algo_config.dynamics.type
         self._dynamics_kwargs=algo_config.dynamics
         self._create_dynamics()
@@ -185,7 +144,7 @@ class UnifiedTrainer(pl.LightningModule):
      
         self.batch_size = self.train_config.training.batch_size
         self.beta = 0.1
-        self.beta_max = 1.0
+        self.beta_max = 0.3
         self.anneal_steps = self.train_config.training.num_steps/3
         self.beta_inc = (self.beta_max - self.beta) / self.anneal_steps
 
@@ -276,10 +235,10 @@ class UnifiedTrainer(pl.LightningModule):
 
           
             aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
-            scaled_actions,mu,logvar = self.vae(scaled_input,aux_info)
-            descaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-            scaled_output = self.scale_traj(descaled_output)
-
+            scaled_actions,mu,logvar = self.vae(scaled_input)
+            scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+   
+            descaled_output = self.descale_traj(scaled_output)
             losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,self.beta)
             loss = losses["loss"]
             recon_loss = losses["Reconstruction_Loss"]
@@ -430,9 +389,9 @@ class UnifiedTrainer(pl.LightningModule):
         batch = batch_utils().parse_batch(batch)
         if self.train_mode == "vae":
             aux_info, scaled_traj,scaled_input = self.pre_vae(batch)
-            scaled_actions,mu,logvar = self.vae(scaled_traj,aux_info)
-            descaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-            scaled_output = self.scale_traj(descaled_output)
+            scaled_actions,mu,logvar = self.vae(scaled_traj)
+            scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+          
 
             losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,self.beta)
             validation_loss = losses["loss"]
@@ -467,7 +426,7 @@ class UnifiedTrainer(pl.LightningModule):
             recon_traj = outputs['output'].detach().cpu().numpy()
             raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
             maps = outputs['maps'].detach().cpu().numpy()
-            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[5, 50, 100, 111])
+            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[13, 53, 86, 109])
 
             save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
             fig.savefig(save_path, dpi=300)

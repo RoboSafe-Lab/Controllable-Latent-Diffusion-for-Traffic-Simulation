@@ -16,15 +16,16 @@ class Encoder(nn.Module):
             bidirectional=False,
         )
         self.cond2hidden = nn.Linear(cond_dim, hidden_size)
-    def forward(self, x,cond_feature):
-        # x: tensor of shape (batch_size, seq_length, feature_dim)
-        batch_size = x.size(0)
-        cond_hidden = self.cond2hidden(cond_feature)#[B,256]-->[B,128]
-        h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)  #[1,B,128]
-        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
-        h0[0, :, :] = cond_hidden
-        outputs, (hn, cn) = self.lstm(x, (h0, c0))#[B,52,128]
-        return outputs
+    def forward(self, x):
+        # # x: tensor of shape (batch_size, seq_length, feature_dim)
+        # batch_size = x.size(0)
+        # cond_hidden = self.cond2hidden(cond_feature)#[B,256]-->[B,128]
+        # h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)  #[1,B,128]
+        # c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        # h0[0, :, :] = cond_hidden
+        # outputs, (hn, cn) = self.lstm(x, (h0, c0))#[B,52,128]
+        ouputs,(hidden, cell) = self.lstm(x)
+        return (hidden,cell)
 
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
@@ -43,9 +44,9 @@ class Decoder(nn.Module):
 
     def forward(self, x, hidden):
         # x: tensor of shape (batch_size, seq_length, latent_size)
-        output, _ = self.lstm(x, hidden)
-        prediction = self.fc(output)
-        return prediction
+        output, (hid, cell) = self.lstm(x, hidden) #[B,52,hid]
+        prediction = self.fc(output)#[B,52,2]
+        return prediction,(hid,cell)
 
 class LSTMVAE(nn.Module):
     """LSTM-based Variational Auto Encoder"""
@@ -75,43 +76,36 @@ class LSTMVAE(nn.Module):
         )
 
         # Variational components
-        self.mu = nn.Conv1d(self.hidden_size, self.latent_size, kernel_size=3, padding=1)
-        self.var = nn.Conv1d(self.hidden_size, self.latent_size, kernel_size=3, padding=1)
-        self.decoder_hidden = nn.Linear(self.latent_size, self.hidden_size)
-        self.decoder_cell = nn.Linear(self.latent_size, self.hidden_size)
+        self.mu = nn.Linear(self.hidden_size, self.latent_size)
+        self.var = nn.Linear(self.hidden_size, self.latent_size)
+        self.fc3 = nn.Linear(self.latent_size, self.hidden_size)
       
-        # self.scale = scale
-        # self.descale = descale
-    def reparametize(self, mu, logvar):
+      
+    def reparametize(self, mean, logvar):
         std = torch.exp(0.5 * logvar)
         noise = torch.randn_like(std).to(self.device)
-        z = mu + noise * std
+        z = mean + noise * std
         return z
 
-    def forward(self, x,aux_info):
-        batch_size, _, _ = x.shape
-        cond_feature = aux_info['cond_feat']#[B,256]
+    def forward(self, x):
+
+        batch_size, seq_len, feature_dim = x.shape
+        enc_hidden = self.lstm_enc(x) #([1,B,hidden],[1,B,hidden])
+        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
         
-        # encode input space to hidden space
-        enc_outputs = self.lstm_enc(x,cond_feature)#[B,52,128=hidden size]
+        mean = self.mu(enc_h) #[B,latent:64]
+        logvar = self.var(enc_h)
 
-        # Prepare for latent space
-        enc_outputs = enc_outputs.permute(0, 2, 1)  # [B, hidden_size, seq_len]
-        mean = self.mu(enc_outputs)  # [B, latent_size, seq_len]
-        logvar = self.var(enc_outputs)  # [B, latent_size, seq_len]
+        z = self.reparametize(mean,logvar)#[B,64]
 
-        # Reparametrize to get z
-        z = self.reparametize(mean, logvar)  # [B, latent_size:64, seq_len:52]
-        z = z.permute(0, 2, 1)  # [B, seq_len, latent_size]
+        h_ = self.fc3(z) #[B,hidden:128]
 
-        # Initialize decoder hidden state from z
-        z_aggregated = z.mean(dim=1)  # Aggregate over time: [B, latent_size]
-        h_0 = self.decoder_hidden(z_aggregated).view(self.num_layers, batch_size, self.hidden_size)#(1,B,hidden:128
-        c_0 = self.decoder_cell(z_aggregated).view(self.num_layers, batch_size, self.hidden_size)
-        hidden = (h_0, c_0)
+        z = z.unsqueeze(1)
+        z = z.repeat(1,seq_len,1) #[B,52,latent:64]
+        z = z.view(batch_size,seq_len,self.latent_size).to(self.device)
 
-        # Decode latent space to input space
-        reconstruct_output = self.lstm_dec(z, hidden)#[B,52,2]
+        hidden = (h_.unsqueeze(0).contiguous(), h_.unsqueeze(0).contiguous())#([1,B,hid],[1,B,hid])
+        reconstruct_output, hidden = self.lstm_dec(z, hidden)
 
         return reconstruct_output,mean,logvar
 
@@ -129,7 +123,7 @@ class LSTMVAE(nn.Module):
         recons_loss = F.mse_loss(recons, input)
 
         kld_loss = torch.mean(
-    -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=(1, 2))
+    -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1)
 )
 
    

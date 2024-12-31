@@ -16,8 +16,8 @@ from  models.algos import  UnifiedTrainer
 from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase,serialize_object
 from tbsim.configs.base import ExperimentConfig
-import yaml
-from configs.visualize_traj import TrajectoryVisualizationCallback
+import yaml,torch
+
 
 
 def create_wandb_dir(base_dir="wandb"):
@@ -47,12 +47,13 @@ def main(cfg, debug=False):
     datamodule = datamodule_factory(cls_name=cfg.train.datamodule_class, config=cfg)
     datamodule.setup()
     
-  
+
     model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
                            modality_shapes=datamodule.modality_shapes,
                            registered_name=cfg.registered_name,
                            train_mode=cfg.train.mode)
-    
+    # checkpoint = torch.load(checkpoint_point)
+    # model.load_state_dict(checkpoint["state_dict"])
 
     logger = None
     if debug:
@@ -123,28 +124,14 @@ def main(cfg, debug=False):
         )
         train_callbacks.append(ckpt_rollout_callback)
 
-    # class WandbCheckpointCallback(pl.callbacks.Callback):
-    #     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
-          
-    #         if trainer.checkpoint_callback and trainer.checkpoint_callback.best_model_path:
-    #             latest_ckpt = trainer.checkpoint_callback.best_model_path
-    #             if latest_ckpt:
-    #                 wandb.save(latest_ckpt)
-
-
 
     images_dir = os.path.join(wandb_run_dir, "images")
     os.makedirs(images_dir, exist_ok=True)
-    # visualization_callback = TrajectoryVisualizationCallback(plot_interval=cfg.train.plt_interval, save_dir=images_dir)
-    # train_callbacks.append(visualization_callback)
-   
 
-
-    # train_callbacks.append(WandbCheckpointCallback())
-    # train_callbacks.append(visualization_callback)
 
     model.image_dir = images_dir
     trainer = pl.Trainer(
+       
         default_root_dir=checkpoint_dir,
         # checkpointing
         enable_checkpointing=cfg.train.save.enabled,
@@ -153,17 +140,19 @@ def main(cfg, debug=False):
         # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
         log_every_n_steps=cfg.train.logging.log_every_n_steps,
         # training
-        max_steps=cfg.train.training.num_steps,
+        min_epochs = 1,
+        # max_steps=cfg.train.training.num_steps,
         # validation
         val_check_interval=cfg.train.validation.every_n_steps,
         limit_val_batches=cfg.train.validation.num_steps_per_epoch,
         # all callbacks
         callbacks=train_callbacks,
         num_sanity_val_steps=0,
+        
        
     )
-    checkpoint_point = None #"logs/2024-12-17 11:58:12/checkpoints/val_loss/iter8000_ep1_val_loss_val/loss.ckpt"
-    trainer.fit(model=model, datamodule=datamodule)
+    checkpoint_point  = "/home/visier/hazardforge/HazardForge/logs/2024-12-31 12:10:38/checkpoints/val_loss/iter10000_ep1_val_loss_val/loss.ckpt"
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_point)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")

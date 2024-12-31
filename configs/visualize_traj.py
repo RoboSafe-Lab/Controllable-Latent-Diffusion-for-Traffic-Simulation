@@ -14,7 +14,7 @@ def vis_in_out(maps,input, output, raster_from_agent,indices=[0]):
     for idx in indices:
         map_idx = maps[idx]
         maps_rgb = map_idx.transpose(1, 2, 0)
-        maps_rgb = maps_rgb * 0.4 + 0.7
+        maps_rgb = maps_rgb * 0.4 + 0.6
         maps_rgb_list.append(maps_rgb)
 
 
@@ -71,28 +71,28 @@ def vis_in_out(maps,input, output, raster_from_agent,indices=[0]):
 
 
 
-class TrajectoryVisualizationCallback(pl.Callback):
-    def __init__(self, plot_interval=100,save_dir="plots"):
-        super().__init__()
-        self.plot_interval = plot_interval
-        self.save_dir = save_dir
-        os.makedirs(self.save_dir, exist_ok=True)
+# class TrajectoryVisualizationCallback(pl.Callback):
+#     def __init__(self, plot_interval=100,save_dir="plots"):
+#         super().__init__()
+#         self.plot_interval = plot_interval
+#         self.save_dir = save_dir
+#         os.makedirs(self.save_dir, exist_ok=True)
 
-    def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        # Check if we are at a plotting step
-        if (trainer.global_step % self.plot_interval == 0) and (trainer.global_step > 0):
-            # Ensure that we have trajectories to plot
-            if hasattr(pl_module, 'latest_origin_traj') and hasattr(pl_module, 'latest_recon_traj'):
-                origin_traj = pl_module.latest_origin_traj
-                recon_traj = pl_module.latest_recon_traj
-                raster_from_agent = pl_module.raster_from_agent
-                maps = pl_module.maps
-                fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[15, 52, 86, 108])
+#     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+#         # Check if we are at a plotting step
+#         if (trainer.global_step % self.plot_interval == 0) and (trainer.global_step > 0):
+#             # Ensure that we have trajectories to plot
+#             if hasattr(pl_module, 'latest_origin_traj') and hasattr(pl_module, 'latest_recon_traj'):
+#                 origin_traj = pl_module.latest_origin_traj
+#                 recon_traj = pl_module.latest_recon_traj
+#                 raster_from_agent = pl_module.raster_from_agent
+#                 maps = pl_module.maps
+#                 fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[15, 52, 86, 108])
 
-                save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
-                fig.savefig(save_path, dpi=300)
+#                 save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
+#                 fig.savefig(save_path, dpi=300)
 
-                # Close the figure to free memory
-                plt.close(fig)
+#                 # Close the figure to free memory
+#                 plt.close(fig)
 
 

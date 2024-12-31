@@ -170,7 +170,7 @@ algo:
         L2: 0.0
     vae:
       learning_rate:
-        initial: 0.0001
+        initial: 0.00005
         decay_factor: 0.5
         epoch_schedule:
           - 10
