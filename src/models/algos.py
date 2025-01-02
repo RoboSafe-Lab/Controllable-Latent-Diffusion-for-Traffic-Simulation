@@ -143,8 +143,8 @@ class UnifiedTrainer(pl.LightningModule):
         
      
         self.batch_size = self.train_config.training.batch_size
-        self.beta = 0.1
-        self.beta_max = 0.3
+        self.beta = 0.01
+        self.beta_max = 0.1
         self.anneal_steps = self.train_config.training.num_steps/3
         self.beta_inc = (self.beta_max - self.beta) / self.anneal_steps
 
@@ -188,7 +188,17 @@ class UnifiedTrainer(pl.LightningModule):
                 weight_decay=optim_params_vae["regularization"]["L2"],
               
             )
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
+            # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
+                optimizer,
+                max_lr=1e-3,                  # 最大学习率
+                steps_per_epoch=7000,         # 每个 epoch 的 step 数
+                epochs=10,                    # 训练的 epoch 数
+                pct_start=0.3,                # 学习率上升阶段占 30%
+                anneal_strategy='cos',        # 余弦衰减策略
+                div_factor=25,                # 初始学习率为 max_lr/25
+                final_div_factor=1000         # 最终学习率为 max_lr/1000
+            )
             return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -235,7 +245,7 @@ class UnifiedTrainer(pl.LightningModule):
 
           
             aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
-            scaled_actions,mu,logvar = self.vae(scaled_input)
+            scaled_actions,mu,logvar = self.vae(scaled_input,aux_info["cond_feat"])
             scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
    
             descaled_output = self.descale_traj(scaled_output)
@@ -389,7 +399,7 @@ class UnifiedTrainer(pl.LightningModule):
         batch = batch_utils().parse_batch(batch)
         if self.train_mode == "vae":
             aux_info, scaled_traj,scaled_input = self.pre_vae(batch)
-            scaled_actions,mu,logvar = self.vae(scaled_traj)
+            scaled_actions,mu,logvar = self.vae(scaled_traj,aux_info["cond_feat"])
             scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
           
 
@@ -426,7 +436,7 @@ class UnifiedTrainer(pl.LightningModule):
             recon_traj = outputs['output'].detach().cpu().numpy()
             raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
             maps = outputs['maps'].detach().cpu().numpy()
-            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[13, 53, 86, 109])
+            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[0,1,2,3,10,20,21,22,23,24,30,80,90,100])
 
             save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
             fig.savefig(save_path, dpi=300)

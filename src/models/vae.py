@@ -16,16 +16,14 @@ class Encoder(nn.Module):
             bidirectional=False,
         )
         self.cond2hidden = nn.Linear(cond_dim, hidden_size)
-    def forward(self, x):
-        # # x: tensor of shape (batch_size, seq_length, feature_dim)
-        # batch_size = x.size(0)
-        # cond_hidden = self.cond2hidden(cond_feature)#[B,256]-->[B,128]
-        # h0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)  #[1,B,128]
-        # c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
-        # h0[0, :, :] = cond_hidden
-        # outputs, (hn, cn) = self.lstm(x, (h0, c0))#[B,52,128]
-        ouputs,(hidden, cell) = self.lstm(x)
-        return (hidden,cell)
+    def forward(self, x,context):
+        batch_size = x.size(0)
+        cond_hidden = self.cond2hidden(context)
+        h0 = cond_hidden.unsqueeze(0).repeat(self.num_layers, 1, 1)  # [1, B, hidden_size]
+        c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+
+        outputs, (hn, cn) = self.lstm(x, (h0, c0))
+        return (hn, cn)
 
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1):
@@ -87,10 +85,10 @@ class LSTMVAE(nn.Module):
         z = mean + noise * std
         return z
 
-    def forward(self, x):
+    def forward(self, x, context):
 
         batch_size, seq_len, feature_dim = x.shape
-        enc_hidden = self.lstm_enc(x) #([1,B,hidden],[1,B,hidden])
+        enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
         enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
         
         mean = self.mu(enc_h) #[B,latent:64]
@@ -122,9 +120,7 @@ class LSTMVAE(nn.Module):
         kld_weight = args[4]
         recons_loss = F.mse_loss(recons, input)
 
-        kld_loss = torch.mean(
-    -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1)
-)
+        kld_loss = torch.mean( -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1) )
 
    
         loss = recons_loss + kld_weight * kld_loss
