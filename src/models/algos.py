@@ -15,13 +15,12 @@ import tbsim.models.base_models as base_models
 import numpy as np
 from tbsim.models.diffuser_helpers import MapEncoder,convert_state_to_state_and_action,unicyle_forward_dynamics
 class UnifiedTrainer(pl.LightningModule):
-    def __init__(self, algo_config,train_config, modality_shapes, registered_name,
+    def __init__(self, algo_config,train_config, modality_shapes,
                  do_log=True, guidance_config=None, constraint_config=None,train_mode="vae", vae_model_path=None):
 
         super(UnifiedTrainer, self).__init__()
         self.algo_config = algo_config
         self.train_config = train_config
-        #self.nets = nn.ModuleDict()
         self._do_log = do_log
 
         # assigned at run-time according to the given data batch
@@ -78,29 +77,6 @@ class UnifiedTrainer(pl.LightningModule):
         neighbor_hist_norm_info = algo_config.nusc_norm_info.neighbor_hist
 
 
-        
-
-
-
-
-        self.cond_drop_map_p = algo_config.conditioning_drop_map_p
-        self.cond_drop_neighbor_p = algo_config.conditioning_drop_neighbor_p
-        min_cond_drop_p = min([self.cond_drop_map_p, self.cond_drop_neighbor_p])
-        max_cond_drop_p = max([self.cond_drop_map_p, self.cond_drop_neighbor_p])
-        assert min_cond_drop_p >= 0.0 and max_cond_drop_p <= 1.0
-        self.use_cond = self.cond_drop_map_p < 1.0 and self.cond_drop_neighbor_p < 1.0  # no need for conditioning arch if always dropping
-        self.cond_fill_val = algo_config.conditioning_drop_fill
-
-        self.use_rasterized_map = algo_config.rasterized_map
-        self.use_rasterized_hist = algo_config.rasterized_history
-
-        if self.use_cond:
-            if self.cond_drop_map_p > 0:
-                print(
-                    'DIFFUSER: Dropping map input conditioning with p = %f during training...' % (self.cond_drop_map_p))
-            if self.cond_drop_neighbor_p > 0:
-                print('DIFFUSER: Dropping neighbor traj input conditioning with p = %f during training...' % (
-                    self.cond_drop_neighbor_p))
                 
         self.horizon = algo_config.horizon
         self.dt = 0.1
@@ -114,32 +90,37 @@ class UnifiedTrainer(pl.LightningModule):
             self.set_constraints(constraint_config)
 
         
-        vae_config = algo_config.vae
-        self.vae = LSTMVAE(input_size=observation_dim+action_dim,
+        vae_config = algo_config.vae     
+
+        self.train_mode = train_mode  # "vae" or "dm"
+        if train_mode == "vae":
+            self.vae = LSTMVAE(input_size=observation_dim+action_dim,
                            hidden_size=vae_config.hidden_size,
                            latent_size=vae_config.latent_size,
                            output_size=output_dim,
                            )
-        # set up EMA
-        self.use_ema = algo_config.use_ema
-        if self.use_ema:
-            print('DIFFUSER: using EMA... val and get_action will use ema model')
-            self.ema = EMA(algo_config.ema_decay)
-            self.ema_policy = copy.deepcopy(self.vae)
-            self.ema_policy.requires_grad_(False)
-            self.ema_update_every = algo_config.ema_step
-            self.ema_start_step = algo_config.ema_start_step
-            self.reset_parameters()
 
-        self.train_mode = train_mode  # "vae" or "dm"
-
-        if train_mode == "dm":
+        elif train_mode == "dm":
+            self.vae = LSTMVAE(input_size=observation_dim+action_dim,
+                           hidden_size=vae_config.hidden_size,
+                           latent_size=vae_config.latent_size,
+                           output_size=output_dim,
+                           )
             # Load pre-trained VAE model and freeze parameters
             if vae_model_path:
-                self.vae.load_state_dict(torch.load(vae_model_path))
-                for param in self.dm.vae.parameters():
+                checkpoint = torch.load(vae_model_path,map_location='cpu')
+                state_dict = checkpoint["state_dict"] 
+                self.load_state_dict(state_dict, strict=False)
+            for param in self.vae.parameters():
                     param.requires_grad = False
-
+            for param in self.map_encoder.parameters():
+                    param.requires_grad = False
+            for param in self.process_cond_mlp.parameters():
+                    param.requires_grad = False
+            self.dm = DM(
+                         latent_dim=vae_config.latent_size,
+                         cond_dim = algo_config.cond_feat_dim,
+                         )
         
      
         self.batch_size = self.train_config.training.batch_size
@@ -158,7 +139,16 @@ class UnifiedTrainer(pl.LightningModule):
             +
         map:(B,seq,256)考虑current_state 目前先这样做,以后去掉也方便
         '''
-
+        # set up EMA
+        self.use_ema = algo_config.use_ema
+        if self.use_ema:
+            print('DIFFUSER: using EMA... val and get_action will use ema model')
+            self.ema = EMA(algo_config.ema_decay)
+            self.ema_policy = copy.deepcopy(self.vae)
+            self.ema_policy.requires_grad_(False)
+            self.ema_update_every = algo_config.ema_step
+            self.ema_start_step = algo_config.ema_start_step
+            self.reset_parameters()
 
     def _create_dynamics(self):
         if self._dynamics_type in ["Unicycle", dynamics.DynType.UNICYCLE]:
@@ -191,13 +181,13 @@ class UnifiedTrainer(pl.LightningModule):
             # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
             scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer,
-                max_lr=1e-3,                  # 最大学习率
-                steps_per_epoch=7000,         # 每个 epoch 的 step 数
-                epochs=10,                    # 训练的 epoch 数
-                pct_start=0.3,                # 学习率上升阶段占 30%
-                anneal_strategy='cos',        # 余弦衰减策略
-                div_factor=25,                # 初始学习率为 max_lr/25
-                final_div_factor=1000         # 最终学习率为 max_lr/1000
+                max_lr=1e-3,                  
+                steps_per_epoch=7000,         
+                epochs=10,                    
+                pct_start=0.3,                
+                anneal_strategy='cos',        
+                div_factor=25,                
+                final_div_factor=1000         
             )
             return {
             "optimizer": optimizer,
@@ -214,12 +204,15 @@ class UnifiedTrainer(pl.LightningModule):
                 lr=optim_params_dm["learning_rate"]["initial"],
                 weight_decay=optim_params_dm["regularization"]["L2"],
             )
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer,
-                mode="min",
-                factor=optim_params_dm["learning_rate"]["decay_factor"],
-                patience=5,
-                verbose=True,
+                max_lr=1e-3,                  
+                steps_per_epoch=7000,         
+                epochs=10,                    
+                pct_start=0.3,                
+                anneal_strategy='cos',        
+                div_factor=25,                
+                final_div_factor=1000         
             )
             return {
             "optimizer": optimizer,
@@ -228,6 +221,7 @@ class UnifiedTrainer(pl.LightningModule):
                 "monitor": "dm_loss",
             },
         }
+            
         else:
             raise ValueError(f"Unknown training mode: {self.train_mode}")
         
@@ -267,10 +261,12 @@ class UnifiedTrainer(pl.LightningModule):
                     }
 
         elif self.train_mode == "dm":
-            dm_losses_dict = self(batch)
-            dm_loss = dm_losses_dict['diffusion_loss']
-            self.log("dm_loss", dm_loss,on_step=True,on_epoch=True,batch_size=self.batch_size)
-            return dm_loss
+            aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
+            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
+            loss = self.dm.compute_losses(z,aux_info)
+
+            self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+            return loss
      
     def convert_action_to_state_and_action(self, x_out, curr_states, scaled_input=True, descaled_output=False):
         '''
@@ -392,6 +388,7 @@ class UnifiedTrainer(pl.LightningModule):
         return target_traj
 
     def validation_step(self, batch):
+        
         if self.use_ema and self.global_step % self.ema_update_every == 0:
             self.step_ema(self.global_step)
             self.data_centric = 'agent'
@@ -412,37 +409,41 @@ class UnifiedTrainer(pl.LightningModule):
             self.log("val/decoder_loss", recons_loss,  on_step=False, on_epoch=True,batch_size=self.batch_size)
             self.log("val/kl", kld_loss,               on_step=False, on_epoch=True,batch_size=self.batch_size)
 
+        else:
+            aux_info,_,scaled_input = self.pre_vae(batch)
+            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
+            loss = self.dm.compute_losses(z,aux_info)
+
+            self.log('val/dm_loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
 
 
 
         
 
-        elif self.train_mode == "dm":
-           pass
-            
 
  
     def on_train_batch_end(self, outputs, batch, batch_idx):
-        current_lr = self.trainer.optimizers[0].param_groups[0]['lr']
-        if self.beta < self.beta_max:
-            self.beta += self.beta_inc
-            self.beta = min(self.beta, self.beta_max)
-        self.log("lr", current_lr, on_step=True, on_epoch=False)
-        self.log("beta", self.beta, on_step=True, on_epoch=False)
+        if self.train_mode == "vae":
+            current_lr = self.trainer.optimizers[0].param_groups[0]['lr']
+            if self.beta < self.beta_max:
+                self.beta += self.beta_inc
+                self.beta = min(self.beta, self.beta_max)
+            self.log("lr", current_lr, on_step=True, on_epoch=False)
+            self.log("beta", self.beta, on_step=True, on_epoch=False)
 
-        if (self.global_step % self.plot_interval == 0) and (self.global_step > 0):
-            
-            origin_traj = outputs['input'].detach().cpu().numpy()
-            recon_traj = outputs['output'].detach().cpu().numpy()
-            raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
-            maps = outputs['maps'].detach().cpu().numpy()
-            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[0,1,2,3,10,20,21,22,23,24,30,80,90,100])
+            if (self.global_step % self.plot_interval == 0) and (self.global_step > 0):
+                
+                origin_traj = outputs['input'].detach().cpu().numpy()
+                recon_traj = outputs['output'].detach().cpu().numpy()
+                raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
+                maps = outputs['maps'].detach().cpu().numpy()
+                fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[0,1,2,3,10,20,21,22,23,24,30,80,90,100])
 
-            save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
-            fig.savefig(save_path, dpi=300)
+                save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
+                fig.savefig(save_path, dpi=300)
 
-            # Close the figure to free memory
-            plt.close(fig)
+                # Close the figure to free memory
+                plt.close(fig)
 
 
 

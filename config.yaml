@@ -1,8 +1,10 @@
 train:
-  mode: "vae"
+  mode: "dm"
   debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
+  checkpoint_vae: "/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt"
+  checkpoint_dm: null
   training:
     batch_size: 128
     num_steps: 100000
@@ -17,7 +19,7 @@ train:
 
   logging:
     terminal_output_to_txt: true
-    wandb_project_name: "hf_visier"
+    wandb_project_name: "dm_visier"
     log_every_n_steps: 50             #the frequency of wandb refresh
     flush_every_n_steps: 500
   trajdata_source_train:

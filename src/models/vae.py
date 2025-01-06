@@ -89,12 +89,12 @@ class LSTMVAE(nn.Module):
 
         batch_size, seq_len, feature_dim = x.shape
         enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
-        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
+        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer:256]
         
-        mean = self.mu(enc_h) #[B,latent:64]
+        mean = self.mu(enc_h) #[B,latent:128]
         logvar = self.var(enc_h)
 
-        z = self.reparametize(mean,logvar)#[B,64]
+        z = self.reparametize(mean,logvar)#[B,128]
 
         h_ = self.fc3(z) #[B,hidden:128]
 
@@ -129,3 +129,15 @@ class LSTMVAE(nn.Module):
             "Reconstruction_Loss": recons_loss,
             "KLD": kld_loss,
         }
+
+    def getZ(self,x, context):
+        batch_size, seq_len, feature_dim = x.shape
+        enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
+        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
+        
+        mean = self.mu(enc_h) #[B,latent:64]
+        logvar = self.var(enc_h)
+
+        z = self.reparametize(mean,logvar)#[B,64]
+
+        return z

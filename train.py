@@ -20,7 +20,7 @@ import yaml,torch
 
 
 
-def create_wandb_dir(base_dir="wandb"):
+def create_wandb_dir(base_dir="logs"):
     """
     Create a directory under the wandb base directory with a timestamp as the name.
     """
@@ -37,28 +37,29 @@ def main(cfg, debug=False):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print("\n============= New Training Run with Config =============")
 
-    wandb_base_dir = "logs"
-    wandb_run_dir = create_wandb_dir(base_dir=wandb_base_dir)
-    config_path = os.path.join(wandb_run_dir, "config.json")
-    with open(config_path, "w") as f:
-        json.dump(serialize_object(cfg), f, indent=4)
+    
 
 
     datamodule = datamodule_factory(cls_name=cfg.train.datamodule_class, config=cfg)
     datamodule.setup()
     
-
+    checkpoint_vae = cfg.train.checkpoint_vae
+    checkpoint_dm = cfg.train.checkpoint_dm
     model = UnifiedTrainer(algo_config=cfg.algo,train_config=cfg.train,
                            modality_shapes=datamodule.modality_shapes,
-                           registered_name=cfg.registered_name,
-                           train_mode=cfg.train.mode)
-    # checkpoint = torch.load(checkpoint_point)
-    # model.load_state_dict(checkpoint["state_dict"])
+                           train_mode=cfg.train.mode,
+                           vae_model_path = checkpoint_vae,
+                           )
+
 
     logger = None
-    if debug:
-        print("Debugging mode, suppress logging.")
-    else:
+    train_callbacks = []
+    if not debug:
+        wandb_base_dir = "logs"
+        wandb_run_dir = create_wandb_dir(base_dir=wandb_base_dir)
+        config_path = os.path.join(wandb_run_dir, "config.json")
+        with open(config_path, "w") as f:
+            json.dump(serialize_object(cfg), f, indent=4)
         wandb.login()
         logger = WandbLogger(
             name=f"{cfg.name}_{current_time}",
@@ -68,68 +69,73 @@ def main(cfg, debug=False):
         logger.watch(model=model)
         logger.experiment.config.update(cfg.to_dict())
 
-    checkpoint_dir = os.path.join(wandb_run_dir, "checkpoints")
-    os.makedirs(checkpoint_dir, exist_ok=True)
+        checkpoint_dir = os.path.join(wandb_run_dir, "checkpoints")
+        os.makedirs(checkpoint_dir, exist_ok=True)
        
 
-    train_callbacks = []
-    if cfg.train.rollout.enabled:
-      
-        rollout_callback = RolloutCallback(
-            exp_config=cfg,
-            every_n_steps=cfg.train.rollout.every_n_steps,
-            warm_start_n_steps=cfg.train.rollout.warm_start_n_steps,
-            verbose=True,
-            save_video=cfg.train.rollout.save_video,
-            video_dir=os.path.join(wandb_run_dir, "videos")
-        )
-        train_callbacks.append(rollout_callback)
-    
-    # Checkpointing
-    if cfg.train.validation.enabled and cfg.train.save.save_best_validation:#NOTE:  first validation then save
-        assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
-            cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
         
+        if cfg.train.rollout.enabled:
         
-        for metric_name, metric_key in model.checkpoint_monitor_keys.items():
-            print(
-                "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
+            rollout_callback = RolloutCallback(
+                exp_config=cfg,
+                every_n_steps=cfg.train.rollout.every_n_steps,
+                warm_start_n_steps=cfg.train.rollout.warm_start_n_steps,
+                verbose=True,
+                save_video=cfg.train.rollout.save_video,
+                video_dir=os.path.join(wandb_run_dir, "videos")
             )
-            ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=f"{checkpoint_dir}/{metric_name}",
-                filename=f"iter{{step}}_ep{{epoch}}_{metric_name}_{metric_key}",
+            train_callbacks.append(rollout_callback)
+        
+        # Checkpointing
+        if cfg.train.validation.enabled and cfg.train.save.save_best_validation:#NOTE:  first validation then save
+            assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
+                cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
+            
+            
+            for metric_name, metric_key in model.checkpoint_monitor_keys.items():
+                print(
+                    "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
+                )
+                ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
+                    dirpath=f"{checkpoint_dir}/{metric_name}",
+                    filename=f"iter{{step}}_ep{{epoch}}_{metric_name}_{metric_key}",
+                    auto_insert_metric_name=False,
+                    save_top_k=cfg.train.save.best_k,
+                    monitor=metric_key,
+                    mode="min",
+                    every_n_train_steps=cfg.train.save.every_n_steps,
+                    verbose=True,
+                    
+                )
+                train_callbacks.append(ckpt_valid_callback)
+        if cfg.train.rollout.enabled and cfg.train.save.save_best_rollout:
+            assert (
+                cfg.train.save.every_n_steps > cfg.train.rollout.every_n_steps
+            ), "checkpointing frequency needs to be greater than rollout frequency"
+            ckpt_rollout_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=checkpoint_dir,
+                filename="iter{step}_ep{epoch}_simADE{rollout/metrics_ego_ADE:.2f}",
                 auto_insert_metric_name=False,
-                save_top_k=cfg.train.save.best_k,
-                monitor=metric_key,
+                save_top_k=cfg.train.save.best_k,  # save the best k models
+                monitor="rollout/metrics_ego_ADE",
                 mode="min",
                 every_n_train_steps=cfg.train.save.every_n_steps,
+                state_key='rollout_checkpoint',
                 verbose=True,
-                
             )
-            train_callbacks.append(ckpt_valid_callback)
-    if cfg.train.rollout.enabled and cfg.train.save.save_best_rollout:
-        assert (
-            cfg.train.save.every_n_steps > cfg.train.rollout.every_n_steps
-        ), "checkpointing frequency needs to be greater than rollout frequency"
-        ckpt_rollout_callback = pl.callbacks.ModelCheckpoint(
-            dirpath=checkpoint_dir,
-            filename="iter{step}_ep{epoch}_simADE{rollout/metrics_ego_ADE:.2f}",
-            auto_insert_metric_name=False,
-            save_top_k=cfg.train.save.best_k,  # save the best k models
-            monitor="rollout/metrics_ego_ADE",
-            mode="min",
-            every_n_train_steps=cfg.train.save.every_n_steps,
-            state_key='rollout_checkpoint',
-            verbose=True,
-        )
-        train_callbacks.append(ckpt_rollout_callback)
+            train_callbacks.append(ckpt_rollout_callback)
 
 
-    images_dir = os.path.join(wandb_run_dir, "images")
-    os.makedirs(images_dir, exist_ok=True)
+        images_dir = os.path.join(wandb_run_dir, "images")
+        os.makedirs(images_dir, exist_ok=True)
 
 
-    model.image_dir = images_dir
+        model.image_dir = images_dir
+    else:
+        wandb_run_dir = "logs/debug_run"
+        os.makedirs(wandb_run_dir, exist_ok=True)
+        checkpoint_dir = wandb_run_dir
+        print("Debug mode: skipping checkpoint callbacks")
     trainer = pl.Trainer(
        
         default_root_dir=checkpoint_dir,
@@ -151,8 +157,9 @@ def main(cfg, debug=False):
         
        
     )
-    checkpoint_point  = "/home/visier/hazardforge/HazardForge/logs/2024-12-31 19:17:11/checkpoints/val_loss/iter5000_ep0_val_loss_val/loss.ckpt"
-    trainer.fit(model=model, datamodule=datamodule)#,ckpt_path=checkpoint_point)
+    # checkpoint_point  = "/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt"
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_dm)
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")
