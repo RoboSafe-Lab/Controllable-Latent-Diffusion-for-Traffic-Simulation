@@ -1,5 +1,5 @@
 train:
-  mode: "dm"
+  mode: "vae"
   debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
@@ -25,7 +25,7 @@ train:
 
   logging:
     terminal_output_to_txt: true
-    wandb_project_name: "dm_visier"
+    wandb_project_name: "HF_Visier"
     log_every_n_steps: 50             #the frequency of wandb refresh
     flush_every_n_steps: 500
   trajdata_source_train:
@@ -36,6 +36,7 @@ train:
     - "nusc_trainval-val" 
     # - "nusc_mini-mini_val"
 
+  wandb_dir: "logs"
   
 
   trajdata_data_dirs:
