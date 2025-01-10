@@ -1,4 +1,4 @@
-from configs.visualize_traj import vis_in_out
+from configs.visualize_traj import vis_in_out,vis_in_out_list
 from models.vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
@@ -218,7 +218,7 @@ class UnifiedTrainer(pl.LightningModule):
             "optimizer": optimizer,
             "lr_scheduler": {
                 "scheduler": scheduler,
-                "monitor": "dm_loss",
+                "monitor": "val/loss",
             },
         }
             
@@ -414,11 +414,43 @@ class UnifiedTrainer(pl.LightningModule):
             z = self.vae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
             loss = self.dm.compute_losses(z,aux_info)
 
-            self.log('val/dm_loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
+            self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
 
 
 
+    def test_step(self,batch):
+        num_samp=5
+        batch = batch_utils().parse_batch(batch)  
+        aux_info, unscaled_input, scaled_input = self.pre_vae(batch)
+
+        z = self.vae.getZ(scaled_input, aux_info["cond_feat"])
+        sampled_output = self.dm(z, aux_info,num_samp=num_samp) 
+        traj = self.vae.getTraj(sampled_output,num_samp)
+        sampled_output_3d = traj.reshape(128, num_samp, 52,2)
+        all_recon_trajs = []
+        for k in range(num_samp):
+            traj_k = sampled_output_3d[:, k, :]
+            scaled_output_k = self.convert_action_to_state_and_action(traj_k, aux_info['curr_states']) 
+            descaled_output_k = self.descale_traj(scaled_output_k)  # => shape [B, ...]
+
+            all_recon_trajs.append(descaled_output_k)
+     
+        print("1111")
         
+        custom_dir = "/home/visier/hazardforge/HazardForge/logs/2025-1-9"
+        for k, recon_traj in enumerate(all_recon_trajs):
+            origin_traj = unscaled_input.detach().cpu().numpy()
+
+            recon_traj = recon_traj.detach().cpu().numpy()
+            raster_from_agent = batch['raster_from_agent'].detach().cpu().numpy()
+            maps = batch['maps'].detach().cpu().numpy()
+            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[5,6,7,23,32,90])
+            
+            save_path = os.path.join(custom_dir, f"trajectory_fig_step{self.global_step}_sample{k}.png")
+
+            fig.savefig(save_path, dpi=300)
+
+        print("1111")
 
 
  
@@ -444,20 +476,6 @@ class UnifiedTrainer(pl.LightningModule):
 
                 # Close the figure to free memory
                 plt.close(fig)
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 
     def on_train_epoch_end(self):
         print(f"-----Epoch {self.current_epoch} has ended. Total Steps: {self.global_step}")

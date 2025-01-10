@@ -158,8 +158,8 @@ def main(cfg, debug=False):
        
     )
     # checkpoint_point  = "/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt"
-    trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_dm)
-    
+    # trainer.fit(model=model, datamodule=datamodule,ckpt_path=checkpoint_dm)
+    trainer.test(model=model, datamodule=datamodule,ckpt_path=checkpoint_dm)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Training Script")

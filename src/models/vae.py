@@ -107,6 +107,25 @@ class LSTMVAE(nn.Module):
 
         return reconstruct_output,mean,logvar
 
+    def getZ(self,x, context):
+        batch_size, seq_len, feature_dim = x.shape
+        enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
+        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
+        
+        mean = self.mu(enc_h) #[B,latent:64]
+        logvar = self.var(enc_h)
+
+        z = self.reparametize(mean,logvar)#[B,64]
+
+        return z
+    def getTraj(self,z,num_samp):
+        h_ = self.fc3(z)
+        z = z.unsqueeze(1)
+        z = z.repeat(1,52,1) #[B,52,latent:64]
+        z = z.view(128*num_samp,52,self.latent_size).to(self.device)
+        hidden = (h_.unsqueeze(0).contiguous(), h_.unsqueeze(0).contiguous())#([1,B,hid],[1,B,hid])
+        reconstruct_output, _ = self.lstm_dec(z, hidden)
+        return reconstruct_output
     def loss_function(self, *args, **kwargs) -> dict:
         """
         Computes the VAE loss function.
@@ -130,14 +149,4 @@ class LSTMVAE(nn.Module):
             "KLD": kld_loss,
         }
 
-    def getZ(self,x, context):
-        batch_size, seq_len, feature_dim = x.shape
-        enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
-        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
-        
-        mean = self.mu(enc_h) #[B,latent:64]
-        logvar = self.var(enc_h)
-
-        z = self.reparametize(mean,logvar)#[B,64]
-
-        return z
+    

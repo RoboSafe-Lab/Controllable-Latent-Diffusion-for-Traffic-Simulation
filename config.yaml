@@ -1,6 +1,6 @@
 train:
   mode: "dm"
-  debug: false
+  debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
   checkpoint_vae: "/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt"
@@ -14,8 +14,14 @@ train:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 2000
-    num_steps_per_epoch: 300   #每次validation时,运行多少step
+    every_n_steps: 1000
+    num_steps_per_epoch: 100  #每次validation时,运行多少step
+  save:
+    enabled: true
+    every_n_steps: 3000
+    best_k: 1
+    save_best_rollout: false
+    save_best_validation: true
 
   logging:
     terminal_output_to_txt: true
@@ -30,12 +36,7 @@ train:
     - "nusc_trainval-val" 
     # - "nusc_mini-mini_val"
 
-  save:
-    enabled: true
-    every_n_steps: 5000
-    best_k: 1
-    save_best_rollout: false
-    save_best_validation: true
+  
 
   trajdata_data_dirs:
     nusc_trainval: "/home/visier/nuscenes"
@@ -107,7 +108,7 @@ algo:
   use_map_feat_global: true
   use_map_feat_grid: false
   base_dim: 32
-  horizon: 52
+  horizon: 100
   n_diffusion_steps: 100
   action_weight: 1
   diffusor_loss_weights: null

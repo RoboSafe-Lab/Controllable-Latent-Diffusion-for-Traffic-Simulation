@@ -217,7 +217,7 @@ class PassUnifiedDataModule(pl.LightningDataModule):
         )
 
     def test_dataloader(self):
-        pass
+        return self.val_dataloader()
 
     def predict_dataloader(self):
         pass
