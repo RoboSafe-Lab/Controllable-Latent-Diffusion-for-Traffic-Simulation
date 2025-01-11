@@ -13,7 +13,8 @@ def train_vae(cfg,debug=False):
     trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_vae)
 
 def train_dm(cfg,debug=False):
-    pass
+    trainer, datamodule,model,_,ckpt_dm = prepare_trainer_and_data(cfg,train_mode="dm",debug=cfg.train.debug)
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_dm)
 
 
 def create_wandb_dir(base_dir="logs"):

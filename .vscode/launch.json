@@ -7,9 +7,9 @@
             "request": "launch",
             "program": "/home/visier/hazardforge/HazardForge/train.py",
             "console": "internalConsole",
-            "env": {
-                "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
-            }
+            // "env": {
+            //     "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
+            // }
         },
         {
             "name": "test",

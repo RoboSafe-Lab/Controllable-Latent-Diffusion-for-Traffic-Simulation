@@ -1,10 +1,8 @@
-
-
 from configs.visualize_traj import vis_in_out,vis_in_out_list
-from models.vae import LSTMVAE
+from models.vae.lstm_vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
-from models.dm import  DM
+from models.dm.dm import  DM
 from tbsim.utils.batch_utils import batch_utils
 import pytorch_lightning as pl
 import torch.nn as nn
@@ -16,11 +14,11 @@ import tbsim.dynamics as dynamics
 import tbsim.models.base_models as base_models
 import numpy as np
 from tbsim.models.diffuser_helpers import MapEncoder,convert_state_to_state_and_action,unicyle_forward_dynamics
-class DMLightningModule(pl.LightningModule):
+class UnifiedTrainer(pl.LightningModule):
     def __init__(self, algo_config,train_config, modality_shapes,
                  do_log=True, guidance_config=None, constraint_config=None,train_mode="vae", vae_model_path=None):
 
-        super(DMLightningModule, self).__init__()
+        super(UnifiedTrainer, self).__init__()
         self.algo_config = algo_config
         self.train_config = train_config
         self._do_log = do_log

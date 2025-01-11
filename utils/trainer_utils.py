@@ -1,13 +1,13 @@
 from tbsim.utils.config_utils import translate_pass_trajdata_cfg
 from tbsim.datasets.trajdata_datamodules import PassUnifiedDataModule
-from  models.algos import  UnifiedTrainer
 from datetime import  datetime
 import os,json,wandb
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 from configs.custom_config import serialize_object
-from models.vae_trainer import VAELightningModule
-from models.dm_trainer import DMLightningModule
+from trainers.vae_trainer import VAELightningModule
+from trainers.dm_trainer import DMLightningModule
+from configs.visualize_traj import TrajectoryVisualizationCallback
 def prepare_trainer_and_data(cfg, train_mode,debug=False):
     trajdata_config = translate_pass_trajdata_cfg(cfg)
     datamodule = PassUnifiedDataModule(trajdata_config, cfg.train)
@@ -16,16 +16,17 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     checkpoint_vae = cfg.train.checkpoint_vae
     checkpoint_dm = cfg.train.checkpoint_dm
     if train_mode == "vae":
-        model = VAELightningModule(algo_config=cfg.algo,train_config=cfg.train,
-                           modality_shapes=datamodule.modality_shapes,
-                           train_mode=cfg.train.mode,
-                           vae_model_path = checkpoint_vae,
-                           )
+        model = VAELightningModule( 
+            algo_config=cfg.algo,
+            train_config=cfg.train,
+            modality_shapes=datamodule.modality_shapes,
+                                    )
     elif train_mode == "dm":
-        model = DMLightningModule(algo_config=cfg.algo,train_config=cfg.train,
-                           modality_shapes=datamodule.modality_shapes,
-                           train_mode=cfg.train.mode,
-                           vae_model_path = checkpoint_vae,
+        model = DMLightningModule(
+            algo_config=cfg.algo,train_config=cfg.train,
+            modality_shapes=datamodule.modality_shapes,
+            train_mode=cfg.train.mode,
+            vae_model_path = checkpoint_vae,
                            )
     else:
          raise ValueError(f"Unknown train mode: {train_mode}")
@@ -49,7 +50,7 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     
         checkpoint_dir, media_dir = [os.path.join(wandb_base, subdir) for subdir in ("checkpoints", "media")]
 
-        if cfg.train.validation.enabled and cfg.train.save.save_best_validation:#NOTE:  first validation then save
+        if cfg.train.validation.enabled:##NOTE:  first validation then save
             assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
             
@@ -70,6 +71,8 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
                     
                 )
                 train_callbacks.append(ckpt_valid_callback)
+        visual_callback = TrajectoryVisualizationCallback(cfg,media_dir)
+        train_callbacks.append(visual_callback)
     else:
         
         checkpoint_dir = "logs/debug_run"
@@ -78,29 +81,30 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
         os.makedirs(media_dir, exist_ok=True)
 
         print("Debug mode: skipping checkpoint callbacks")
+        vis_callback = TrajectoryVisualizationCallback(cfg, media_dir)
+        train_callbacks.append(vis_callback)
 
-
-        trainer = pl.Trainer(
-       
-        default_root_dir=checkpoint_dir,
-        # checkpointing
-        enable_checkpointing=cfg.train.save.enabled,
-        # logging
-        logger=logger,
-        # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
-        log_every_n_steps=cfg.train.logging.log_every_n_steps,
-        # training
-        min_epochs = 1,
-        # max_steps=cfg.train.training.num_steps,
-        # validation
-        val_check_interval=cfg.train.validation.every_n_steps,
-        limit_val_batches=cfg.train.validation.num_steps_per_epoch,
-        # all callbacks
-        callbacks=train_callbacks,
-        num_sanity_val_steps=0,
-        
-       
-    )
+    trainer = pl.Trainer(
+    
+    default_root_dir=checkpoint_dir,
+    # checkpointing
+    enable_checkpointing=cfg.train.save.enabled,
+    # logging
+    logger=logger,
+    # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
+    log_every_n_steps=cfg.train.logging.log_every_n_steps,
+    # training
+    min_epochs = 1,
+    # max_steps=cfg.train.training.num_steps,
+    # validation
+    val_check_interval=cfg.train.validation.every_n_steps,
+    limit_val_batches=cfg.train.validation.num_steps_per_epoch,
+    # all callbacks
+    callbacks=train_callbacks,
+    num_sanity_val_steps=0,
+    
+    
+)
     return trainer,datamodule, model,checkpoint_vae,checkpoint_dm
             
 def create_wandb_dir(base_dir="logs"):

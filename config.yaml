@@ -1,10 +1,12 @@
 train:
-  mode: "vae"
+  mode: "dm"
   debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
-  checkpoint_vae: "/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt"
+  plt_indices: [5,15,25,35,45,55,65,75,85,95,105]
+  checkpoint_vae: "/home/visier/hazardforge/HazardForge/logs/2025-01-11 16:24:36/checkpoints/val/total_loss/iter30_ep0_val/total_loss_val/total_loss.ckpt"
   checkpoint_dm: null
+
   training:
     batch_size: 128
     num_steps: 100000
@@ -14,14 +16,14 @@ train:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 1000
-    num_steps_per_epoch: 100  #每次validation时,运行多少step
+    every_n_steps: 10
+    num_steps_per_epoch: 10  #每次validation时,运行多少step
   save:
     enabled: true
-    every_n_steps: 3000
+    every_n_steps: 30
     best_k: 1
     save_best_rollout: false
-    save_best_validation: true
+    # save_best_validation: true
 
   logging:
     terminal_output_to_txt: true
@@ -122,7 +124,7 @@ algo:
   clip_denoised: false
   loss_type: "l2"
   use_ema: true
-  ema_step: 1
+  ema_step: 10
   ema_decay: 0.995
   ema_start_step: 4000
   diffuser_building_block: "concat"

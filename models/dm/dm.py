@@ -3,10 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import  torch
 from tbsim.models.diffuser_helpers import (extract,cosine_beta_schedule)
+
 from .dm_mlp import MLPResNetwork
 import tbsim.utils.tensor_utils as TensorUtils
 from tbsim.utils.diffuser_utils.progress import Progress,Silent
-from copy import deepcopy
+
 import numpy as np
 class DM(nn.Module):
     def __init__(
