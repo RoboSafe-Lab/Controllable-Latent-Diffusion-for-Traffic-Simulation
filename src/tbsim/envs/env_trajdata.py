@@ -176,6 +176,7 @@ class EnvUnifiedSimulation(BaseEnv, BatchedEnv):
         )
         if start_frame_index is None:
             start_frame_index = self._env_config.simulation.start_frame_index
+            #NOTE:历史frame=30,所以从第31帧开始制作视频
         self._current_scenes = []
         scenes_valid = []
         for i, si in enumerate(scene_info):

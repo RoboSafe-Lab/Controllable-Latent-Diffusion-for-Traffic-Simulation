@@ -59,14 +59,14 @@ if __name__ == '__main__':
     )
   
 
-    if default_config.train.rollout.get("enabled", False):
-        default_config.env["eval"] = {"env": default_config.env["name"]}
-        assert default_config.algo["eval_class"], f"Please set an eval_class for {default_config.algo['name']}"
-        default_config.env["eval"]["eval_class"] = default_config.algo["eval_class"]
-        default_config.env["eval"]["dataset_path"] = default_config.train["trajdata_data_dirs"]["nusc_trainval"]
-        env_specific_config = default_config.env.get(default_config.env["eval"]["env"], {})
-        for key, value in env_specific_config.items():
-            default_config.env["eval"][key] = value
+    # if default_config.train.rollout.get("enabled", False):
+    #     default_config.env["eval"] = {"env": default_config.env["name"]}
+    #     assert default_config.algo["eval_class"], f"Please set an eval_class for {default_config.algo['name']}"
+    #     default_config.env["eval"]["eval_class"] = default_config.algo["eval_class"]
+    #     default_config.env["eval"]["dataset_path"] = default_config.train["trajdata_data_dirs"]["nusc_trainval"]
+    #     env_specific_config = default_config.env.get(default_config.env["eval"]["env"], {})
+    #     for key, value in env_specific_config.items():
+    #         default_config.env["eval"][key] = value
 
     default_config.lock()  # Make config read-only
   

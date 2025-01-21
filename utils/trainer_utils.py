@@ -23,9 +23,9 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
                                     )
     elif train_mode == "dm":
         model = DMLightningModule(
-            algo_config=cfg.algo,train_config=cfg.train,
+            algo_config=cfg.algo,
+            train_config=cfg.train,
             modality_shapes=datamodule.modality_shapes,
-            train_mode=cfg.train.mode,
             vae_model_path = checkpoint_vae,
                            )
     else:
@@ -54,23 +54,18 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
             assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
             
-            
-            for metric_name, metric_key in model.checkpoint_monitor_keys.items():
-                print(
-                    "Monitoring metrics {} under alias {}".format(metric_key, metric_name)
-                )
-                ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-                    dirpath=f"{checkpoint_dir}/{metric_name}",
-                    filename=f"iter{{step}}_ep{{epoch}}_{metric_name}_{metric_key}",
-                    auto_insert_metric_name=False,
-                    save_top_k=cfg.train.save.best_k,
-                    monitor=metric_key,
-                    mode="min",
-                    every_n_train_steps=cfg.train.save.every_n_steps,
-                    verbose=True,
-                    
-                )
-                train_callbacks.append(ckpt_valid_callback)
+            ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
+                dirpath=f"{checkpoint_dir}",
+                filename=f"iter{{step}}_ep{{epoch}}_val/loss",
+                auto_insert_metric_name=False,
+                save_top_k=cfg.train.save.best_k,
+                monitor='val/loss',
+                mode="min",
+                every_n_train_steps=cfg.train.save.every_n_steps,
+                verbose=True,
+                
+            )
+            train_callbacks.append(ckpt_valid_callback)
         visual_callback = TrajectoryVisualizationCallback(cfg,media_dir)
         train_callbacks.append(visual_callback)
     else:

@@ -13,6 +13,11 @@ cd ~
 git clone https://github.com/RoboSafe-Lab/HazardForge.git
 cd HazardForge
 pip install -e .
+
+pip install numpy==2.0.2
+pip install pytorch_lightning==2.1.0
+conda install pytorch==1.13.0 torchvision==0.14.0 torchaudio==0.13.0 pytorch-cuda=11.7 -c pytorch -c nvidia
+
 ```
 Install a customized version of `trajdata`
 ```angular2html

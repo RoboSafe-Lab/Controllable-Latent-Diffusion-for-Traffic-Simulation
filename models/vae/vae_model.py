@@ -61,7 +61,7 @@ class VaeModel(nn.Module):
         self._create_dynamics()
    
         vae_config = algo_config.vae             
-        self.vae = LSTMVAE(input_size=observation_dim+action_dim,
+        self.lstmvae = LSTMVAE(input_size=observation_dim+action_dim,
                            hidden_size=vae_config.hidden_size,
                            latent_size=vae_config.latent_size,
                            output_size=output_dim,
@@ -98,11 +98,11 @@ class VaeModel(nn.Module):
 
     def forward(self, batch,beta):
         aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
-        scaled_actions,mu,logvar = self.vae(scaled_input,aux_info["cond_feat"])
+        scaled_actions,mu,logvar = self.lstmvae(scaled_input,aux_info["cond_feat"])
         scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
 
         descaled_output = self.descale_traj(scaled_output)
-        losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,beta)
+        losses = self.lstmvae.loss_function(scaled_output,scaled_input,mu,logvar,beta)
         return {"loss": losses['loss'], 
                 "input": unscaled_input,
                 "output":descaled_output,

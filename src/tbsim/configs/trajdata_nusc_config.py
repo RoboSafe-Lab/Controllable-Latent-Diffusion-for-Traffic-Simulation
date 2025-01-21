@@ -20,6 +20,9 @@ class NuscTrajdataTrainConfig(TrajdataTrainConfig):
             "nusc_mini" : "../behavior-generation-dataset/nuscenes/mini",
         }
 
+       
+
+
         # for debug
         self.trajdata_rebuild_cache = False
 

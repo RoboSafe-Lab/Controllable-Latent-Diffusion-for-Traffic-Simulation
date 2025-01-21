@@ -11,15 +11,13 @@
             //     "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
             // }
         },
+
         {
-            "name": "test",
+            "name": "rollout",
             "type": "debugpy",
             "request": "launch",
-            "program": "/home/visier/hazardforge/HazardForge/test.py",
-            "console": "internalConsole",
-            "env": {
-                "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
-            }
+            "program": "/home/visier/hazardforge/HazardForge/rollout.py",
+            "console": "integratedTerminal",
         }
     ]
 }

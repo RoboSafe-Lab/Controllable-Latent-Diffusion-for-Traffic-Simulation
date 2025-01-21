@@ -87,7 +87,7 @@ class LSTMVAE(nn.Module):
 
     def forward(self, x, context):
 
-        batch_size, seq_len, feature_dim = x.shape
+        batch_size, seq_len, _ = x.shape
         enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
         enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer:256]
         
@@ -112,10 +112,10 @@ class LSTMVAE(nn.Module):
         enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
         enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer]
         
-        mean = self.mu(enc_h) #[B,latent:64]
+        mean = self.mu(enc_h) #[B,latent:128]
         logvar = self.var(enc_h)
 
-        z = self.reparametize(mean,logvar)#[B,64]
+        z = self.reparametize(mean,logvar)#[B,128]
 
         return z
     def getTraj(self,z,num_samp):

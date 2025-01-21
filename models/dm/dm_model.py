@@ -1,4 +1,4 @@
-from tbsim.models.diffuser import DiffuserModel
+
 import torch.nn as nn
 import torch.nn.functional as F
 import  torch
@@ -9,11 +9,14 @@ import tbsim.utils.tensor_utils as TensorUtils
 from tbsim.utils.diffuser_utils.progress import Progress,Silent
 
 import numpy as np
-class DM(nn.Module):
+class DmModel(nn.Module):
     def __init__(
         self,
         latent_dim,
         cond_dim,
+        time_dim,
+        hidden_dim,
+        num_res_blocks,
         n_timesteps=1000,
        
     ):
@@ -44,20 +47,16 @@ class DM(nn.Module):
         self.register_buffer('posterior_mean_coef2',
             (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod))
 
-        self.model = MLPResNetwork(latent_dim = latent_dim,cond_dim = cond_dim)
+        self.model = MLPResNetwork(latent_dim,cond_dim,time_dim,hidden_dim,num_res_blocks)
         
     def compute_losses(self,z,aux_info):
         batch_size = len(z)
-        t = torch.randint(0, self.n_timesteps, (batch_size,), device=z.device).long()
+        t = torch.randint(0, self.n_timesteps, (batch_size,), device=z.device).long()# 128 在(0,1000)之内
         noise_init = torch.randn_like(z) #[B,128]
-        
         x_start = z
-        
-        
         x_noisy = self.q_sample(x_start=x_start,t=t,noise=noise_init) #[B,128]
         t_inp = t
         noise_recon = self.model(x_noisy, aux_info, t_inp)#[B,128]
-
         loss = F.mse_loss(noise_recon,noise_init)
         return loss
 

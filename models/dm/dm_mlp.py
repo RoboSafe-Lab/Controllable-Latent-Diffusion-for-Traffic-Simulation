@@ -22,11 +22,11 @@ class ResidualBlockMLP(nn.Module):
 class MLPResNetwork(nn.Module):
     def __init__(
             self,
-            latent_dim=64,
-            cond_dim=256, 
-            time_dim=128, 
-            hidden_dim=256,
-            num_res_blocks=4
+            latent_dim,
+            cond_dim, 
+            time_dim, 
+            hidden_dim,
+            num_res_blocks
             ):
         super().__init__()
 

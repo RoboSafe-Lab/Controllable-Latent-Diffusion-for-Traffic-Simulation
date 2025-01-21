@@ -12,7 +12,7 @@ class VAELightningModule(pl.LightningModule):
         super(VAELightningModule, self).__init__()
         self.algo_config = algo_config
         self.train_config = train_config
-        self.coordinate = algo_config.coordinate
+      
         print(f"algo_config_diffuser_input_mode: {algo_config.diffuser_input_mode}")
 
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
@@ -65,22 +65,16 @@ class VAELightningModule(pl.LightningModule):
         "optimizer": optimizer,
         "lr_scheduler": {
             "scheduler": scheduler,
-            "monitor": "val/loss",
         },
     }
 
     def forward(self, *args, **kwargs):
         return super().forward(*args, **kwargs)
   
-    def training_step(self, batch):
-        # if self.use_ema and self.global_step % self.ema_update_every == 0:
-        #     self.step_ema(self.global_step)
-         
+    def training_step(self, batch):         
         batch = batch_utils().parse_batch(batch)                 
-    
         outputs,losses = self.vae(batch,self.beta)
        
-        
         self.log("train/kl_loss", losses["KLD"],                       on_step=True, on_epoch=False,batch_size=self.batch_size)
         self.log("train/recon_loss", losses["Reconstruction_Loss"],    on_step=True, on_epoch=False,batch_size=self.batch_size)
         self.log("train/total_loss", losses["loss"],                   on_step=True, on_epoch=False,batch_size=self.batch_size)
@@ -91,10 +85,7 @@ class VAELightningModule(pl.LightningModule):
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)
         _,losses = self.vae(batch,self.beta)
-
-        self.log("val/kl_loss", losses["KLD"],                     on_step=False, on_epoch=True,batch_size=self.batch_size)
-        self.log("val/recon_loss", losses["Reconstruction_Loss"],  on_step=False, on_epoch=True,batch_size=self.batch_size)
-        self.log("val/total_loss", losses["loss"],                 on_step=False, on_epoch=True,batch_size=self.batch_size)
+        self.log("val/loss", losses["loss"],                 on_step=False, on_epoch=True,batch_size=self.batch_size)
         
 
         
@@ -161,9 +152,7 @@ class VAELightningModule(pl.LightningModule):
         #     # Close the figure to free memory
         #     plt.close(fig)
 
-    @property
-    def checkpoint_monitor_keys(self):
-        return {"val/total_loss": "val/total_loss"}
+  
         
     def reset_parameters(self):
         self.ema_policy.load_state_dict(self.vae.state_dict())

@@ -4,7 +4,7 @@ train:
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
   plt_indices: [5,15,25,35,45,55,65,75,85,95,105]
-  checkpoint_vae: "/home/visier/hazardforge/HazardForge/logs/2025-01-11 16:24:36/checkpoints/val/total_loss/iter30_ep0_val/total_loss_val/total_loss.ckpt"
+  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-01-11 23:34:42/checkpoints/iter4_ep0_val/loss.ckpt'
   checkpoint_dm: null
 
   training:
@@ -16,14 +16,13 @@ train:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 10
+    every_n_steps: 2
     num_steps_per_epoch: 10  #每次validation时,运行多少step
   save:
     enabled: true
-    every_n_steps: 30
+    every_n_steps: 4
     best_k: 1
-    save_best_rollout: false
-    # save_best_validation: true
+ 
 
   logging:
     terminal_output_to_txt: true
@@ -80,7 +79,7 @@ env:
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
     trajdata_max_agents_distance: !!float inf
-    trajdata_standardize_data: true            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
+    trajdata_standardize_data: false            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
     other_agents_num: null
 
   rasterizer:
@@ -97,6 +96,10 @@ env:
       - -0.5
       - 0.0
     no_map_fill_value: -1.0
+
+  simulation:
+    num_simulation_steps: null
+    start_frame_index: null
 algo:
   name: "dm_vae"
   eval_class: "dm_vae"
@@ -145,7 +148,9 @@ algo:
   future_num_frames: 52
   step_time: 0.1
   render_ego_history: false
-
+  time_dim: 128
+  mlpres_hidden: 256
+  mlp_blocks: 4
   vae:
     
     hidden_size: 256

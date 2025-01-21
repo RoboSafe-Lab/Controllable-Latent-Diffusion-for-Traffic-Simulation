@@ -2,7 +2,7 @@ from configs.visualize_traj import vis_in_out,vis_in_out_list
 from models.vae.lstm_vae import LSTMVAE
 import torch.optim as optim
 import torch,copy
-from models.dm.dm import  DM
+from models.dm.dm_model import  DM
 from tbsim.utils.batch_utils import batch_utils
 import pytorch_lightning as pl
 import torch.nn as nn
