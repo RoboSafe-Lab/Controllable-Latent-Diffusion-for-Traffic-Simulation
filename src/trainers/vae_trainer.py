@@ -93,40 +93,7 @@ class VAELightningModule(pl.LightningModule):
     def on_after_optimizer_step(self, optimizer, optimizer_idx):
         if self.use_ema and (self.global_step % self.ema_update_every == 0):
             self.step_ema(self.global_step)
-    # def test_step(self,batch):
-    #     num_samp=5
-    #     batch = batch_utils().parse_batch(batch)  
-    #     aux_info, unscaled_input, scaled_input = self.pre_vae(batch)
-
-    #     z = self.vae.getZ(scaled_input, aux_info["cond_feat"])
-    #     sampled_output = self.dm(z, aux_info,num_samp=num_samp) 
-    #     traj = self.vae.getTraj(sampled_output,num_samp)
-    #     sampled_output_3d = traj.reshape(128, num_samp, 52,2)
-    #     all_recon_trajs = []
-    #     for k in range(num_samp):
-    #         traj_k = sampled_output_3d[:, k, :]
-    #         scaled_output_k = self.convert_action_to_state_and_action(traj_k, aux_info['curr_states']) 
-    #         descaled_output_k = self.descale_traj(scaled_output_k)  # => shape [B, ...]
-
-    #         all_recon_trajs.append(descaled_output_k)
-     
-    #     print("1111")
-        
-    #     custom_dir = "/home/visier/hazardforge/HazardForge/logs/2025-1-9"
-    #     for k, recon_traj in enumerate(all_recon_trajs):
-    #         origin_traj = unscaled_input.detach().cpu().numpy()
-
-    #         recon_traj = recon_traj.detach().cpu().numpy()
-    #         raster_from_agent = batch['raster_from_agent'].detach().cpu().numpy()
-    #         maps = batch['maps'].detach().cpu().numpy()
-    #         fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[5,6,7,23,32,90])
-            
-    #         save_path = os.path.join(custom_dir, f"trajectory_fig_step{self.global_step}_sample{k}.png")
-
-    #         fig.savefig(save_path, dpi=300)
-
-    #     print("1111")
-
+ 
 
  
     def on_train_batch_end(self, outputs, batch, batch_idx):
@@ -138,22 +105,6 @@ class VAELightningModule(pl.LightningModule):
         self.log("lr", current_lr, on_step=True, on_epoch=False)
         self.log("beta", self.beta, on_step=True, on_epoch=False)
 
-        # if (self.global_step % self.plot_interval == 0) and (self.global_step > 0):
-            
-        #     origin_traj = outputs['input'].detach().cpu().numpy()
-        #     recon_traj = outputs['output'].detach().cpu().numpy()
-        #     raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
-        #     maps = outputs['maps'].detach().cpu().numpy()
-        #     fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=[0,1,2,3,10,20,21,22,23,24,30,80,90,100])
-
-        #     save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
-        #     fig.savefig(save_path, dpi=300)
-
-        #     # Close the figure to free memory
-        #     plt.close(fig)
-
-  
-        
     def reset_parameters(self):
         self.ema_policy.load_state_dict(self.vae.state_dict())
     def step_ema(self, step):

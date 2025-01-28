@@ -110,40 +110,13 @@ class VaeModel(nn.Module):
                 "maps":batch['maps'],
                 }, losses
         
-      
+    def z2traj(self,z,num_samp,aux_info):
+        scaled_actions,mu,logvar = self.lstmvae.getTraj(z,num_samp)
+        scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
+        return scaled_output
   
 
 
-    # def training_step(self, batch):
-    #     if self.use_ema and self.global_step % self.ema_update_every == 0:
-    #         self.step_ema(self.global_step)
-    #         self.data_centric = 'agent'
-    #     batch = batch_utils().parse_batch(batch)                 
-        
-      
-
-          
-    #     aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
-    #     scaled_actions,mu,logvar = self.vae(scaled_input,aux_info["cond_feat"])
-    #     scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-
-    #     descaled_output = self.descale_traj(scaled_output)
-    #     losses = self.vae.loss_function(scaled_output,scaled_input,mu,logvar,self.beta)
-    #     loss = losses["loss"]
-    #     recon_loss = losses["Reconstruction_Loss"]
-    #     kl_loss = losses["KLD"]
-        
-    #     self.log("train/kl_loss", kl_loss,          on_step=True, on_epoch=False,batch_size=self.batch_size)
-    #     self.log("train/recon_loss", recon_loss,    on_step=True, on_epoch=False,batch_size=self.batch_size)
-    #     self.log("train/vae_loss", loss,            on_step=True, on_epoch=False,batch_size=self.batch_size)
-
-        
-    #     return {"loss": loss, 
-    #             "input": unscaled_input,
-    #             "output":descaled_output,
-    #             "raster_from_agent":batch['raster_from_agent'],
-    #             "maps":batch['maps'],
-    #             }
 
       
      

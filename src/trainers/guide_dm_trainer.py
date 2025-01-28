@@ -6,12 +6,17 @@ import pytorch_lightning as pl
 from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
-class DMLightningModule(pl.LightningModule):
-    def __init__(self, algo_config,train_config, modality_shapes,vae_model_path=None):
+from tbsim.utils.trajdata_utils import get_stationary_mask
+class GuideDMLightningModule(pl.LightningModule):
+    def __init__(self, algo_config,train_config, modality_shapes,dm_model_path,rl_model_path):
 
-        super(DMLightningModule, self).__init__()
+        super(GuideDMLightningModule, self).__init__()
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
+        self.disable_control_on_stationary = algo_config.disable_control_on_stationary
+
+
+
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
         self.dm = DmModel(
             algo_config.vae.latent_size,
@@ -20,6 +25,7 @@ class DMLightningModule(pl.LightningModule):
             algo_config.mlpres_hidden,
             algo_config.mlp_blocks,
             )
+        self.rl = None
         self.use_ema = algo_config.use_ema
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
@@ -32,39 +38,49 @@ class DMLightningModule(pl.LightningModule):
         else:
             self.ema_policy=None
 
-        if vae_model_path is not None:
-            self._load_vae_weights(vae_model_path)
+        if  dm_model_path or rl_model_path is not None:
+            self._load_weights(dm_model_path,rl_model_path)
+            
     
 
-    def _load_vae_weights(self, ckpt_path: str):
+    def _load_weights(self, dm,rl: str,):
        
-        print(f"Loading VAE weights from: {ckpt_path}")
-        checkpoint = torch.load(ckpt_path, map_location="cpu")
-        lightning_sd = checkpoint["state_dict"] 
-        new_sd = {}
-        for old_key, val in lightning_sd.items():
-            if old_key.startswith("vae."):
-                new_key = old_key[len("vae."):] 
-                new_sd[new_key] = val
-            else:
-                pass
-        missing, unexpected = self.vae.load_state_dict(new_sd, strict=False)
-        print("Load normal VAE weights done. missing:", missing, "unexpected:", unexpected)
+        if dm is not None:
+            print(f"Loading from: {dm}")
+            checkpoint = torch.load(dm, map_location="cpu")
+            state_dict = checkpoint["state_dict"]
+
+        vae_sd = {}
+        for old_key, val in state_dict.items():
+                if old_key.startswith("vae."):
+                    new_key = old_key[len("vae."):]
+                    vae_sd[new_key] = val
+        missing_vae, unexpected_vae = self.vae.load_state_dict(vae_sd, strict=False)
+        print("Loaded VAE from ckpt. missing:", missing_vae, "unexpected:", unexpected_vae)
         for param in self.vae.parameters():
                 param.requires_grad = False
-        if self.use_ema and "ema_state" in checkpoint:
-            ema_dict = checkpoint["ema_state"] 
-            for k, v in ema_dict.items():
-                if k in self.ema_policy.state_dict():
-                    self.ema_policy.state_dict()[k].copy_(v)
-                else:
-                    pass
 
-            print("Load EMA weights done from ckpt['ema_state'].")
-            for param in self.ema_policy.parameters():
-                param.requires_grad = False
-        else:
-            print("No 'ema_state' found in ckpt or self.use_ema=False. Skipping EMA load.")
+        dm_sd = {}
+        for old_key, val in state_dict.items():
+            if old_key.startswith("dm."):
+                new_key = old_key[len("dm."):]
+                dm_sd[new_key] = val
+        missing_dm, unexpected_dm = self.dm.load_state_dict(dm_sd, strict=False)
+        print("Loaded DM from ckpt. missing:", missing_dm, "unexpected:", unexpected_dm)
+
+        if self.use_ema and "ema_state" in checkpoint:
+                ema_dict = checkpoint["ema_state"]
+                for k, v in ema_dict.items():
+                    # 注意这里: 只要我们在ema_policy里找得到同名参数，就copy
+                    if k in self.ema_policy.state_dict():
+                        self.ema_policy.state_dict()[k].copy_(v)
+                        print("Loaded EMA weights from ckpt['ema_state'] into ema_policy.")
+                    elif self.use_ema:
+                        print("No 'ema_state' found in ckpt or use_ema=False. Skipping EMA load.")
+
+        if rl is not None:
+            # TODO: Load RL Model Weights
+            pass
 
     def configure_optimizers(self):  
         optim_params_dm = self.algo_config.optim_params["dm"]
@@ -92,15 +108,18 @@ class DMLightningModule(pl.LightningModule):
             
   
     def training_step(self, batch):
-        batch = batch_utils().parse_batch(batch)      #TODO:加上self.vae改成ema_policy           
+        batch = batch_utils().parse_batch(batch) 
+        aux_info = self.ema_policy.get_aux_info(batch)
+       
         
-        aux_info,unscaled_input,scaled_input = self.ema_policy.pre_vae(batch)
-        z = self.ema_policy.lstmvae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
-        loss = self.dm.compute_losses(z,aux_info)
-
-        self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+        z_0,log_prob= self.dm(batch,aux_info,self.algo_config)#NOTE:拿到z_0
+        trajectory = self.ema_policy.z2traj(z_0,aux_info)#翻译到物理空间0
+        r_value = self.rl(batch,trajectory,aux_info)
+        loss = -r_value * log_prob
         return loss
-     
+
+
+      
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)
@@ -110,7 +129,13 @@ class DMLightningModule(pl.LightningModule):
         loss = self.dm.compute_losses(z,aux_info)
 
         self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
-   
+
+
+
+
+
+
+    
     
       
     def reset_parameters(self):

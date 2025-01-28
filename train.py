@@ -5,7 +5,7 @@ from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global
 from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase
 from tbsim.configs.base import ExperimentConfig
-from utils.trainer_utils import prepare_trainer_and_data
+from utils.trainer_utils import prepare_trainer_and_data,prepare_for_guided_dm
 
 
 def train_vae(cfg,debug=False):
@@ -16,6 +16,9 @@ def train_dm(cfg,debug=False):
     trainer, datamodule,model,_,ckpt_dm = prepare_trainer_and_data(cfg,train_mode="dm",debug=cfg.train.debug)
     trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_dm)
 
+def train_guide_dm(cfg,debug=False):
+    trainer, datamodule,model, ckpt = prepare_for_guided_dm(cfg,debug=cfg.train.debug)
+    trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
 
 def create_wandb_dir(base_dir="logs"):
     """
@@ -38,6 +41,8 @@ def main(cfg):
         train_vae(cfg)
     elif cfg.train.mode == "dm":
         train_dm(cfg)
+    elif cfg.train.mode == 'guide_dm':
+        train_guide_dm(cfg)
     else:
         raise ValueError(f"Unknown train mode: {cfg.train.mode}") 
 

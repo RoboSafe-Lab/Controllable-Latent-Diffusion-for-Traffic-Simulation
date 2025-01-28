@@ -5,10 +5,11 @@ train:
   plt_interval: 500
   plt_indices: [5,15,25,35,45,55,65,75,85,95,105]
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-01-11 23:34:42/checkpoints/iter4_ep0_val/loss.ckpt'
-  checkpoint_dm: null
+  checkpoint_dm: null #'/home/visier/hazardforge/HazardForge/checkpoint/dm/loss.ckpt'
+  checkpoint_rl: null
 
   training:
-    batch_size: 128
+    batch_size: 4
     num_steps: 100000
     num_data_workers: 20
 
@@ -79,7 +80,7 @@ env:
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
     trajdata_max_agents_distance: !!float inf
-    trajdata_standardize_data: false            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
+    trajdata_standardize_data: true            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
     other_agents_num: null
 
   rasterizer:
@@ -103,6 +104,7 @@ env:
 algo:
   name: "dm_vae"
   eval_class: "dm_vae"
+  num_samp: 1
   coordinate: "agent_centric"
   scene_agent_max_neighbor_dist: 30
   map_encoder_model_arch: "resnet18"
@@ -152,7 +154,6 @@ algo:
   mlpres_hidden: 256
   mlp_blocks: 4
   vae:
-    
     hidden_size: 256
     latent_size: 128
   dynamics:
