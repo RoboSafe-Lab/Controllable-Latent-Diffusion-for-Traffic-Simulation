@@ -4,7 +4,7 @@ train:
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
   plt_indices: [5,15,25,35,45,55,65,75,85,95,105]
-  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-01-11 23:34:42/checkpoints/iter4_ep0_val/loss.ckpt'
+  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-01-29 01:09:48/checkpoints/iter4_ep0_val/loss.ckpt'
   checkpoint_dm: null #'/home/visier/hazardforge/HazardForge/checkpoint/dm/loss.ckpt'
   checkpoint_rl: null
 
@@ -151,7 +151,7 @@ algo:
   step_time: 0.1
   render_ego_history: false
   time_dim: 128
-  mlpres_hidden: 256
+  mlpres_hidden: 128
   mlp_blocks: 4
   vae:
     hidden_size: 256
@@ -205,6 +205,7 @@ algo:
       - [-0.237441, 1.118636, 0.489575, 0.868664, 0.222984]
       - [7.587311, 7.444489, 1.680952, 2.578202, 0.832563]
   trajectory_shape: [52,6]
+  hist_encoder_hidden: 128
   
 # root_dir: "/home/visier/hazardforge/visier_logs"
 # name: "test"

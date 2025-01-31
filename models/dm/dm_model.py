@@ -1,12 +1,11 @@
 
 import torch.nn as nn
-import torch.nn.functional as F
 import  torch
 from tbsim.models.diffuser_helpers import (extract,cosine_beta_schedule)
 
 from .dm_mlp import MLPResNetwork
 import tbsim.utils.tensor_utils as TensorUtils
-from tbsim.utils.diffuser_utils.progress import Progress,Silent
+
 from torch.distributions import Normal
 import torch
 import numpy as np
@@ -16,7 +15,6 @@ class DmModel(nn.Module):
         latent_dim,
         cond_dim,
         time_dim,
-        hidden_dim,
         num_res_blocks,
         n_timesteps=100,
        
@@ -49,7 +47,7 @@ class DmModel(nn.Module):
         self.register_buffer('posterior_mean_coef2',
             (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod))
 
-        self.model = MLPResNetwork(latent_dim,cond_dim,time_dim,hidden_dim,num_res_blocks)
+        self.model = MLPResNetwork(latent_dim,cond_dim,time_dim,num_res_blocks)
         
     def compute_losses(self,z,aux_info):
         batch_size = len(z)
@@ -57,10 +55,11 @@ class DmModel(nn.Module):
         noise_init = torch.randn_like(z) #[B,128]
         x_start = z
         x_noisy = self.q_sample(x_start=x_start,t=t,noise=noise_init) #[B,128]
-        t_inp = t
-        noise_recon = self.model(x_noisy, aux_info, t_inp)#[B,128]
-        loss = F.mse_loss(noise_recon,noise_init)
-        return loss
+        
+        noise_recon = self.model(x_noisy, aux_info, t)#[B,128]
+        z_0_recon = self.predict_start_from_noise(x_noisy,t,noise_recon)
+       
+        return z_0_recon
 
     def q_sample(self, x_start, t, noise):        
         sample = (

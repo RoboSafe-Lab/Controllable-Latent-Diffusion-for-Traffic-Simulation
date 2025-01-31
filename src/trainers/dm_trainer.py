@@ -6,6 +6,8 @@ import pytorch_lightning as pl
 from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
+import torch.nn.functional as F
+
 class DMLightningModule(pl.LightningModule):
     def __init__(self, algo_config,train_config, modality_shapes,vae_model_path=None):
 
@@ -17,17 +19,22 @@ class DMLightningModule(pl.LightningModule):
             algo_config.vae.latent_size,
             algo_config.cond_feat_dim,
             algo_config.time_dim,
-            algo_config.mlpres_hidden,
             algo_config.mlp_blocks,
             )
         self.use_ema = algo_config.use_ema
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
             self.ema = EMA(algo_config.ema_decay)
-            self.ema_policy = copy.deepcopy(self.vae)
-            self.ema_policy.requires_grad_(False)
+
+            self.ema_vae = copy.deepcopy(self.vae) 
+            self.ema_vae.requires_grad_(False)
+
+            self.ema_dm = copy.deepcopy(self.dm)
+            self.ema_dm.requires_grad_(False)
+
             self.ema_update_every = algo_config.ema_step
             self.ema_start_step = algo_config.ema_start_step
+
             self.reset_parameters()
         else:
             self.ema_policy=None
@@ -52,19 +59,13 @@ class DMLightningModule(pl.LightningModule):
         print("Load normal VAE weights done. missing:", missing, "unexpected:", unexpected)
         for param in self.vae.parameters():
                 param.requires_grad = False
-        if self.use_ema and "ema_state" in checkpoint:
-            ema_dict = checkpoint["ema_state"] 
-            for k, v in ema_dict.items():
-                if k in self.ema_policy.state_dict():
-                    self.ema_policy.state_dict()[k].copy_(v)
-                else:
-                    pass
 
-            print("Load EMA weights done from ckpt['ema_state'].")
-            for param in self.ema_policy.parameters():
-                param.requires_grad = False
-        else:
-            print("No 'ema_state' found in ckpt or self.use_ema=False. Skipping EMA load.")
+        if self.use_ema and ("ema_state" in checkpoint):
+            ema_state = checkpoint["ema_state"]
+            with torch.no_grad():
+                for name, param in self.ema_vae.named_parameters():
+                    if name in ema_state:
+                        param.copy_(ema_state[name])
 
     def configure_optimizers(self):  
         optim_params_dm = self.algo_config.optim_params["dm"]
@@ -92,49 +93,65 @@ class DMLightningModule(pl.LightningModule):
             
   
     def training_step(self, batch):
-        batch = batch_utils().parse_batch(batch)      #TODO:加上self.vae改成ema_policy           
+        batch = batch_utils().parse_batch(batch)     
         
-        aux_info,unscaled_input,scaled_input = self.ema_policy.pre_vae(batch)
-        z = self.ema_policy.lstmvae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
-        loss = self.dm.compute_losses(z,aux_info)
+        
+        aux_info,_,scaled_input = self.ema_vae.pre_vae(batch)
+        z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
+        z_0_recon = self.dm.compute_losses(z,aux_info)
+        traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
 
+        traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
+        scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
+
+        loss = F.mse_loss(traj_recon,scaled_input)
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+
         return loss
      
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)
        
-        aux_info,_,scaled_input = self.ema_policy.pre_vae(batch)
-        z = self.ema_policy.lstmvae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
-        loss = self.dm.compute_losses(z,aux_info)
+        aux_info,_,scaled_input = self.ema_vae.pre_vae(batch)
+        z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
+        z_0_recon = self.dm.compute_losses(z,aux_info)
+        traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
+
+        traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
+        scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
+
+        loss = F.mse_loss(traj_recon,scaled_input)
 
         self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
    
     
       
     def reset_parameters(self):
-        self.ema_policy.load_state_dict(self.vae.state_dict())
+        self.ema_dm.load_state_dict(self.dm.state_dict())
+
+    def on_after_optimizer_step(self, optimizer, optimizer_idx):
+        if self.use_ema and (self.global_step % self.ema_update_every == 0):
+            self.step_ema(self.global_step)
 
     def step_ema(self, step):
         if step < self.ema_start_step:
             self.reset_parameters()
             return
-        self.ema.update_model_average(self.ema_policy, self.vae)
+        self.ema.update_model_average(self.ema_dm, self.dm)
 
     def on_save_checkpoint(self, checkpoint):
         if self.use_ema:
             ema_state = {}
             with torch.no_grad():
-                for name,param in self.ema_policy.named_parameters():
+                for name,param in self.ema_dm.named_parameters():
                     ema_state[name]=param.detach().cpu().clone()
-            checkpoint["ema_state"] = ema_state
+            checkpoint["ema_state_dm"] = ema_state
 
     def on_load_checkpoint(self, checkpoint):
         if self.use_ema and ("ema_state" in checkpoint):
-            ema_state = checkpoint["ema_state"]
+            ema_state = checkpoint["ema_state_dm"]
             with torch.no_grad():
-                for name, param in self.ema_policy.named_parameters():
+                for name, param in self.ema_dm.named_parameters():
                     if name in ema_state:
                         param.copy_(ema_state[name])
-

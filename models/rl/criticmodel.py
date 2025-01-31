@@ -1,19 +1,20 @@
 import torch.nn as nn
 import torch
 import torch.nn.functional as F
-
+from l5kit.geometry import transform_points
 class CriticModel(nn.Module):
     def __init__(self,state_dim, hidden_dim,lr,collision_penalty):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(state_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, 1)  # 输出一个标量Value
+            nn.Linear(hidden_dim, 1)  
         )
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
         self.collision_penalty = collision_penalty
-    def forward(self, state):
-        return self.net(state)
+    def forward(self, batch,trajectory):
+
+        reward = self.compute_reward(batch,trajectory)
     
     def train_critic(self, states, returns):
    
@@ -26,27 +27,23 @@ class CriticModel(nn.Module):
         self.optimizer.step()
 
         return loss
-    def compute_reward(self, trajectory):
+    def compute_reward(self, batch,trajectory):
 
-        B, T, D = trajectory.shape
-        device = trajectory.device
-        
-        # 1) 简易超速惩罚
-        speeds = trajectory[..., 2]     # [B, T]
-        over_speed_mask = (speeds > self.speed_limit)
-        # 这里例子: 每次超速时刻记 -1 => summation
-        speed_penalty = over_speed_mask.sum(dim=1).float()  # shape [B], 超速多少次
-        
-        # 2) 碰撞惩罚(示例)
-        #   假设 "detect_collision" 是自己写的函数, 
-        #   这里我们就简单地把距离其它车<1视为碰撞 => -5 
-        #   如果你没有其它车信息,就跳过
-        collision_mask = self.detect_collision(trajectory)  # [B] bool
-        # 只要有一次碰撞 -> self.collision_penalty
-        collision_penalty_tensor = collision_mask.float() * self.collision_penalty  # shape [B]
+        raster_from_agent = batch['raster_from_agent']
 
-        # 3) 最终回报(整条轨迹的累计):
-        returns = -speed_penalty + collision_penalty_tensor
-        # 也可以加其它逻辑: 例如到达目标 => +10, etc.
+        drivable_map = batch['drivable_map']
+        raster_traj = transform_points(trajectory,raster_from_agent)
+        is_on_drivable = drivable_map[:, raster_traj[..., 1], raster_traj[..., 0]]
+        out_of_bounds_penalty = (is_on_drivable == 0).float().sum(dim=-1)
 
-        return returns
+        lane_points = batch['extras']['closest_lane_point'][..., :2]
+        trajectory_expanded = trajectory[:, :, None, None, :]  # [B, T, 1, 1, 2]
+
+        # lane_distances = torch.norm(trajectory_expanded - lane_points[:, None, :, :, :], dim=-1)  # [B, T, S_seg, S_point]
+        # # min_lane_distance, _ = torch.min(lane_distances.view(4, 52, -1), dim=-1)  # [B, T]
+
+        # lane_alignment_penalty = min_lane_distance.mean(dim=-1)  # [B]
+
+
+
+

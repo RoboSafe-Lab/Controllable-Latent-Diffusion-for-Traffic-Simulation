@@ -99,7 +99,7 @@ class LSTMVAE(nn.Module):
         h_ = self.fc3(z) #[B,hidden:128]
 
         z = z.unsqueeze(1)
-        z = z.repeat(1,seq_len,1) #[B,52,latent:64]
+        z = z.repeat(1,seq_len,1) #[B,52,latent:128]
         z = z.view(batch_size,seq_len,self.latent_size).to(self.device)
 
         hidden = (h_.unsqueeze(0).contiguous(), h_.unsqueeze(0).contiguous())#([1,B,hid],[1,B,hid])
@@ -119,10 +119,10 @@ class LSTMVAE(nn.Module):
 
         return z
     def getTraj(self,z,num_samp):
-        h_ = self.fc3(z)
+        h_ = self.fc3(z)#[B,256]
         z = z.unsqueeze(1)
-        z = z.repeat(1,52,1) #[B,52,latent:64]
-        z = z.view(128*num_samp,52,self.latent_size).to(self.device)
+        z = z.repeat(1,52,1) #[B,128]->[B,1,128]
+        #z = z.view(128*num_samp,52,self.latent_size).to(self.device)
         hidden = (h_.unsqueeze(0).contiguous(), h_.unsqueeze(0).contiguous())#([1,B,hid],[1,B,hid])
         reconstruct_output, _ = self.lstm_dec(z, hidden)
         return reconstruct_output
