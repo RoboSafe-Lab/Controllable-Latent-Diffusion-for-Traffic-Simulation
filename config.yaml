@@ -1,5 +1,5 @@
 train:
-  mode: "dm"
+  mode: "guide_dm"
   debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 500
@@ -153,6 +153,7 @@ algo:
   time_dim: 128
   mlpres_hidden: 128
   mlp_blocks: 4
+  num_infer: 3
   vae:
     hidden_size: 256
     latent_size: 128

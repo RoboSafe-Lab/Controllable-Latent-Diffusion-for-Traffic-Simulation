@@ -74,6 +74,71 @@ class DmModel(nn.Module):
                 extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
                 extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
             )
+  
+    def forward(self,batch,aux_info,algo_config):
+        batch_size = batch['history_positions'].size()[0]
+        shape = (batch_size,algo_config.num_samp,algo_config.vae.latent_size)#[B,N=1,128]
+        #NOTE:p_sample_loop:
+        
+        device = self.betas.device
+        x = torch.randn(shape, device=device)#[B,N,128]
+        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)#[B*N,128]
+        noise_all = torch.randn(
+            x.shape[0],  # B*N
+            self.n_timesteps,  # total steps
+            algo_config.vae.latent_size,  # D
+            device=device
+        )#[B,100,128]
+
+        aux_info = TensorUtils.repeat_by_expand_at(aux_info, repeats=algo_config.num_samp, dim=0)
+
+        steps = [i for i in reversed(range(0, self.n_timesteps, self.stride))]
+        log_probs = []
+        traj_data = []
+        for i in steps:
+            timesteps = torch.full((x.shape[0],), i, device=device, dtype=torch.long)#[99,99,99,99...B个]
+            noise_t = noise_all[:, i, :]#[B,128]
+            x_tminus1, mean_t, sigma_t  = self.x_minus1(x,timesteps,noise_t,aux_info)
+
+            step_info = {
+            "x_t": x,
+            "x_tminus1": x_tminus1,
+            "mean_t": mean_t,
+            "sigma_t": sigma_t,
+            "t":timesteps
+        }
+            traj_data.append(step_info)
+            # log_probs.append(log_prob_step)
+
+            x = x_tminus1 
+       
+        # #TODO:添加对于静止车辆的过滤
+        
+        
+        return x, traj_data
+       
+    def x_minus1(self,x,t,noise,aux_info):
+        b, *_, _ = *x.shape, x.device
+        model_mean, posterior_variance,model_log_variance = self.x_tminus1_mean(x=x, t=t,aux_info=aux_info)
+        sigma = (0.5 * model_log_variance).exp()
+        
+        
+        nonzero_mask = (1 - (t == 0).float()).reshape(b , *((1,) * (len(x.shape) - 1)))
+        
+        
+        noise = nonzero_mask * sigma * noise
+        x_tminus1 = model_mean + noise
+        # dist = Normal(model_mean,sigma)
+        # log_prob_step = dist.log_prob(x_tminus1).sum(dim=-1)
+        return x_tminus1,model_mean,sigma
+   
+    def x_tminus1_mean(self,x,t,aux_info):
+        noise_recon = self.model(x, aux_info, t)#[B,128]
+        x_0_recon = self.predict_start_from_noise(x, t=t, noise=noise_recon)#[B,128]
+        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start=x_0_recon, x_t=x, t=t)
+
+        return model_mean, posterior_variance, posterior_log_variance
+    
     def q_posterior(self, x_start, x_t, t):
         posterior_mean = (
             extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
@@ -83,65 +148,4 @@ class DmModel(nn.Module):
         posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
-    def forward(self,batch,aux_info,algo_config):
-        batch_size = batch['history_positions'].size()[0]
-        shape = (batch_size,algo_config.num_samp,algo_config.vae.latent_size)#[B,N,128]
-        return self.p_sample_loop(shape,batch,algo_config,aux_info)
-
-    def p_sample_loop(self,shape,batch,algo_config,aux_info):
-        #NOTE:p_sample_loop:
-        batch_size = shape[0]
-        device = self.betas.device
-        x = torch.randn(shape, device=device)#[B,N,128]
-        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)#[B*N,128]
-    
-        num_samp = algo_config.num_samp
-        aux_info = TensorUtils.repeat_by_expand_at(aux_info, repeats=num_samp, dim=0)
-
-        steps = [i for i in reversed(range(0, self.n_timesteps, self.stride))]
-        for i in steps:
-            timesteps = torch.full((batch_size*num_samp,), i, device=device, dtype=torch.long)
-            x, guide_losses = self.p_sample(x,timesteps,batch,algo_config,aux_info)
-            
-
-
-        z_0 = TensorUtils.reshape_dimensions(x, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
-        #TODO:添加对于静止车辆的过滤
-        
-        log_prob = ...
-        return z_0,log_prob
-       
-    def p_sample(self,x,t,batch,algo_config,aux_info):
-        b, *_, device = *x.shape, x.device
-        model_mean, posterior_variance, model_log_variance, q_posterior_in = self.p_mean_variance(x=x, t=t,aux_info=aux_info)
-        sigma = (0.5 * model_log_variance).exp()
-        x_initial = model_mean.clone().detach()
-        return_grad_of = x_initial
-        nonzero_mask = (1 - (t == 0).float()).reshape(b , *((1,) * (len(x.shape) - 1)))
-        x_initial.requires_grad_()
-        noise = torch.randn_like(x_initial)
-        noise = nonzero_mask * sigma * noise
-        x_out = x_initial + noise
-        return x_out
    
-
-    def p_mean_variance(self,x,t,aux_info):
-        t_inp = t
-        x_model_in = x
-        noise_recon = self.model(x_model_in, aux_info, t_inp)
-
-        x_tmp = x.detach()
-        x_0_recon = self.predict_start_from_noise(x_tmp, t=t, noise=noise_recon)
-        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start=x_0_recon, x_t=x_tmp, t=t)
-
-        return model_mean, posterior_variance, posterior_log_variance, (x_0_recon, x_tmp, t)
-    
-    def compute_log_q(self, x_prev, x_t, x_0_recon, t):
-    # same code snippet
-        model_mean, posterior_variance, _ = self.q_posterior(x_0_recon, x_t, t)
-        std = torch.sqrt(posterior_variance)
-        dist = torch.distributions.Normal(model_mean, std)
-        # if shape is [B, D], we do:
-        log_q_per_dim = dist.log_prob(x_prev)   # shape [B, D]
-        log_q = log_q_per_dim.sum(dim=-1)       # shape [B]
-        return log_q

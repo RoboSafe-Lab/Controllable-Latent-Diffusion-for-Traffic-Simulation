@@ -95,7 +95,6 @@ class DMLightningModule(pl.LightningModule):
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch)     
         
-        
         aux_info,_,scaled_input = self.ema_vae.pre_vae(batch)
         z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
         z_0_recon = self.dm.compute_losses(z,aux_info)
