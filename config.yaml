@@ -9,7 +9,7 @@ train:
   checkpoint_rl: null
 
   training:
-    batch_size: 4
+    batch_size: 128
     num_steps: 100000
     num_data_workers: 20
 
@@ -109,7 +109,7 @@ algo:
   scene_agent_max_neighbor_dist: 30
   map_encoder_model_arch: "resnet18"
   diffuser_model_arch: "TemporalMapUnet"
-  disable_control_on_stationary: "current_speed"
+  disable_control_on_stationary: ["any_speed","on_lane"]
   moving_speed_th: 0.5
   rasterized_history: true
   rasterized_map: true

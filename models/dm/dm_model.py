@@ -43,9 +43,9 @@ class DmModel(nn.Module):
         self.register_buffer('posterior_log_variance_clipped',
             torch.log(torch.clamp(posterior_variance, min=1e-20)))
         self.register_buffer('posterior_mean_coef1',
-            betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod))
+            betas * torch.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod))
         self.register_buffer('posterior_mean_coef2',
-            (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod))
+            (1. - alphas_cumprod_prev) * torch.sqrt(alphas) / (1. - alphas_cumprod))
 
         self.model = MLPResNetwork(latent_dim,cond_dim,time_dim,num_res_blocks)
         
@@ -118,7 +118,7 @@ class DmModel(nn.Module):
         return x, traj_data
        
     def x_minus1(self,x,t,noise,aux_info):
-        b, *_, _ = *x.shape, x.device
+        b = x.shape[0]
         model_mean, posterior_variance,model_log_variance = self.x_tminus1_mean(x=x, t=t,aux_info=aux_info)
         sigma = (0.5 * model_log_variance).exp()
         

@@ -7,6 +7,7 @@ from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
 from tbsim.utils.trajdata_utils import get_stationary_mask
+from models.rl.criticmodel import compute_reward
 class GuideDMLightningModule(pl.LightningModule):
     def __init__(self, algo_config,train_config, modality_shapes,vae_model_path):
 
@@ -14,8 +15,8 @@ class GuideDMLightningModule(pl.LightningModule):
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
         self.disable_control_on_stationary = algo_config.disable_control_on_stationary
-
-
+        
+        self.moving_speed_th = algo_config.moving_speed_th
 
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
         self.dm = DmModel(
@@ -173,7 +174,15 @@ class GuideDMLightningModule(pl.LightningModule):
         ratio_stacked = torch.exp(logp_new_stacked - logp_old_stacked)  # [T, B]
         ratio_sum = ratio_stacked.sum(dim=0)  # => [B]
         
-        reward = self.rl(batch, trajectory, aux_info) 
+        # self.stationary_mask = get_stationary_mask(batch, self.disable_control_on_stationary, self.moving_speed_th)
+        # trajectory_stationary = trajectory[self.stationary_mask]
+        # trajectory_stationary = self.ema_vae.descale_traj(trajectory_stationary,[4,5])
+        # trajectory_stationary[...]=0
+        # trajectory_stationary = self.ema_vae.scale_traj(trajectory_stationary,[4,5])
+        # trajectory[self.stationary_mask] = trajectory_stationary
+
+
+        reward = compute_reward(batch, trajectory, aux_info) 
         loss = -(ratio_sum * reward).mean() 
         
         self.log("train/loss", loss, on_step=True, logger=True)
@@ -185,14 +194,46 @@ class GuideDMLightningModule(pl.LightningModule):
             self.old_dm.load_state_dict(self.dm.state_dict())
   
     def validation_step(self, batch):
-        batch = batch_utils().parse_batch(batch)
-       
-        aux_info,_,scaled_input = self.ema_policy.pre_vae(batch)
-        z = self.ema_policy.lstmvae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
-        loss = self.dm.compute_losses(z,aux_info)
+        batch = batch_utils().parse_batch(batch) 
 
-        self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
+        aux_info,*_ = self.ema_vae.pre_vae(batch)
+        with torch.no_grad():
+            x0_old, traj_data_old = self.old_dm(batch, aux_info, self.algo_config)
+        trajectory = self.ema_vae.z2traj(x0_old,aux_info)#翻译到物理空间
+        
 
+        logp_new_list = []
+        logp_old_list = []
+        for step_info in traj_data_old:
+            x_t = step_info["x_t"]
+            x_tminus1 = step_info["x_tminus1"]
+            old_mean_t = step_info["mean_t"]
+            old_sigma_t = step_info["sigma_t"]
+            t = step_info["t"]
+
+            new_model_mean, _, model_log_variance = self.dm.x_tminus1_mean(x_t,t,aux_info)
+            new_sigma = (0.5 * model_log_variance).exp()
+            dist_new = torch.distributions.Normal(new_model_mean, new_sigma)
+            logp_new_t = dist_new.log_prob(x_tminus1).sum(dim=-1)  # [B]
+
+
+            dist_old = torch.distributions.Normal(old_mean_t, old_sigma_t)
+            logp_old_t = dist_old.log_prob(x_tminus1).sum(dim=-1)  # [B]
+
+            logp_new_list.append(logp_new_t)
+            logp_old_list.append(logp_old_t)
+
+        logp_new_stacked = torch.stack(logp_new_list, dim=0)
+        logp_old_stacked = torch.stack(logp_old_list, dim=0)  
+
+        ratio_stacked = torch.exp(logp_new_stacked - logp_old_stacked)  # [T, B]
+        ratio_sum = ratio_stacked.sum(dim=0)  # => [B]
+        
+        reward = self.rl(batch, trajectory, aux_info) 
+        loss = -(ratio_sum * reward).mean() 
+        
+        self.log("val/loss", loss, on_step=True, logger=True)
+      
 
 
 

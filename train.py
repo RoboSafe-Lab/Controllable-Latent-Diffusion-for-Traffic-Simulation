@@ -18,7 +18,37 @@ def train_dm(cfg,debug=False):
 
 def train_guide_dm(cfg,debug=False):
     trainer, datamodule,model, ckpt = prepare_for_guided_dm(cfg,debug=cfg.train.debug)
-    trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
+    import torch
+    from tbsim.utils.batch_utils import batch_utils
+    from tbsim.models.diffuser_helpers import convert_state_to_state_and_action
+    dataloader = datamodule.train_dataloader()
+
+
+    total_sum = None
+    total_sum_sq = None
+    total_count = 0
+    with torch.no_grad():
+        for batch in dataloader:
+            batch = batch_utils().parse_batch(batch) 
+            traj_state = torch.cat(
+                (batch["target_positions"][:, :52, :], batch["target_yaws"][:, :52, :]), dim=2)
+            traj_state_and_action = convert_state_to_state_and_action(traj_state, batch["curr_speed"], 0.1)
+            B, T, D = traj_state_and_action.shape
+            data = traj_state_and_action.reshape(-1, D)
+
+            if total_sum is None:
+                total_sum = data.sum(dim=0)
+                total_sum_sq = (data ** 2).sum(dim=0)
+            else:
+                total_sum += data.sum(dim=0)
+                total_sum_sq += (data ** 2).sum(dim=0)
+            total_count += data.size(0)
+
+    mean = total_sum / total_count
+    var = total_sum_sq / total_count - mean ** 2
+    std = torch.sqrt(var)
+    print(f"mean:{mean}, std:{std}")
+    # trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
 
 def create_wandb_dir(base_dir="logs"):
     """
