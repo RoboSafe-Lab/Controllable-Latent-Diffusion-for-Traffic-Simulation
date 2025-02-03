@@ -4,7 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 
 class Encoder(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers,cond_dim=256):
+    def __init__(self, input_size, hidden_size, num_layers,cond_dim=256,dropout_rate=0.2):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -14,6 +14,7 @@ class Encoder(nn.Module):
             num_layers,
             batch_first=True,
             bidirectional=False,
+            dropout=dropout_rate if num_layers > 1 else 0.0,
         )
         self.cond2hidden = nn.Linear(cond_dim, hidden_size)
     def forward(self, x,context):
@@ -26,7 +27,7 @@ class Encoder(nn.Module):
         return (hn, cn)
 
 class Decoder(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size, num_layers=1):
+    def __init__(self, input_size, hidden_size, output_size, num_layers=1, dropout_rate=0.2):
         super().__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -37,6 +38,7 @@ class Decoder(nn.Module):
             num_layers,
             batch_first=True,
             bidirectional=False,
+            dropout=dropout_rate if num_layers > 1 else 0.0,
         )
         self.fc = nn.Linear(hidden_size, output_size)
 
@@ -50,7 +52,7 @@ class LSTMVAE(nn.Module):
     """LSTM-based Variational Auto Encoder"""
 
     def __init__(
-        self, input_size, hidden_size, latent_size, output_size,device=torch.device("cuda")
+        self, input_size, hidden_size, latent_size, output_size,dropout_rate=0.2,device=torch.device("cuda")
     ):
         super(LSTMVAE, self).__init__()
         self.device = device
@@ -59,25 +61,26 @@ class LSTMVAE(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.latent_size = latent_size
-        self.num_layers = 1
-      
+        self.num_layers = 2
+
 
         # lstm ae
         self.lstm_enc = Encoder(
-            input_size=input_size, hidden_size=hidden_size, num_layers=self.num_layers,
+            input_size=input_size, hidden_size=hidden_size, num_layers=self.num_layers,dropout_rate=dropout_rate
         )
         self.lstm_dec = Decoder(
             input_size=latent_size,
             hidden_size=hidden_size,
             output_size=output_size,
             num_layers=self.num_layers,
+            dropout_rate=dropout_rate,
         )
 
         # Variational components
         self.mu = nn.Linear(self.hidden_size, self.latent_size)
         self.var = nn.Linear(self.hidden_size, self.latent_size)
         self.fc3 = nn.Linear(self.latent_size, self.hidden_size)
-      
+        self.dropout = nn.Dropout(p=0.2)
       
     def reparametize(self, mean, logvar):
         std = torch.exp(0.5 * logvar)
@@ -89,7 +92,7 @@ class LSTMVAE(nn.Module):
 
         batch_size, seq_len, _ = x.shape
         enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
-        enc_h = enc_hidden[0].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer:256]
+        enc_h = enc_hidden[0][-1].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer:256]
         
         mean = self.mu(enc_h) #[B,latent:128]
         logvar = self.var(enc_h)
@@ -97,12 +100,12 @@ class LSTMVAE(nn.Module):
         z = self.reparametize(mean,logvar)#[B,128]
 
         h_ = self.fc3(z) #[B,hidden:128]
-
+        h_ = self.dropout(h_)
         z = z.unsqueeze(1)
         z = z.repeat(1,seq_len,1) #[B,52,latent:128]
-        z = z.view(batch_size,seq_len,self.latent_size).to(self.device)
-
-        hidden = (h_.unsqueeze(0).contiguous(), h_.unsqueeze(0).contiguous())#([1,B,hid],[1,B,hid])
+        h0_dec = h_.unsqueeze(0).repeat(self.num_layers, 1, 1)
+        c0_dec = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        hidden = (h0_dec, c0_dec)
         reconstruct_output, hidden = self.lstm_dec(z, hidden)
 
         return reconstruct_output,mean,logvar

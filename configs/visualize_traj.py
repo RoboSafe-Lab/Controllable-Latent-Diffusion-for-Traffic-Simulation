@@ -4,62 +4,54 @@ import pytorch_lightning as pl
 import matplotlib
 import numpy as np
 import os
+from l5kit.geometry import transform_points
 # matplotlib.use('TkAgg')  # or another supported GUI backend
-
-
-def vis_in_out(maps,input, output, raster_from_agent,indices=[0]):
+def vis(batch):
+    idx=5
+    fig, ax = plt.subplots(1,1,figsize=(8,8))
+    image = batch['image'][idx].permute(1,2,0).cpu().numpy()
+    ax.imshow(image[...,-3:]*0.5+0.5)
+    target_position = batch['target_positions'][idx].cpu().numpy()
+    raster_from_agent = batch['raster_from_agent'][idx].cpu().numpy()
+    target_raster = transform_points(target_position,raster_from_agent)
+    ax.scatter(target_raster[:,0], target_raster[:,1], c='b', s=1, label='future')
+    print("111")
+def vis_in_out(image,input, output, raster_from_agent,indices=[0]):
    
-    raster_from_agent = raster_from_agent
-    maps_rgb_list = []
+   
+    image_rgb_list = []
     for idx in indices:
-        map_idx = maps[idx]
-        maps_rgb = map_idx.transpose(1, 2, 0)
-        maps_rgb = maps_rgb * 0.4 + 0.6
-        maps_rgb_list.append(maps_rgb)
+        image_rgb = image[idx].transpose(1, 2, 0)[...,-3:]
+        image_rgb = image_rgb * 0.5 + 0.5
+        image_rgb_list.append(image_rgb)
 
-
-    input = input[..., :2]
-    output = output[..., :2]
-    
-
-    B, T, _ = input.shape
-    ones = np.ones((B, T, 1))
-    fig, axes = plt.subplots(len(indices), 2, figsize=(12, 6 * len(indices)))
+    fig, axes = plt.subplots(len(indices), 2, figsize=(20, 10*len(indices)))
 
     if len(indices) == 1:
         axes = np.array([axes])
 
     for i, idx in enumerate(indices):
+        
+        input_raster = transform_points(input[i,:,:2],raster_from_agent[i])
+        output_raster = transform_points(output[i,:,:2],raster_from_agent[i])
+        image_rgb = image_rgb_list[i]
 
-        input_homo = np.concatenate([input, ones], axis=-1)
-        input_homo_T = np.transpose(input_homo, (0, 2, 1))
-        input_raster = np.matmul(raster_from_agent, input_homo_T)
-        input_raster = np.transpose(input_raster, (0, 2, 1))
-        input_xy = input_raster[..., :2][idx]
+        axes[i, 0].imshow(image_rgb, alpha=0.8)
+        axes[i, 0].scatter(input_raster[:, 0], input_raster[:, 1], c='b', s=1, label='Input Trajectory')
+       
+        axes[i, 0].scatter(input_raster[0, 0], input_raster[0, 1], marker='o', color='green', s=4, label='Start')
 
-  
-
-        output_homo = np.concatenate([output, ones], axis=-1)
-        output_homo_T = np.transpose(output_homo, (0, 2, 1))
-        output_raster = np.matmul(raster_from_agent, output_homo_T)
-        output_raster = np.transpose(output_raster, (0, 2, 1))
-        output_xy = output_raster[..., :2][idx]
-
-        maps_rgb = maps_rgb_list[i]
-
-
-        axes[i, 0].imshow(maps_rgb, alpha=0.8)
-        axes[i, 0].plot(input_xy[:, 0], input_xy[:, 1], color='red', linewidth=1, label='Input Trajectory')
-        axes[i, 0].plot(input_xy[0, 0], input_xy[0, 1], marker='o', color='green', markersize=2, label='Start')
         axes[i, 0].axis('off')
         if i == 0:
             axes[i, 0].legend()
         axes[i, 0].set_title(f"Input Trajectory (idx={idx})")
 
         # Plot output
-        axes[i, 1].imshow(maps_rgb, alpha=0.8)
-        axes[i, 1].plot(output_xy[:, 0], output_xy[:, 1], color='blue', linewidth=1, label='Output Trajectory')
-        axes[i, 1].plot(output_xy[0, 0], output_xy[0, 1], marker='o', color='green', markersize=2, label='Start')
+        axes[i, 1].imshow(image_rgb, alpha=0.8)
+        axes[i, 1].scatter(output_raster[:, 0], output_raster[:, 1], c='b', s=1, label='Output Trajectory')
+       
+        axes[i, 1].scatter(output_raster[0, 0], output_raster[0, 1], marker='o', color='green', s=4, label='Start')
+
         axes[i, 1].axis('off')
         if i == 0:
             axes[i, 1].legend()
@@ -68,66 +60,9 @@ def vis_in_out(maps,input, output, raster_from_agent,indices=[0]):
     plt.tight_layout()
     return fig
 
-# def vis_in_out_list(maps,input, outputs_list, raster_from_agent,indices=[0]):
-   
-#     raster_from_agent = raster_from_agent
-#     maps_rgb_list = []
-#     for idx in indices:
-#         map_idx = maps[idx]
-#         maps_rgb = map_idx.transpose(1, 2, 0)
-#         maps_rgb = maps_rgb * 0.4 + 0.6
-#         maps_rgb_list.append(maps_rgb)
 
 
-#     input = input[..., :2]
-#     output = output[..., :2]
-    
 
-#     B, T, _ = input.shape
-#     ones = np.ones((B, T, 1))
-#     fig, axes = plt.subplots(len(indices), 2, figsize=(12, 6 * len(indices)))
-
-#     if len(indices) == 1:
-#         axes = np.array([axes])
-
-#     for i, idx in enumerate(indices):
-
-#         input_homo = np.concatenate([input, ones], axis=-1)
-#         input_homo_T = np.transpose(input_homo, (0, 2, 1))
-#         input_raster = np.matmul(raster_from_agent, input_homo_T)
-#         input_raster = np.transpose(input_raster, (0, 2, 1))
-#         input_xy = input_raster[..., :2][idx]
-
-  
-
-#         output_homo = np.concatenate([output, ones], axis=-1)
-#         output_homo_T = np.transpose(output_homo, (0, 2, 1))
-#         output_raster = np.matmul(raster_from_agent, output_homo_T)
-#         output_raster = np.transpose(output_raster, (0, 2, 1))
-#         output_xy = output_raster[..., :2][idx]
-
-#         maps_rgb = maps_rgb_list[i]
-
-
-#         axes[i, 0].imshow(maps_rgb, alpha=0.8)
-#         axes[i, 0].plot(input_xy[:, 0], input_xy[:, 1], color='red', linewidth=1, label='Input Trajectory')
-#         axes[i, 0].plot(input_xy[0, 0], input_xy[0, 1], marker='o', color='green', markersize=2, label='Start')
-#         axes[i, 0].axis('off')
-#         if i == 0:
-#             axes[i, 0].legend()
-#         axes[i, 0].set_title(f"Input Trajectory (idx={idx})")
-
-#         # Plot output
-#         axes[i, 1].imshow(maps_rgb, alpha=0.8)
-#         axes[i, 1].plot(output_xy[:, 0], output_xy[:, 1], color='blue', linewidth=1, label='Output Trajectory')
-#         axes[i, 1].plot(output_xy[0, 0], output_xy[0, 1], marker='o', color='green', markersize=2, label='Start')
-#         axes[i, 1].axis('off')
-#         if i == 0:
-#             axes[i, 1].legend()
-#         axes[i, 1].set_title(f"Output Trajectory (idx={idx})")
-
-#     plt.tight_layout()
-#     return fig
 
 
 
@@ -147,10 +82,10 @@ class TrajectoryVisualizationCallback(pl.Callback):
             
             recon_traj = outputs['output'].detach().cpu().numpy()
             origin_traj = outputs['input'].detach().cpu().numpy()
-            maps = outputs['maps'].detach().cpu().numpy()
+            image = outputs['image'].detach().cpu().numpy()
             raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
 
-            fig = vis_in_out(maps, origin_traj, recon_traj,raster_from_agent, indices=self.indices)
+            fig = vis_in_out(image, origin_traj, recon_traj,raster_from_agent, indices=self.indices)
 
             save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
             fig.savefig(save_path, dpi=300)

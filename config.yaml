@@ -1,27 +1,27 @@
 train:
-  mode: "guide_dm"
-  debug: true
+  mode: "vae"
+  debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 500
-  plt_indices: [5,15,25,35,45,55,65,75,85,95,105]
-  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-01-29 01:09:48/checkpoints/iter4_ep0_val/loss.ckpt'
+  plt_interval: 1000
+  plt_indices: [5,15,25,35,45,55]
+  checkpoint_vae: null
   checkpoint_dm: null #'/home/visier/hazardforge/HazardForge/checkpoint/dm/loss.ckpt'
   checkpoint_rl: null
 
   training:
     batch_size: 128
-    num_steps: 100000
+    num_steps: 35000
     num_data_workers: 20
 
   validation:
     enabled: true
     batch_size: 128
     num_data_workers: 20
-    every_n_steps: 2
+    every_n_steps: 1000
     num_steps_per_epoch: 10  #每次validation时,运行多少step
   save:
     enabled: true
-    every_n_steps: 4
+    every_n_steps: 2000
     best_k: 1
  
 
@@ -156,7 +156,7 @@ algo:
   num_infer: 3
   vae:
     hidden_size: 256
-    latent_size: 128
+    latent_size: 64
   dynamics:
     type: "Unicycle"
     max_steer: 0.5
@@ -195,6 +195,7 @@ algo:
     diffuser:
       # - [2.135494, 0.003704, 0.970226, 0.000573, -0.002965, 0.000309] #from ctg
       # - [5.5444, 0.524067, 2.206522, 0.049049, 0.729327, 0.023765]
+   
       - [-3.9122, 0.0014352, -1.5173, -0.000072716, -0.0083405, -0.000060884] # standard=true
       - [9.5063, 1.5163, 3.1296, 0.1343, 2.0385, 0.0574]
       # - [-1167.1, -1179.8, -1.8901, -0.18935, -0.0083414, -0.035908] #standard = false

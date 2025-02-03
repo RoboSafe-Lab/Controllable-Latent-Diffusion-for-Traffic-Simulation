@@ -84,17 +84,19 @@ class VaeModel(nn.Module):
             self.dyn = None
 
     def forward(self, batch,beta):
-        aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
+        aux_info,scaled_input = self.pre_vae(batch)
+        # from configs.visualize_traj import vis
+        # vis(batch)
         scaled_actions,mu,logvar = self.lstmvae(scaled_input,aux_info["context"])
         scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
 
         descaled_output = self.descale_traj(scaled_output)
         losses = self.lstmvae.loss_function(scaled_output,scaled_input,mu,logvar,beta)
         return {"loss": losses['loss'], 
-                "input": unscaled_input,
-                "output":descaled_output,
+                "input": batch['target_positions'],
+                "output":descaled_output[...,:2],
                 "raster_from_agent":batch['raster_from_agent'],
-                "maps":batch['maps'],
+                "image":batch['image'],
                 }, losses
         
     def pre_vae(self,batch):
@@ -103,10 +105,10 @@ class VaeModel(nn.Module):
 
         unscaled_input = self.get_state_and_action_from_data_batch(batch)#[B,52,6]
         scaled_input = self.scale_traj(unscaled_input)
-        return aux_info,unscaled_input,scaled_input
+        return aux_info,scaled_input
 
     def get_aux_info(self,data_batch):
-        hist_availability = data_batch['history_availabilities']
+        hist_availability = data_batch['history_availabilities']#[B,31]
 
         hist_pos = data_batch['history_positions']#[B,31,2]
         hist_speed = data_batch['history_speeds']#[B,31]
@@ -115,7 +117,7 @@ class VaeModel(nn.Module):
         hist_pos[~hist_availability]=0.0
         hist_speed[~hist_availability] = 0.0 
         hist_yaw[~hist_availability] = 0.0
-        hist_speed = hist_speed.unsqueeze(-1)
+        hist_speed = hist_speed.unsqueeze(-1)#[B,31,1]
 
         hist_state = torch.cat([hist_pos, hist_speed, hist_yaw], dim=-1) #[B,31,4]
         hist_state = self.scale_traj(hist_state,[0,1,2,3])

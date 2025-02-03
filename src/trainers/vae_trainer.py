@@ -36,8 +36,8 @@ class VAELightningModule(pl.LightningModule):
             self.reset_parameters()
 
         self.beta = 0.01
-        self.beta_max = 0.1
-        self.anneal_steps = self.train_config.training.num_steps/3
+        self.beta_max = 1
+        self.anneal_steps = self.train_config.training.num_steps
 
         self.beta_inc = (self.beta_max - self.beta) / self.anneal_steps
         self.val_batch_size = self.train_config.validation.batch_size
@@ -72,7 +72,10 @@ class VAELightningModule(pl.LightningModule):
         return super().forward(*args, **kwargs)
   
     def training_step(self, batch):         
-        batch = batch_utils().parse_batch(batch)                 
+        batch = batch_utils().parse_batch(batch)     
+        # from configs.visualize_traj import vis
+        # vis(batch)
+
         outputs,losses = self.vae(batch,self.beta)
        
         self.log("train/kl_loss", losses["KLD"],                       on_step=True, on_epoch=False,batch_size=self.batch_size)

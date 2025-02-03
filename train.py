@@ -43,11 +43,13 @@ def train_guide_dm(cfg,debug=False):
                 total_sum += data.sum(dim=0)
                 total_sum_sq += (data ** 2).sum(dim=0)
             total_count += data.size(0)
-
+            if total_count%100==0:
+                print(total_count)
     mean = total_sum / total_count
     var = total_sum_sq / total_count - mean ** 2
     std = torch.sqrt(var)
     print(f"mean:{mean}, std:{std}")
+    #mean:tensor([ 3.9122e+00, -1.4352e-03,  1.5173e+00,  7.2863e-05,  8.3396e-03, 6.0973e-05]), std:tensor([9.5063, 1.5163, 3.1296, 0.1343, 2.0385, 0.0574])
     # trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
 
 def create_wandb_dir(base_dir="logs"):

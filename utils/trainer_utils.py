@@ -50,7 +50,8 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
         logger.experiment.config.update(cfg.to_dict())
     
         checkpoint_dir, media_dir = [os.path.join(wandb_base, subdir) for subdir in ("checkpoints", "media")]
-
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        os.makedirs(media_dir, exist_ok=True)
         if cfg.train.validation.enabled:##NOTE:  first validation then save
             assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
