@@ -54,8 +54,8 @@ class VAELightningModule(pl.LightningModule):
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             max_lr=1e-3,                  
-            steps_per_epoch=7000,         
-            epochs=10,                    
+            steps_per_epoch=7447,         
+            epochs=3,                    
             pct_start=0.3,                
             anneal_strategy='cos',        
             div_factor=25,                

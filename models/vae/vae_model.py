@@ -170,7 +170,7 @@ class VaeModel(nn.Module):
             initial_states=curr_states,
             actions=x_out,
             step_time=self.dt,
-            mode='parallel'
+            mode='chain'
         )
 
         x_out_all = torch.cat([x_out_state, x_out], dim=-1)

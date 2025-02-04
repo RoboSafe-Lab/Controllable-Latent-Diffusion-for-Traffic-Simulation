@@ -1,11 +1,11 @@
 train:
-  mode: "vae"
-  debug: false
+  mode: "dm"
+  debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 1000
   plt_indices: [5,15,25,35,45,55]
   checkpoint_vae: null
-  checkpoint_dm: null #'/home/visier/hazardforge/HazardForge/checkpoint/dm/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-04 14:01:51/checkpoints/iterstep=30000_epepoch=4_val/loss.ckpt'
   checkpoint_rl: null
 
   training:
@@ -129,7 +129,7 @@ algo:
   clip_denoised: false
   loss_type: "l2"
   use_ema: true
-  ema_step: 10
+  ema_step: 300
   ema_decay: 0.995
   ema_start_step: 4000
   diffuser_building_block: "concat"
@@ -209,6 +209,5 @@ algo:
   trajectory_shape: [52,6]
   hist_encoder_hidden: 128
   
-# root_dir: "/home/visier/hazardforge/visier_logs"
-# name: "test"
+
 seed: 1

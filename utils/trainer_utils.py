@@ -56,12 +56,21 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
             assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
             
+            # ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
+            #     dirpath=f"{checkpoint_dir}",
+            #     filename=f"iter{{step}}_ep{{epoch}}_val/loss",
+            #     auto_insert_metric_name=False,
+            #     save_top_k=cfg.train.save.best_k,
+            #     monitor='val/loss',
+            #     mode="min",
+            #     every_n_train_steps=cfg.train.save.every_n_steps,
+            #     verbose=True,
+                
+            # )
             ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=f"{checkpoint_dir}",
                 filename=f"iter{{step}}_ep{{epoch}}_val/loss",
-                auto_insert_metric_name=False,
-                save_top_k=cfg.train.save.best_k,
-                monitor='val/loss',
+                save_top_k=-1,
                 mode="min",
                 every_n_train_steps=cfg.train.save.every_n_steps,
                 verbose=True,
