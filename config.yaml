@@ -1,11 +1,11 @@
 train:
-  mode: "dm"
-  debug: true
+  mode: "vae"
+  debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 1000
   plt_indices: [5,15,25,35,45,55]
   checkpoint_vae: null
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-04 14:01:51/checkpoints/iterstep=30000_epepoch=4_val/loss.ckpt'
+  checkpoint_dm: null
   checkpoint_rl: null
 
   training:
@@ -155,8 +155,8 @@ algo:
   mlp_blocks: 4
   num_infer: 3
   vae:
-    hidden_size: 256
-    latent_size: 64
+    hidden_size: 128
+    latent_size: 2
   dynamics:
     type: "Unicycle"
     max_steer: 0.5

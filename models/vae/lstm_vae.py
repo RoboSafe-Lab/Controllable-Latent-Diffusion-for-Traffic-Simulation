@@ -24,7 +24,7 @@ class Encoder(nn.Module):
         c0 = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
 
         outputs, (hn, cn) = self.lstm(x, (h0, c0))
-        return (hn, cn)
+        return outputs
 
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1, dropout_rate=0.2):
@@ -90,21 +90,22 @@ class LSTMVAE(nn.Module):
 
     def forward(self, x, context):
 
-        batch_size, seq_len, _ = x.shape
-        enc_hidden = self.lstm_enc(x,context) #([1,B,hidden],[1,B,hidden])
-        enc_h = enc_hidden[0][-1].view(batch_size, self.hidden_size).to(self.device)#[B, hidden_layer:256]
+        B, T, _ = x.shape
+        env_outputs = self.lstm_enc(x,context) #  [B, T, hidden_size]
         
-        mean = self.mu(enc_h) #[B,latent:128]
-        logvar = self.var(enc_h)
+        mean = self.mu(env_outputs) #[B,latent:2]
+        logvar = self.var(env_outputs)
 
-        z = self.reparametize(mean,logvar)#[B,128]
+        z = self.reparametize(mean,logvar)#[B,T,2]
+        h0_dec = torch.zeros(self.num_layers, B, self.hidden_size, device=x.device)
+        c0_dec = torch.zeros(self.num_layers, B, self.hidden_size, device=x.device)
 
-        h_ = self.fc3(z) #[B,hidden:128]
-        h_ = self.dropout(h_)
-        z = z.unsqueeze(1)
-        z = z.repeat(1,seq_len,1) #[B,52,latent:128]
-        h0_dec = h_.unsqueeze(0).repeat(self.num_layers, 1, 1)
-        c0_dec = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
+        # h_ = self.fc3(z) #[B,hidden:128]
+        # h_ = self.dropout(h_)
+        # z = z.unsqueeze(1)
+        # z = z.repeat(1,seq_len,1) #[B,52,latent:128]
+        # h0_dec = h_.unsqueeze(0).repeat(self.num_layers, 1, 1)
+        # c0_dec = torch.zeros(self.num_layers, batch_size, self.hidden_size, device=x.device)
         hidden = (h0_dec, c0_dec)
         reconstruct_output, hidden = self.lstm_dec(z, hidden)
 
