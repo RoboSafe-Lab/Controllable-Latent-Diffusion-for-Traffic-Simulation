@@ -37,9 +37,9 @@ def vis_in_out(image,input, output, raster_from_agent,indices=[0]):
         image_rgb = image_rgb_list[i]
 
         axes[i, 0].imshow(image_rgb, alpha=0.8)
-        axes[i, 0].scatter(input_raster[:, 0], input_raster[:, 1], c='b', s=1, label='Input Trajectory')
+        axes[i, 0].scatter(input_raster[:, 0], input_raster[:, 1], c='b', s=0.2, label='Input Trajectory')
        
-        axes[i, 0].scatter(input_raster[0, 0], input_raster[0, 1], marker='o', color='green', s=4, label='Start')
+        # axes[i, 0].scatter(input_raster[0, 0], input_raster[0, 1], marker='o', color='green', s=4, label='Start')
 
         axes[i, 0].axis('off')
         if i == 0:
@@ -48,9 +48,9 @@ def vis_in_out(image,input, output, raster_from_agent,indices=[0]):
 
         # Plot output
         axes[i, 1].imshow(image_rgb, alpha=0.8)
-        axes[i, 1].scatter(output_raster[:, 0], output_raster[:, 1], c='b', s=1, label='Output Trajectory')
+        axes[i, 1].scatter(output_raster[:, 0], output_raster[:, 1], c='b', s=0.2, label='Output Trajectory')
        
-        axes[i, 1].scatter(output_raster[0, 0], output_raster[0, 1], marker='o', color='green', s=4, label='Start')
+        # axes[i, 1].scatter(output_raster[0, 0], output_raster[0, 1], marker='o', color='green', s=4, label='Start')
 
         axes[i, 1].axis('off')
         if i == 0:
@@ -80,12 +80,12 @@ class TrajectoryVisualizationCallback(pl.Callback):
                 outputs = outputs[0]
             # Ensure that we have trajectories to plot
             
-            recon_traj = outputs['output'].detach().cpu().numpy()
-            origin_traj = outputs['input'].detach().cpu().numpy()
+            recon = outputs['output'].detach().cpu().numpy()
+            origin = outputs['input'].detach().cpu().numpy()
             image = outputs['image'].detach().cpu().numpy()
             raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
 
-            fig = vis_in_out(image, origin_traj, recon_traj,raster_from_agent, indices=self.indices)
+            fig = vis_in_out(image, origin, recon,raster_from_agent, indices=self.indices)
 
             save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
             fig.savefig(save_path, dpi=300)

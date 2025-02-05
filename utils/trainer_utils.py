@@ -14,23 +14,16 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     datamodule = PassUnifiedDataModule(trajdata_config, cfg.train)
     datamodule.setup()
 
-    checkpoint_vae = cfg.train.checkpoint_vae
+
     checkpoint_dm = cfg.train.checkpoint_dm
-    if train_mode == "vae":
-        model = VAELightningModule( 
-            algo_config=cfg.algo,
-            train_config=cfg.train,
-            modality_shapes=datamodule.modality_shapes,
-                                    )
-    elif train_mode == "dm":
+    
+    if train_mode == "dm":
         model = DMLightningModule(
             algo_config=cfg.algo,
             train_config=cfg.train,
             modality_shapes=datamodule.modality_shapes,
-            vae_model_path = checkpoint_vae,
                            )
-    else:
-         raise ValueError(f"Unknown train mode: {train_mode}")
+    
     
     train_callbacks = []
     logger= None
@@ -111,7 +104,7 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     
     
 )
-    return trainer,datamodule, model,checkpoint_vae,checkpoint_dm
+    return trainer,datamodule, model,checkpoint_dm
             
 def create_wandb_dir(base_dir="logs"):
     
