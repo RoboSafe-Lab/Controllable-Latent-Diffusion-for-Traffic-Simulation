@@ -63,21 +63,15 @@ class DMLightningModule(pl.LightningModule):
   
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch)     
-        loss,origin,output = self.dm.compute_losses(batch)
-        # z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
-        # z_0_recon = self.dm.compute_losses(z,aux_info)
-        # traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
-
-        # traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
-        # scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
-
-        # loss = F.mse_loss(traj_recon,scaled_input)
+        loss,target,recon = self.dm.compute_losses(batch)
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
         return {"loss":loss,
-                "input": origin[...,:2],
-                "output":output[...,:2],
+                "target": target[...,:2],
+                'hist':batch['history_positions'],
+                
                 "raster_from_agent":batch['raster_from_agent'],
                 "image":batch['image'],
+                "output":recon[...,:2],
 
         }
         
@@ -86,7 +80,7 @@ class DMLightningModule(pl.LightningModule):
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)
        
-        loss = self.dm.compute_losses(batch)
+        loss,origin,output = self.dm.compute_losses(batch)
         # z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
         # z_0_recon = self.dm.compute_losses(z,aux_info)
         # traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)

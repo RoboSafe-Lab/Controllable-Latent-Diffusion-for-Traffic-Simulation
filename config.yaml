@@ -5,7 +5,7 @@ train:
   plt_interval: 1000
   plt_indices: [6,16,26,36,46,56]
   checkpoint_vae: null
-  checkpoint_dm: null
+  checkpoint_dm: "/home/visier/hazardforge/HazardForge/logs/2025-02-05 21:24:07/checkpoints/iterstep=12000_epepoch=1_val/loss.ckpt"
   checkpoint_rl: null
 
   training:

@@ -122,9 +122,9 @@ class DmModel(nn.Module):
         x_recon_action = self.predict_start_from_noise(x_action_noisy, t=t, noise=noise)
         x_recon = self.convert_action_to_state_and_action(x_recon_action, aux_info['curr_states'])
 
-        x_recon= x_recon * data_batch['target_availabilities'][:, :self.horizon].unsqueeze(-1)
-        x_start = x * data_batch['target_availabilities'][:, :self.horizon].unsqueeze(-1)
-        loss = F.mse_loss(x_start,x_recon)
+        x_recon = x_recon * data_batch['target_availabilities'][:, :self.horizon].unsqueeze(-1)
+        x_batch = x * data_batch['target_availabilities'][:, :self.horizon].unsqueeze(-1)
+        loss = F.mse_loss(x_batch[...,:4],x_recon[...,:4])
         future_recon = self.descale_traj(x_recon)
         return loss,future_traj,future_recon
 
