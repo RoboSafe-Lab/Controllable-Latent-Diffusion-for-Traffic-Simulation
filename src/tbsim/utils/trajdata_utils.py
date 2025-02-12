@@ -1104,7 +1104,7 @@ def get_stationary_mask(data_batch, disable_control_on_stationary, moving_speed_
     elif 'current_speed' in disable_control_on_stationary:
         # technically we are using one timestep from the current timestep
         # (B, (M), T), (B, (M), T) -> (B, (M))
-        moving_mask = ((full_fut_speed[...,0] > moving_speed_th).to(torch.float) * full_fut_valid[...,0]) > 0
+        moving_mask = ((full_fut_speed[...,0] > moving_speed_th).to(torch.float) * full_fut_valid[...,0]) >0
     else:
         moving_mask = torch.ones(*full_fut_valid.shape[:-1], dtype=torch.bool, device=full_fut_valid.device)
     stationary_mask = ~moving_mask

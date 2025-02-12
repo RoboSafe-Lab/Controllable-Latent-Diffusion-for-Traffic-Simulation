@@ -7,27 +7,23 @@ from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
 import torch.nn.functional as F
-
+from tbsim.utils.trajdata_utils import get_stationary_mask
+from configs.visualize_traj import vis
 class DMLightningModule(pl.LightningModule):
-    def __init__(self, algo_config,train_config, modality_shapes,vae_model_path=None):
+    def __init__(self, algo_config,train_config, modality_shapes,):
 
         super(DMLightningModule, self).__init__()
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
-        self.vae = VaeModel(algo_config,train_config, modality_shapes)
-        self.dm = DmModel(
-            algo_config.vae.latent_size,
-            algo_config.cond_feat_dim,
-            algo_config.time_dim,
-            algo_config.mlp_blocks,
-            )
+        self.moving_speed_th = algo_config.moving_speed_th
+        self.disable_control_on_stationary = algo_config.disable_control_on_stationary
+        self.num_samp = algo_config.num_samp
+        self.dm = DmModel(algo_config,modality_shapes)
+        
         self.use_ema = algo_config.use_ema
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
             self.ema = EMA(algo_config.ema_decay)
-
-            self.ema_vae = copy.deepcopy(self.vae) 
-            self.ema_vae.requires_grad_(False)
 
             self.ema_dm = copy.deepcopy(self.dm)
             self.ema_dm.requires_grad_(False)
@@ -39,33 +35,9 @@ class DMLightningModule(pl.LightningModule):
         else:
             self.ema_policy=None
 
-        if vae_model_path is not None:
-            self._load_vae_weights(vae_model_path)
+
     
 
-    def _load_vae_weights(self, ckpt_path: str):
-       
-        print(f"Loading VAE weights from: {ckpt_path}")
-        checkpoint = torch.load(ckpt_path, map_location="cpu")
-        lightning_sd = checkpoint["state_dict"] 
-        new_sd = {}
-        for old_key, val in lightning_sd.items():
-            if old_key.startswith("vae."):
-                new_key = old_key[len("vae."):] 
-                new_sd[new_key] = val
-            else:
-                pass
-        missing, unexpected = self.vae.load_state_dict(new_sd, strict=False)
-        print("Load normal VAE weights done. missing:", missing, "unexpected:", unexpected)
-        for param in self.vae.parameters():
-                param.requires_grad = False
-
-        if self.use_ema and ("ema_state" in checkpoint):
-            ema_state = checkpoint["ema_state"]
-            with torch.no_grad():
-                for name, param in self.ema_vae.named_parameters():
-                    if name in ema_state:
-                        param.copy_(ema_state[name])
 
     def configure_optimizers(self):  
         optim_params_dm = self.algo_config.optim_params["dm"]
@@ -91,36 +63,55 @@ class DMLightningModule(pl.LightningModule):
                                 },
                 }
             
-  
+    
     def training_step(self, batch):
-        batch = batch_utils().parse_batch(batch)     
-        
-        aux_info,_,scaled_input = self.ema_vae.pre_vae(batch)
-        z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
-        z_0_recon = self.dm.compute_losses(z,aux_info)
-        traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
+        batch = batch_utils().parse_batch(batch)    
+        # self.get_action(batch,self.num_samp)
 
-        traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
-        scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
-
-        loss = F.mse_loss(traj_recon,scaled_input)
+        loss,target,recon = self.dm.compute_losses(batch)
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
+        return {"loss":loss,
+                "target": target[...,:2],
+                'hist':batch['history_positions'],
+                
+                "raster_from_agent":batch['raster_from_agent'],
+                "image":batch['image'],
+                "output":recon[...,:2],
 
-        return loss
-     
+        }
+        
+    
+    def get_action(self,obs_dict,num_action_samples=1):
+        predict,image = self(obs_dict,num_samp=num_action_samples)
+        raster_from_agent = obs_dict['raster_from_agent']
+        vis(predict,image,raster_from_agent)
+        
+    def forward(self,obs_dict,num_samp):
+        
+        self.stationary_mask = get_stationary_mask(obs_dict,self.disable_control_on_stationary,self.moving_speed_th)
+        B = self.stationary_mask.shape[0]
+        stationary_mask_expand =  self.stationary_mask.unsqueeze(1).expand(B, num_samp).reshape(B*num_samp)
+        cur_policy = self.dm
+
+        if self.use_ema:
+            cur_policy = self.ema_dm
+            return cur_policy(obs_dict,stationary_mask_expand,self.algo_config)
+
+
+
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)
        
-        aux_info,_,scaled_input = self.ema_vae.pre_vae(batch)
-        z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
-        z_0_recon = self.dm.compute_losses(z,aux_info)
-        traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
+        loss,origin,output = self.dm.compute_losses(batch)
+        # z = self.ema_vae.lstmvae.getZ(scaled_input,aux_info["context"])#[B,128]
+        # z_0_recon = self.dm.compute_losses(z,aux_info)
+        # traj_recon = self.ema_vae.z2traj(z_0_recon,aux_info)
 
-        traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
-        scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
+        # traj_recon = traj_recon*batch['target_availabilities'].unsqueeze(-1)
+        # scaled_input = scaled_input*batch['target_availabilities'].unsqueeze(-1)
 
-        loss = F.mse_loss(traj_recon,scaled_input)
+        # loss = F.mse_loss(traj_recon,scaled_input)
 
         self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
    

@@ -124,17 +124,9 @@ class VaeModel(nn.Module):
 
         _, (h_n, _) = self.hist_encoder(hist_state)
         hist_features = h_n[-1]#[B,hid=128]
-        
-
-        # N = data_batch["history_positions"].size(0)
-        # device = data_batch["history_positions"].device
-        # cond_feat_in = torch.empty((N,0)).to(device)
 
         curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())#[B,4]
-        # curr_states_input = self.scale_traj(curr_states,[0,1,2,3])#[B,4]
-        # curr_state_feat = self.agent_state_encoder(curr_states_input)#[B,64]
-        # cond_feat_in = torch.cat([cond_feat_in, curr_state_feat], dim=-1)#[B,0+64]
-
+    
         image_batch = data_batch["image"]#[B,34,224,224]包含历史轨迹和邻居轨迹
         map_global_feat,_ = self.map_encoder(image_batch)#[B,256]
         cond_feat_in = torch.cat([hist_features, map_global_feat], dim=-1)#[B,128+256=384]

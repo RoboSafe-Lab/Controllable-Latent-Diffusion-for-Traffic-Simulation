@@ -289,7 +289,7 @@
         "num_episode_repeats": 1,
         "start_frame_index_each_episode": null,
         "seed_each_episode": null,
-        "ego_only": false,
+        "ego_only": true,
         "agent_eval_class": null,
         "ckpt_root_dir": "checkpoints/",
         "experience_hdf5_path": null,

@@ -1,3 +1,14 @@
+from tbsim.utils.diffuser_utils.progress import Progress
+progress = Progress(100)
+for i in range(100):
+    # print("i")
+    progress.update({'t': i})
+progress.close()
+
+
+'''
+
+
 from tbsim.utils.scene_edit_utils import UnifiedRenderer
 import numpy as np
 
@@ -96,3 +107,4 @@ for batch in tqdm(dataloader):
     # plot_agent_batch_all(batch)
      # Displays the plot
    
+'''
