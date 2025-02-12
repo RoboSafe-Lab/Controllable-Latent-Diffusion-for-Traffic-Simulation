@@ -134,13 +134,13 @@ class TemporalMapUnet(nn.Module):
             # [ B*N ] -> [ B*N*M ]
             time = TensorUtils.repeat_by_expand_at(time, repeats=M, dim=0)
         else:
-            cond_feat = aux_info['cond_feat']
-        x = einops.rearrange(x, 'b h t -> b t h')
+            cond_feat = aux_info['cond_feat']#[B*N,256]
+        x = einops.rearrange(x, 'b h t -> b t h')#[B,52,6]->[B,6,52]
         # print('rearrange x.size()', x.size())
         # print('time', time)
         # print('time.size()', time.size())
         # (B*N) -> (B*N, K_d)
-        t = self.time_mlp(time)
+        t = self.time_mlp(time)#[B*N,32]
         # print('t.size()', t.size())
         t = torch.cat([t, cond_feat], dim=-1)
         # raise
@@ -169,10 +169,10 @@ class TemporalMapUnet(nn.Module):
             x = upsample(x)
             
 
-        x = self.final_conv(x)
+        x = self.final_conv(x)#[B*N,2,52]
         # print('final conv x.size()', x.size())
 
-        x = einops.rearrange(x, 'b t h -> b h t')
+        x = einops.rearrange(x, 'b t h -> b h t')#[B*N,2,52]->[B*N,52,2]
         # print('output x.size()', x.size())
         if len_x_shape == 4:
             x = x.reshape(BN, M, T, -1)

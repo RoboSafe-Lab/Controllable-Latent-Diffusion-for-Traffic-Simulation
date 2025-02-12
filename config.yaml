@@ -1,27 +1,27 @@
 train:
-  mode: "dm"
-  debug: false
+  mode: "ppo"
+  debug: true
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 1000
-  plt_indices: [6,16,26,36,46,56]
+  plt_interval: 100000000
+  plt_indices: [3,13,23,33,43,53]
   checkpoint_vae: null
-  checkpoint_dm: "/home/visier/hazardforge/HazardForge/logs/2025-02-05 21:24:07/checkpoints/iterstep=12000_epepoch=1_val/loss.ckpt"
+  checkpoint_dm: null #'/home/visier/hazardforge/HazardForge/logs/2025-02-06 20:14:11/checkpoints/iterstep=28000_epepoch=3_val/loss.ckpt'
   checkpoint_rl: null
 
   training:
-    batch_size: 128
+    batch_size: 32
     num_steps: 35000
     num_data_workers: 20
 
   validation:
     enabled: true
-    batch_size: 128
+    batch_size: 64
     num_data_workers: 20
-    every_n_steps: 1000
+    every_n_steps: 500
     num_steps_per_epoch: 10  #每次validation时,运行多少step
   save:
     enabled: true
-    every_n_steps: 2000
+    every_n_steps: 1000
     best_k: 1
  
 
@@ -72,7 +72,7 @@ train:
 env:
   name: "trajdata"
   data_generation_params:
-    trajdata_centric: "agent"
+    trajdata_centric: "scene"
     trajdata_only_types:
       - "vehicle"
     trajdata_predict_types:
@@ -104,7 +104,8 @@ env:
 algo:
   name: "dm_vae"
   eval_class: "dm_vae"
-  num_samp: 1
+  num_samp: 5
+  update_old_model_every: 20
   coordinate: "agent_centric"
   scene_agent_max_neighbor_dist: 30
   map_encoder_model_arch: "resnet18"

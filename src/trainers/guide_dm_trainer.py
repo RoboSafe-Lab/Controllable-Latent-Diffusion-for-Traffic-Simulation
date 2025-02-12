@@ -9,7 +9,7 @@ from models.dm.dm_model import DmModel
 from tbsim.utils.trajdata_utils import get_stationary_mask
 from models.rl.criticmodel import compute_reward
 class GuideDMLightningModule(pl.LightningModule):
-    def __init__(self, algo_config,train_config, modality_shapes,vae_model_path):
+    def __init__(self, algo_config,train_config,modality_shapes):
 
         super(GuideDMLightningModule, self).__init__()
         self.algo_config = algo_config
@@ -17,24 +17,16 @@ class GuideDMLightningModule(pl.LightningModule):
         self.disable_control_on_stationary = algo_config.disable_control_on_stationary
         
         self.moving_speed_th = algo_config.moving_speed_th
+        self.num_samp = algo_config.num_samp
+   
+        self.dm = DmModel(algo_config,modality_shapes)
+       
 
-        self.vae = VaeModel(algo_config,train_config, modality_shapes)
-        self.dm = DmModel(
-            algo_config.vae.latent_size,
-            algo_config.cond_feat_dim,
-            algo_config.time_dim,
-            algo_config.mlp_blocks,
-            algo_config.num_infer,
-            )
-        self.rl = None
         self.use_ema = algo_config.use_ema
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
             self.ema = EMA(algo_config.ema_decay)
             
-            self.ema_vae = copy.deepcopy(self.vae) 
-            self.ema_vae.requires_grad_(False)
-
             self.ema_dm = copy.deepcopy(self.dm)
             self.ema_dm.requires_grad_(False)
 
@@ -43,76 +35,8 @@ class GuideDMLightningModule(pl.LightningModule):
             self.reset_parameters()
         else:
             self.ema_policy=None
-
-        if vae_model_path is not None:
-            self._load_vae_weights(vae_model_path)
         
-        self.old_dm = copy.deepcopy(self.dm)
         
-    def _load_vae_weights(self, ckpt_path: str):
-       
-        print(f"Loading VAE weights from: {ckpt_path}")
-        checkpoint = torch.load(ckpt_path, map_location="cpu")
-        lightning_sd = checkpoint["state_dict"] 
-        new_sd = {}
-        for old_key, val in lightning_sd.items():
-            if old_key.startswith("vae."):
-                new_key = old_key[len("vae."):] 
-                new_sd[new_key] = val
-            else:
-                pass
-        missing, unexpected = self.vae.load_state_dict(new_sd, strict=False)
-        print("Load normal VAE weights done. missing:", missing, "unexpected:", unexpected)
-        for param in self.vae.parameters():
-                param.requires_grad = False
-
-        if self.use_ema and ("ema_state" in checkpoint):
-            ema_state = checkpoint["ema_state"]
-            with torch.no_grad():
-                for name, param in self.ema_vae.named_parameters():
-                    if name in ema_state:
-                        param.copy_(ema_state[name])
-    '''
-    def _load_weights(self, dm,rl: str,):
-       
-        if dm is not None:
-            print(f"Loading from: {dm}")
-            checkpoint = torch.load(dm, map_location="cpu")
-            state_dict = checkpoint["state_dict"]
-
-        vae_sd = {}
-        for old_key, val in state_dict.items():
-                if old_key.startswith("vae."):
-                    new_key = old_key[len("vae."):]
-                    vae_sd[new_key] = val
-        missing_vae, unexpected_vae = self.vae.load_state_dict(vae_sd, strict=False)
-        print("Loaded VAE from ckpt. missing:", missing_vae, "unexpected:", unexpected_vae)
-        for param in self.vae.parameters():
-                param.requires_grad = False
-
-        dm_sd = {}
-        for old_key, val in state_dict.items():
-            if old_key.startswith("dm."):
-                new_key = old_key[len("dm."):]
-                dm_sd[new_key] = val
-        missing_dm, unexpected_dm = self.dm.load_state_dict(dm_sd, strict=False)
-        print("Loaded DM from ckpt. missing:", missing_dm, "unexpected:", unexpected_dm)
-
-        if self.use_ema and "ema_state" in checkpoint:
-                ema_dict = checkpoint["ema_state"]
-                for k, v in ema_dict.items():
-                    # 注意这里: 只要我们在ema_policy里找得到同名参数，就copy
-                    if k in self.ema_policy.state_dict():
-                        self.ema_policy.state_dict()[k].copy_(v)
-                        print("Loaded EMA weights from ckpt['ema_state'] into ema_policy.")
-                    elif self.use_ema:
-                        print("No 'ema_state' found in ckpt or use_ema=False. Skipping EMA load.")
-
-        if rl is not None:
-            # TODO: Load RL Model Weights
-            pass
-    '''
-
     def configure_optimizers(self):  
         optim_params_dm = self.algo_config.optim_params["dm"]
         optimizer = optim.Adam(
@@ -140,108 +64,65 @@ class GuideDMLightningModule(pl.LightningModule):
   
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
+        out_dict,image = self(batch,self.num_samp)
+        reward = compute_reward(out_dict['pred_traj'],batch)
 
-        aux_info,*_ = self.ema_vae.pre_vae(batch)
-        with torch.no_grad():
-            x0_old, traj_data_old = self.old_dm(batch, aux_info, self.algo_config)
-        trajectory = self.ema_vae.z2traj(x0_old,aux_info)#翻译到物理空间
+        diffusion = out_dict['diffusion']#[B,5,52,101,6]
+        model_means = out_dict['mean']  #[B,5,52,100,2]         
+        log_vars = out_dict['log_var'] #[B,5,1,100,1]
         
+        x_sample = diffusion[...,1:, -2:]
 
-        logp_new_list = []
-        logp_old_list = []
-        for step_info in traj_data_old:
-            x_t = step_info["x_t"]
-            x_tminus1 = step_info["x_tminus1"]
-            old_mean_t = step_info["mean_t"]
-            old_sigma_t = step_info["sigma_t"]
-            t = step_info["t"]
-
-            new_model_mean, _, model_log_variance = self.dm.x_tminus1_mean(x_t,t,aux_info)
-            new_sigma = (0.5 * model_log_variance).exp()
-            dist_new = torch.distributions.Normal(new_model_mean, new_sigma)
-            logp_new_t = dist_new.log_prob(x_tminus1).sum(dim=-1)  # [B]
-
-
-            dist_old = torch.distributions.Normal(old_mean_t, old_sigma_t)
-            logp_old_t = dist_old.log_prob(x_tminus1).sum(dim=-1)  # [B]
-
-            logp_new_list.append(logp_new_t)
-            logp_old_list.append(logp_old_t)
-
-        logp_new_stacked = torch.stack(logp_new_list, dim=0)
-        logp_old_stacked = torch.stack(logp_old_list, dim=0)  
-
-        ratio_stacked = torch.exp(logp_new_stacked - logp_old_stacked)  # [T, B]
-        ratio_sum = ratio_stacked.sum(dim=0)  # => [B]
+        std = (0.5*log_vars).exp()
+        dist = torch.distributions.Normal(model_means,std)
+        log_prob = dist.log_prob(x_sample)#[B,5,52,100,2]
         
-        # self.stationary_mask = get_stationary_mask(batch, self.disable_control_on_stationary, self.moving_speed_th)
-        # trajectory_stationary = trajectory[self.stationary_mask]
-        # trajectory_stationary = self.ema_vae.descale_traj(trajectory_stationary,[4,5])
-        # trajectory_stationary[...]=0
-        # trajectory_stationary = self.ema_vae.scale_traj(trajectory_stationary,[4,5])
-        # trajectory[self.stationary_mask] = trajectory_stationary
-
-
-        reward = compute_reward(batch, trajectory, aux_info) 
-        loss = -(ratio_sum * reward).mean() 
         
+        total_log_prob = log_prob.sum(dim=(-1,-2,-3))#[B,5]
+        total_log_prob_mean = total_log_prob.mean(dim=1)
+        loss = -(reward)* total_log_prob_mean
+        
+        loss = loss.mean()
         self.log("train/loss", loss, on_step=True, logger=True)
         return loss
+    
+    def forward(self,obs_dict,num_samp):
+        cur_policy = self.dm
+      
+        self.stationary_mask = get_stationary_mask(obs_dict,self.disable_control_on_stationary,self.moving_speed_th)#[B]
+        B = self.stationary_mask.shape[0]
+        stationary_mask_expand = self.stationary_mask.unsqueeze(1).expand(B,num_samp).reshape(B*num_samp)#[B*N]
+        return cur_policy(obs_dict,stationary_mask_expand,self.algo_config)
+    
+
+        
 
 
-    def on_after_backward(self):
-        if (self.global_step % 10) == 0:
-            self.old_dm.load_state_dict(self.dm.state_dict())
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
+        out_dict,image = self(batch,self.num_samp)
+        reward = compute_reward(out_dict['pred_traj'],batch)
 
-        aux_info,*_ = self.ema_vae.pre_vae(batch)
-        with torch.no_grad():
-            x0_old, traj_data_old = self.old_dm(batch, aux_info, self.algo_config)
-        trajectory = self.ema_vae.z2traj(x0_old,aux_info)#翻译到物理空间
+        diffusion = out_dict['diffusion']#[B,5,52,101,6]
+        model_means = out_dict['mean']  #[B,5,52,100,2]         
+        log_vars = out_dict['log_var'] #[B,5,1,100,1]
         
+        x_sample = diffusion[...,1:, -2:]
 
-        logp_new_list = []
-        logp_old_list = []
-        for step_info in traj_data_old:
-            x_t = step_info["x_t"]
-            x_tminus1 = step_info["x_tminus1"]
-            old_mean_t = step_info["mean_t"]
-            old_sigma_t = step_info["sigma_t"]
-            t = step_info["t"]
-
-            new_model_mean, _, model_log_variance = self.dm.x_tminus1_mean(x_t,t,aux_info)
-            new_sigma = (0.5 * model_log_variance).exp()
-            dist_new = torch.distributions.Normal(new_model_mean, new_sigma)
-            logp_new_t = dist_new.log_prob(x_tminus1).sum(dim=-1)  # [B]
-
-
-            dist_old = torch.distributions.Normal(old_mean_t, old_sigma_t)
-            logp_old_t = dist_old.log_prob(x_tminus1).sum(dim=-1)  # [B]
-
-            logp_new_list.append(logp_new_t)
-            logp_old_list.append(logp_old_t)
-
-        logp_new_stacked = torch.stack(logp_new_list, dim=0)
-        logp_old_stacked = torch.stack(logp_old_list, dim=0)  
-
-        ratio_stacked = torch.exp(logp_new_stacked - logp_old_stacked)  # [T, B]
-        ratio_sum = ratio_stacked.sum(dim=0)  # => [B]
+        std = (0.5*log_vars).exp()
+        dist = torch.distributions.Normal(model_means,std)
+        log_prob = dist.log_prob(x_sample)#[B,5,52,100,2]
         
-        reward = self.rl(batch, trajectory, aux_info) 
-        loss = -(ratio_sum * reward).mean() 
         
+        total_log_prob = log_prob.sum(dim=(-1,-2,-3))#[B,5]
+        total_log_prob_mean = total_log_prob.mean(dim=1)
+        loss = -(reward)* total_log_prob_mean
+        
+        loss = loss.mean()
         self.log("val/loss", loss, on_step=True, logger=True)
       
 
-
-
-
-
-    
-    
-      
     def reset_parameters(self):
         self.ema_dm.load_state_dict(self.dm.state_dict())
 
@@ -264,10 +145,17 @@ class GuideDMLightningModule(pl.LightningModule):
             checkpoint["ema_state_dm"] = ema_state
 
     def on_load_checkpoint(self, checkpoint):
-        if self.use_ema and ("ema_state" in checkpoint):
+        if self.use_ema and ("ema_state_dm" in checkpoint):
             ema_state = checkpoint["ema_state_dm"]
             with torch.no_grad():
                 for name, param in self.ema_dm.named_parameters():
                     if name in ema_state:
                         param.copy_(ema_state[name])
+            
+                    
+              
 
+      # def state_dict(self, *args, **kwargs):
+    #     sd = super().state_dict(*args, **kwargs)
+    #     sd = {k: v for k, v in sd.items() if not k.startswith("old_dm.")}
+    #     return sd

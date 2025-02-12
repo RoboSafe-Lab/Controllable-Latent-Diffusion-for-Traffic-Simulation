@@ -640,7 +640,7 @@ def unicyle_forward_dynamics(
     
     # ------------------------------------------------------------ #
     elif mode == 'chain':
-        num_steps = actions.shape[-2]
+        num_steps = actions.shape[-2]#52
         x_all = [initial_states] + [None] * num_steps
         for t in range(num_steps):
             x = x_all[t]

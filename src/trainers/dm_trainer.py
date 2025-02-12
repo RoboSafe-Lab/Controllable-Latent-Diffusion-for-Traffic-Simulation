@@ -7,14 +7,17 @@ from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
 import torch.nn.functional as F
-
+from tbsim.utils.trajdata_utils import get_stationary_mask
+from configs.visualize_traj import vis
 class DMLightningModule(pl.LightningModule):
     def __init__(self, algo_config,train_config, modality_shapes,):
 
         super(DMLightningModule, self).__init__()
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
-      
+        self.moving_speed_th = algo_config.moving_speed_th
+        self.disable_control_on_stationary = algo_config.disable_control_on_stationary
+        self.num_samp = algo_config.num_samp
         self.dm = DmModel(algo_config,modality_shapes)
         
         self.use_ema = algo_config.use_ema
@@ -60,9 +63,11 @@ class DMLightningModule(pl.LightningModule):
                                 },
                 }
             
-  
+    
     def training_step(self, batch):
-        batch = batch_utils().parse_batch(batch)     
+        batch = batch_utils().parse_batch(batch)    
+        # self.get_action(batch,self.num_samp)
+
         loss,target,recon = self.dm.compute_losses(batch)
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
         return {"loss":loss,
@@ -75,7 +80,25 @@ class DMLightningModule(pl.LightningModule):
 
         }
         
-     
+    
+    def get_action(self,obs_dict,num_action_samples=1):
+        predict,image = self(obs_dict,num_samp=num_action_samples)
+        raster_from_agent = obs_dict['raster_from_agent']
+        vis(predict,image,raster_from_agent)
+        
+    def forward(self,obs_dict,num_samp):
+        
+        self.stationary_mask = get_stationary_mask(obs_dict,self.disable_control_on_stationary,self.moving_speed_th)
+        B = self.stationary_mask.shape[0]
+        stationary_mask_expand =  self.stationary_mask.unsqueeze(1).expand(B, num_samp).reshape(B*num_samp)
+        cur_policy = self.dm
+
+        if self.use_ema:
+            cur_policy = self.ema_dm
+            return cur_policy(obs_dict,stationary_mask_expand,self.algo_config)
+
+
+
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)

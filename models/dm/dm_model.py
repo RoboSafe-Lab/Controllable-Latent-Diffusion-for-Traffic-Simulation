@@ -7,9 +7,10 @@ import tbsim.utils.tensor_utils as TensorUtils
 import torch
 import numpy as np
 import tbsim.models.base_models as base_models
-from tbsim.models.diffuser_helpers import unicyle_forward_dynamics,MapEncoder,convert_state_to_state_and_action,AgentHistoryEncoder
+from tbsim.models.diffuser_helpers import unicyle_forward_dynamics,MapEncoder,convert_state_to_state_and_action
 import torch.nn.functional as F
 import tbsim.dynamics as dynamics
+from tbsim.utils.diffuser_utils.progress import Progress, Silent
 from tbsim.models.temporal import TemporalMapUnet
 class DmModel(nn.Module):
     def __init__(
@@ -147,45 +148,9 @@ class DmModel(nn.Module):
         aux_info = {
             'cond_feat': cond_feat, 
             'curr_states': curr_states,
+            'image':image_batch,
         }
         return aux_info
-
-
-
-
-
-        '''
-        hist_availability = data_batch['history_availabilities']#[B,31]
-
-        hist_pos = data_batch['history_positions']#[B,31,2]
-        hist_speed = data_batch['history_speeds']#[B,31]
-        hist_yaw = data_batch['history_yaws']#[B,31,1]
-
-        hist_pos[~hist_availability]=0.0
-        hist_speed[~hist_availability] = 0.0 
-        hist_yaw[~hist_availability] = 0.0
-        hist_speed = hist_speed.unsqueeze(-1)#[B,31,1]
-
-        hist_state = torch.cat([hist_pos, hist_speed, hist_yaw], dim=-1) #[B,31,4]
-        hist_state = self.scale_traj(hist_state,[0,1,2,3])
-        _, (h_n, _) = self.hist_encoder(hist_state)
-        hist_features = h_n[-1]#[B,hid=128]
-        agent_hist_feat = self.agent_hist_encoder(data_batch["history_positions"],
-                                                      data_batch["history_yaws"],
-                                                      data_batch["history_speeds"],
-                                                      data_batch["extent"],
-                                                      data_batch["history_availabilities"])
-        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())#[B,4]
-        image_batch = data_batch["image"]#[B,34,224,224]包含历史轨迹和邻居轨迹
-        map_global_feat,_ = self.map_encoder(image_batch)#[B,256]
-        cond_feat_in = torch.cat([hist_features, map_global_feat], dim=-1)#[B,128+256=384]
-        cond_feat = self.process_cond_mlp(cond_feat_in)#[B,256]
-        aux_info = {
-            'cond_feat':cond_feat,
-            'curr_states':curr_states
-        }
-        return aux_info
-        '''
         
     def get_state_and_action_from_data_batch(self, data_batch, chosen_inds=[]):
         '''
@@ -262,68 +227,82 @@ class DmModel(nn.Module):
                 extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
             )
   
-    def forward(self,batch,aux_info,algo_config):
-        batch_size = batch['history_positions'].size()[0]
-        shape = (batch_size,algo_config.num_samp,algo_config.vae.latent_size)#[B,N=1,128]
-        #NOTE:p_sample_loop:
+    def forward(self,data_batch,stationary_mask,algo_config):
+        aux_info = self.get_aux_info(data_batch)
+        self.stationary_mask = stationary_mask #[B*num_samp]
         
+        out_dict = self.sample_traj(data_batch,algo_config,aux_info)
+        traj_init = out_dict['pred_traj']
+        traj = self.descale_traj(traj_init)
+        out_dict['pred_traj']=traj
+        return out_dict,aux_info['image']
+
+    def sample_traj(self,data_batch,algo_config,aux_info):
+        batch_size = data_batch['history_positions'].size()[0]
+        num_samp = algo_config.num_samp
+        shape = (batch_size,algo_config.num_samp,algo_config.horizon,algo_config.transition_in_dim)#[B,N=1,52,6]
+        #NOTE:p_sample_loop:      
         device = self.betas.device
-        x = torch.randn(shape, device=device)#[B,N,128]
-        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)#[B*N,128]
-        noise_all = torch.randn(
-            x.shape[0],  # B*N
-            self.n_timesteps,  # total steps
-            algo_config.vae.latent_size,  # D
-            device=device
-        )#[B,100,128]
 
-        aux_info = TensorUtils.repeat_by_expand_at(aux_info, repeats=algo_config.num_samp, dim=0)
-
+        x = torch.randn(shape, device=device)#[B,N,52,6]
+        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)#[B*N,52,6]
+        aux_info = TensorUtils.repeat_by_expand_at(aux_info, repeats=num_samp, dim=0)
+        # progress = Progress(self.n_timesteps)
+        diffusion = [x]
+        model_mean_list=[]
+        log_var_list = []
         steps = [i for i in reversed(range(0, self.n_timesteps, self.stride))]
-        log_probs = []
-        traj_data = []
+
         for i in steps:
-            timesteps = torch.full((x.shape[0],), i, device=device, dtype=torch.long)#[99,99,99,99...B个]
-            noise_t = noise_all[:, i, :]#[B,128]
-            x_tminus1, mean_t, sigma_t  = self.x_minus1(x,timesteps,noise_t,aux_info)
+            timesteps = torch.full((batch_size*algo_config.num_samp,), i, device=device, dtype=torch.long)#[99,99,99,99...B*num_samp个]
+            x,model_mean,posterior_log_variance = self.x_Tminus1(x,timesteps,aux_info)
+            diffusion.append(x)
+            model_mean_list.append(model_mean)
+            log_var_list.append(posterior_log_variance)
+        # progress.close()
 
-            step_info = {
-            "x_t": x,
-            "x_tminus1": x_tminus1,
-            "mean_t": mean_t,
-            "sigma_t": sigma_t,
-            "t":timesteps
-        }
-            traj_data.append(step_info)
-            # log_probs.append(log_prob_step)
+        x = TensorUtils.reshape_dimensions(x, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))#[B,_numsamp,52,6]
+        out_dict = {'pred_traj' : x}
 
-            x = x_tminus1 
+        diffusion = [TensorUtils.reshape_dimensions(cur_diff, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp)) for cur_diff in diffusion]
+        out_dict['diffusion'] = torch.stack(diffusion, dim=3)
+
+        model_mean_list = [TensorUtils.reshape_dimensions(mean, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp)) for mean in model_mean_list]
+
+        out_dict['mean']=torch.stack(model_mean_list,dim=3)
+
+        log_var_list = [TensorUtils.reshape_dimensions(plv, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp)) for plv in log_var_list]
+        out_dict['log_var']=torch.stack(log_var_list,dim=3)
+        return out_dict      
        
-        # #TODO:添加对于静止车辆的过滤
-        
-        
-        return x, traj_data
-       
-    def x_minus1(self,x,t,noise,aux_info):
-        b = x.shape[0]
-        model_mean, posterior_variance,model_log_variance = self.x_tminus1_mean(x=x, t=t,aux_info=aux_info)
-        sigma = (0.5 * model_log_variance).exp()
-        
-        
-        nonzero_mask = (1 - (t == 0).float()).reshape(b , *((1,) * (len(x.shape) - 1)))
-        
-        
+    def x_Tminus1(self,x,t,aux_info):
+        b, *_, device = *x.shape, x.device
+        model_mean, posterior_variance, posterior_log_variance = self.x_Tminus1_mean_variance(x, t, aux_info)
+
+        sigma = (0.5 * posterior_log_variance).exp()
+        nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1)))
+
+        noise = torch.randn_like(model_mean)
         noise = nonzero_mask * sigma * noise
-        x_tminus1 = model_mean + noise
-        # dist = Normal(model_mean,sigma)
-        # log_prob_step = dist.log_prob(x_tminus1).sum(dim=-1)
-        return x_tminus1,model_mean,sigma
-   
-    def x_tminus1_mean(self,x,t,aux_info):
-        noise_recon = self.model(x, aux_info, t)#[B,128]
-        x_0_recon = self.predict_start_from_noise(x, t=t, noise=noise_recon)#[B,128]
-        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start=x_0_recon, x_t=x, t=t)
+        x_out = model_mean + noise
+        x_out = self.convert_action_to_state_and_action(x_out, aux_info['curr_states'])
+        return x_out,model_mean,posterior_log_variance
 
+   
+    def x_Tminus1_mean_variance(self,x,t,aux_info):
+        noise_recon = self.model(x, aux_info, t)#[B*N,52,2]
+        x_tmp = x[...,4:]
+        x_0_recon = self.predict_start_from_noise(x_tmp, t=t, noise=noise_recon)
+
+        x_recon_stationary = x_0_recon[self.stationary_mask]
+        x_recon_stationary = self.descale_traj(x_recon_stationary, [4, 5])
+        x_recon_stationary[...] = 0
+        x_recon_stationary = self.scale_traj(x_recon_stationary, [4, 5])
+        x_0_recon[self.stationary_mask] = x_recon_stationary
+        model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start=x_0_recon, x_t=x_tmp, t=t)
+
+
+   
         return model_mean, posterior_variance, posterior_log_variance
     
     def q_posterior(self, x_start, x_t, t):
@@ -356,9 +335,8 @@ class DmModel(nn.Module):
             initial_states=curr_states,#(B,4)
             actions=x_out,
             step_time=self.dt,
-            mode='chain'
+            mode='parallel'
         )
-
         x_out_all = torch.cat([x_out_state, x_out], dim=-1)
         if scaled_input and not descaled_output:
             x_out_all = self.scale_traj(x_out_all, [0, 1, 2, 3, 4, 5])

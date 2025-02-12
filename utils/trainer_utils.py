@@ -119,14 +119,14 @@ def prepare_for_guided_dm(cfg,debug=False):
     datamodule = PassUnifiedDataModule(trajdata_config, cfg.train)
     datamodule.setup()
 
-    checkpoint_vae = cfg.train.checkpoint_vae
+   
     checkpoint_dm = cfg.train.checkpoint_dm
     # checkpoint_rl = cfg.train.checkpoint_rl
     model = GuideDMLightningModule(
         algo_config=cfg.algo,
         train_config=cfg.train,
         modality_shapes=datamodule.modality_shapes,
-        vae_model_path = checkpoint_vae 
+      
                     )
 
     
@@ -179,7 +179,7 @@ def prepare_for_guided_dm(cfg,debug=False):
         train_callbacks.append(vis_callback)
 
     trainer = pl.Trainer(
-    
+    precision='16-mixed',
     default_root_dir=checkpoint_dir,
     # checkpointing
     enable_checkpointing=cfg.train.save.enabled,

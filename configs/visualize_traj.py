@@ -6,16 +6,41 @@ import numpy as np
 import os
 from l5kit.geometry import transform_points
 # matplotlib.use('TkAgg')  # or another supported GUI backend
-# def vis(batch):
-#     idx=5
-#     fig, ax = plt.subplots(1,1,figsize=(8,8))
-#     image = batch['image'][idx].permute(1,2,0).cpu().numpy()
-#     ax.imshow(image[...,-3:]*0.5+0.5)
-#     target_position = batch['target_positions'][idx].cpu().numpy()
-#     raster_from_agent = batch['raster_from_agent'][idx].cpu().numpy()
-#     target_raster = transform_points(target_position,raster_from_agent)
-#     ax.scatter(target_raster[:,0], target_raster[:,1], c='b', s=1, label='future')
-#     print("111")
+def vis(pred,image,raster):
+    idx1=3
+    idx2=15
+    idx3=16
+    fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(24,8))
+
+    raster = raster.detach().cpu().numpy()
+    image = image.permute(0,2,3,1).detach().cpu().numpy()
+    pred = pred.detach().cpu().numpy()
+    positions = pred[...,:2]
+
+    num_samp = pred.shape[1]
+
+    ax1.imshow(image[idx1,:,:,-3:]*0.5+0.5)
+
+    for i in range(num_samp):
+        sample = positions[:,i,:,:]
+        recon_raster = transform_points(sample,raster)
+        ax1.scatter(recon_raster[idx1,:,0],recon_raster[idx1,:,1],c='b',s=0.2,label='future')
+
+    ax2.imshow(image[idx2,:,:,-3:]*0.5+0.5)
+
+    for i in range(num_samp):
+        sample = positions[:,i,:,:]
+        recon_raster = transform_points(sample,raster)
+        ax2.scatter(recon_raster[idx2,:,0],recon_raster[idx2,:,1],c='b',s=0.2,label='future')
+
+    ax3.imshow(image[idx1,:,:,-3:]*0.5+0.5)
+
+    for i in range(num_samp):
+        sample = positions[:,i,:,:]
+        recon_raster = transform_points(sample,raster)
+        ax3.scatter(recon_raster[idx3,:,0],recon_raster[idx3,:,1],c='b',s=0.2,label='future')
+    print("11111")
+    
 def vis_in_out(image,target_raster, hist_raster,recon_fut,indices=[0]):
    
    
