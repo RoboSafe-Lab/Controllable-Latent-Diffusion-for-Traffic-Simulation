@@ -1,5 +1,4 @@
 from tbsim.utils.config_utils import translate_pass_trajdata_cfg
-from tbsim.datasets.trajdata_datamodules import PassUnifiedDataModule
 from datetime import  datetime
 import os,json,wandb
 import pytorch_lightning as pl
@@ -9,9 +8,11 @@ from trainers.vae_trainer import VAELightningModule
 from trainers.dm_trainer import DMLightningModule
 from trainers.guide_dm_trainer import GuideDMLightningModule
 from configs.visualize_traj import TrajectoryVisualizationCallback
+from configs.datamodules import Hf_DataModule
+
 def prepare_trainer_and_data(cfg, train_mode,debug=False):
     trajdata_config = translate_pass_trajdata_cfg(cfg)
-    datamodule = PassUnifiedDataModule(trajdata_config, cfg.train)
+    datamodule = Hf_DataModule(trajdata_config, cfg.train)
     datamodule.setup()
 
 
@@ -49,26 +50,26 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
             assert (cfg.train.save.every_n_steps > cfg.train.validation.every_n_steps),"checkpointing frequency (" + str(
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
             
-            # ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-            #     dirpath=f"{checkpoint_dir}",
-            #     filename=f"iter{{step}}_ep{{epoch}}_val/loss",
-            #     auto_insert_metric_name=False,
-            #     save_top_k=cfg.train.save.best_k,
-            #     monitor='val/loss',
-            #     mode="min",
-            #     every_n_train_steps=cfg.train.save.every_n_steps,
-            #     verbose=True,
-                
-            # )
             ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
                 dirpath=f"{checkpoint_dir}",
                 filename=f"iter{{step}}_ep{{epoch}}_val/loss",
-                save_top_k=-1,
+                auto_insert_metric_name=False,
+                save_top_k=cfg.train.save.best_k,
+                monitor='val/loss',
                 mode="min",
                 every_n_train_steps=cfg.train.save.every_n_steps,
                 verbose=True,
                 
             )
+            # ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
+            #     dirpath=f"{checkpoint_dir}",
+            #     filename=f"iter{{step}}_ep{{epoch}}_val/loss",
+            #     save_top_k=-1,
+            #     mode="min",
+            #     every_n_train_steps=cfg.train.save.every_n_steps,
+            #     verbose=True,
+                
+            # )
             train_callbacks.append(ckpt_valid_callback)
         visual_callback = TrajectoryVisualizationCallback(cfg,media_dir)
         train_callbacks.append(visual_callback)
@@ -84,7 +85,7 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
         train_callbacks.append(vis_callback)
 
     trainer = pl.Trainer(
-    
+    precision='16-mixed',
     default_root_dir=checkpoint_dir,
     # checkpointing
     enable_checkpointing=cfg.train.save.enabled,
@@ -116,7 +117,7 @@ def create_wandb_dir(base_dir="logs"):
 
 def prepare_for_guided_dm(cfg,debug=False):
     trajdata_config = translate_pass_trajdata_cfg(cfg)
-    datamodule = PassUnifiedDataModule(trajdata_config, cfg.train)
+    datamodule = Hf_DataModule(trajdata_config, cfg.train)
     datamodule.setup()
 
    

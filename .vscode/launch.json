@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "/home/visier/hazardforge/HazardForge/train.py",
             "console": "internalConsole",
-            "justMyCode":False,
+            "justMyCode": false,
             "env": {
                 "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
             }

@@ -115,7 +115,7 @@ class DmModel(nn.Module):
         t = torch.randint(0, self.n_timesteps, (batch_size,), device=x.device).long()# 128 在(0,1000)之内
         noise_init = torch.randn_like(x) #[B,52,6]
       
-        x_noisy = self.q_sample(x_start=x,t=t,noise=noise_init) #[B,128]
+        x_noisy = self.q_sample(x_start=x,t=t,noise=noise_init) 
         x_action_noisy = x_noisy[..., [4, 5]]
         x_noisy = self.convert_action_to_state_and_action(x_action_noisy, aux_info['curr_states'])
 

@@ -1,6 +1,8 @@
 
 import torch.optim as optim
 import torch,copy
+torch.set_float32_matmul_precision('medium')
+
 from tbsim.utils.batch_utils import batch_utils
 import pytorch_lightning as pl
 from tbsim.models.diffuser_helpers import EMA
@@ -67,6 +69,31 @@ class DMLightningModule(pl.LightningModule):
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch)    
         # self.get_action(batch,self.num_samp)
+
+        # import matplotlib.pyplot as plt
+        # from l5kit.geometry import transform_points
+        # indices=[0,5,15,25,35]
+        # fig, axes = plt.subplots(len(indices), 2, figsize=(20, 10*len(indices)))
+        # for i, idx in enumerate(indices):
+        #     ax_left = axes[i,0]
+        #     ax_right = axes[i,1]
+        #     image = batch['image'][idx].permute(1,2,0).cpu().numpy()
+        #     drivable_map = batch['drivable_map'][idx].cpu().numpy()
+        #     ax_left.imshow(image[...,-3:]*0.5+0.5)
+        
+        #     raster_from_agent = batch['raster_from_agent'][idx].cpu().numpy()
+        #     ax_right.imshow(drivable_map, cmap="gray")
+
+        #     target_position = batch['target_positions'][idx].cpu().numpy()        
+        #     target_raster = transform_points(target_position,raster_from_agent)
+
+            
+        #     ax_left.scatter(target_raster[:,0], target_raster[:,1], c='g', s=0.1, label='future')
+
+        #     hist_position= batch['history_positions'][idx].cpu().numpy()
+        #     hist_raster  = transform_points(hist_position,raster_from_agent)
+        #     ax_left.scatter(hist_raster[:,0], hist_raster[:,1], c='r', s=0.1, label='future')
+
 
         loss,target,recon = self.dm.compute_losses(batch)
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
