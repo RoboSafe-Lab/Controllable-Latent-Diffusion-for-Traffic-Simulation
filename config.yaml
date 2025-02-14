@@ -1,23 +1,30 @@
 train:
+
   mode: "vae"
+
+
   debug: false
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 100000000
+  plt_interval: 2000
   plt_indices: [3,13,23,33,43,53]
   checkpoint_vae: null
+
   checkpoint_dm: null
+
+  checkpoint_dm: null 
+
   checkpoint_rl: null
 
   training:
-    batch_size: 32
+    batch_size: 128
     num_steps: 35000
     num_data_workers: 20
 
   validation:
     enabled: true
-    batch_size: 64
+    batch_size: 128
     num_data_workers: 20
-    every_n_steps: 500
+    every_n_steps: 300
     num_steps_per_epoch: 10  #每次validation时,运行多少step
   save:
     enabled: true
@@ -60,7 +67,7 @@ train:
 
  
   
-  datamodule_class: "PassUnifiedDataModule"
+
   training_vec_map_params: 
     S_seg: 15
     S_point: 80
@@ -72,16 +79,16 @@ train:
 env:
   name: "trajdata"
   data_generation_params:
-    trajdata_centric: "scene"
+    trajdata_centric: "agent"
     trajdata_only_types:
       - "vehicle"
     trajdata_predict_types:
       - "vehicle"
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
-    trajdata_max_agents_distance: !!float inf
+    trajdata_max_agents_distance: 20
     trajdata_standardize_data: true            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
-    other_agents_num: null
+    other_agents_num: 10
 
   rasterizer:
     include_hist: true
