@@ -85,18 +85,19 @@ class TrajectoryVisualizationCallback(pl.Callback):
         if (trainer.global_step % self.plot_interval == 0) and (trainer.global_step > 0):
             if isinstance(outputs, list):
                 outputs = outputs[0]
+            output = outputs['log_dict']
             # Ensure that we have trajectories to plot
-            input = outputs['input'].detach().cpu().numpy()
-            raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
+            input = output['input'].detach().cpu().numpy()
+            raster_from_agent = output['raster_from_agent'].detach().cpu().numpy()
 
             input_raster = transform_points(input,raster_from_agent)
 
-            hist_position = outputs['hist'].detach().cpu().numpy()
+            hist_position = output['hist'].detach().cpu().numpy()
             hist_raster  = transform_points(hist_position,raster_from_agent)
 
-            image = outputs['image'].permute(0,2,3,1).detach().cpu().numpy()
+            image = output['image'].permute(0,2,3,1).detach().cpu().numpy()
 
-            recon_fut = outputs['output'].detach().cpu().numpy()
+            recon_fut = output['output'].detach().cpu().numpy()
             recon_raster = transform_points(recon_fut,raster_from_agent)
 
 

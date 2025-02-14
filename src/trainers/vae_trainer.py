@@ -31,21 +31,13 @@ class VAELightningModule(pl.LightningModule):
             weight_decay=optim_params_vae["regularization"]["L2"],
             
         )
-        # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=1e-3,                  
-            steps_per_epoch=7447,         
-            epochs=3,                    
-            pct_start=0.3,                
-            anneal_strategy='cos',        
-            div_factor=25,                
-            final_div_factor=1000         
-        )
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
+        
         return {
         "optimizer": optimizer,
         "lr_scheduler": {
             "scheduler": scheduler,
+            'monitor':'train/vae_loss',
         },
     }
 
@@ -54,18 +46,22 @@ class VAELightningModule(pl.LightningModule):
         batch = batch_utils().parse_batch(batch)     
         output_dict = self.vae(batch,self.beta)
        
-        self.log("train/kld", output_dict["kld"],                       on_step=True, on_epoch=False,batch_size=self.batch_size)
-        self.log("train/recon", output_dict["recon"],    on_step=True, on_epoch=False,batch_size=self.batch_size)
-        self.log("train/vae_loss", output_dict["loss"],                   on_step=True, on_epoch=False,batch_size=self.batch_size)
+        self.log("train/kld", output_dict["kld"],        on_step=True, on_epoch=True,batch_size=self.batch_size)
+        self.log("train/recon", output_dict["recon"],    on_step=True, on_epoch=True,batch_size=self.batch_size)
+        self.log("train/vae_loss", output_dict["loss"],  on_step=True, on_epoch=True,batch_size=self.batch_size)
       
-        return output_dict
+        return {"loss": output_dict["loss"], "log_dict": output_dict}
+
         
       
     def validation_step(self, batch):
-        batch = batch_utils().parse_batch(batch)
-        _,losses = self.vae(batch,self.beta)
-        self.log("val/loss", losses["loss"],                 on_step=False, on_epoch=True,batch_size=self.batch_size)
-        
+        batch = batch_utils().parse_batch(batch)     
+        output_dict = self.vae(batch,self.beta)
+       
+        self.log("val/kld", output_dict["kld"],        on_step=False, on_epoch=True,batch_size=self.batch_size)
+        self.log("val/recon", output_dict["recon"],    on_step=False, on_epoch=True,batch_size=self.batch_size)
+        self.log("val/loss", output_dict["loss"],      on_step=False, on_epoch=True,batch_size=self.batch_size)
+  
 
     def on_train_batch_end(self, outputs, batch, batch_idx):
     
