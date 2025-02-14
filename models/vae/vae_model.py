@@ -6,9 +6,9 @@ import torch
 from tbsim.utils.batch_utils import batch_utils
 import tbsim.utils.tensor_utils as TensorUtils
 import tbsim.dynamics as dynamics
-import tbsim.models.base_models as base_models
+from torch.nn import functional as F
 from tbsim.models.diffuser_helpers import MapEncoder,convert_state_to_state_and_action,unicyle_forward_dynamics
-
+from models.context_utils import ContextEncoder,get_state_and_action_from_data_batch
 class VaeModel(nn.Module):
     def __init__(self, algo_config,train_config, modality_shapes):
 
@@ -17,41 +17,21 @@ class VaeModel(nn.Module):
         self.train_config = train_config
         self.data_centric = None
         self.coordinate = algo_config.coordinate
-        print(f"algo_config_diffuser_input_mode: {algo_config.diffuser_input_mode}")
-     
        
         observation_dim = 4  # x, y, vel, yaw
         action_dim = 2  # acc, yawvel
-        output_dim = 2  # acc, yawvel   
-        layer_dims =  (algo_config.curr_state_feat_dim, algo_config.curr_state_feat_dim)  #(64,64)
+        output_dim = 2  # acc, yawvel 
+        
+
+              
+        vae_config = algo_config.vae             
+        self.lstmvae = LSTMVAE(input_size=observation_dim+action_dim,
+                           hidden_size=vae_config.hidden_size,#64
+                           latent_size=vae_config.latent_size,
+                           output_size=output_dim,
+                           )
         self.default_chosen_inds = [0, 1, 2, 3, 4, 5] 
         
-        self.hist_encoder = nn.LSTM(observation_dim,algo_config.hist_encoder_hidden,batch_first=True)
-
-
-
-        cond_in_feat_size = 0
-        cond_in_feat_size += algo_config.hist_encoder_hidden #128
-        # self.agent_state_encoder = base_models.MLP(observation_dim,
-        #                                                algo_config.curr_state_feat_dim,
-        #                                                layer_dims,
-        #                                                normalization=True)
-        
-        self.map_encoder = MapEncoder(
-                model_arch=algo_config.map_encoder_model_arch,
-                input_image_shape=modality_shapes["image"],
-                global_feature_dim=algo_config.map_feature_dim,
-                grid_feature_dim= None,
-            )
-        cond_in_feat_size += algo_config.map_feature_dim #128+256=384
-        cond_out_feat_size = algo_config.cond_feat_dim #256
-        combine_layer_dims = (cond_in_feat_size, cond_in_feat_size, cond_out_feat_size, cond_out_feat_size)
-        self.process_cond_mlp = base_models.MLP(cond_in_feat_size,
-                                                cond_out_feat_size,
-                                                combine_layer_dims,
-                                                normalization=True)
-        
-
         diffuser_norm_info = algo_config.nusc_norm_info.diffuser
         norm_add_coeffs = diffuser_norm_info[0]
         norm_div_coeffs = diffuser_norm_info[1]
@@ -65,12 +45,11 @@ class VaeModel(nn.Module):
         self._dynamics_kwargs=algo_config.dynamics
         self._create_dynamics()
    
-        vae_config = algo_config.vae             
-        self.lstmvae = LSTMVAE(input_size=observation_dim+action_dim,
-                           hidden_size=vae_config.hidden_size,
-                           latent_size=vae_config.latent_size,
-                           output_size=output_dim,
-                           )
+        self.context_encoder = ContextEncoder(observation_dim,
+                                              algo_config,
+                                              modality_shapes,
+                                              self.dyn,
+                                              )
 
     def _create_dynamics(self):
         if self._dynamics_type in ["Unicycle", dynamics.DynType.UNICYCLE]:
@@ -84,64 +63,33 @@ class VaeModel(nn.Module):
             self.dyn = None
 
     def forward(self, batch,beta):
-        aux_info,scaled_input = self.pre_vae(batch)
-        # from configs.visualize_traj import vis
-        # vis(batch)
-        scaled_actions,mu,logvar = self.lstmvae(scaled_input,aux_info["context"])
-        scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-
-        descaled_output = self.descale_traj(scaled_output)
-        losses = self.lstmvae.loss_function(scaled_output,scaled_input,mu,logvar,beta)
-        return {"loss": losses['loss'], 
+        aux_info,batch_state_and_action_scaled = self.pre_vae(batch)
+        recon_act_output,mu,logvar = self.lstmvae(batch_state_and_action_scaled,aux_info["cond_feat"])
+        recon_state_and_action_scaled = self.convert_action_to_state_and_action(recon_act_output,aux_info['curr_states'])
+        recon_state_and_action_descaled = self.descale_traj(recon_state_and_action_scaled)
+        loss,recon,kld = self.compute_vae_loss(batch_state_and_action_scaled,recon_state_and_action_descaled,mu,logvar,beta)
+        return {"loss": loss, 
+                'recon':recon,
+                'kld':kld,
+                'hist':batch['history_positions'],
                 "input": batch['target_positions'],
-                "output":descaled_output[...,:2],
+                "output":recon_state_and_action_descaled[...,:2],
                 "raster_from_agent":batch['raster_from_agent'],
                 "image":batch['image'],
-                }, losses
+                }
         
     def pre_vae(self,batch):
-        aux_info = self.get_aux_info(batch)
+        aux_info = self.context_encoder(batch)
+        state_and_action = get_state_and_action_from_data_batch(batch)#[B,52,6]
+        state_and_action_scaled = self.scale_traj(state_and_action)
+        return aux_info,state_and_action_scaled
 
-
-        unscaled_input = self.get_state_and_action_from_data_batch(batch)#[B,52,6]
-        scaled_input = self.scale_traj(unscaled_input)
-        return aux_info,scaled_input
-
-    def get_aux_info(self,data_batch):
-        hist_availability = data_batch['history_availabilities']#[B,31]
-
-        hist_pos = data_batch['history_positions']#[B,31,2]
-        hist_speed = data_batch['history_speeds']#[B,31]
-        hist_yaw = data_batch['history_yaws']#[B,31,1]
-
-        hist_pos[~hist_availability]=0.0
-        hist_speed[~hist_availability] = 0.0 
-        hist_yaw[~hist_availability] = 0.0
-        hist_speed = hist_speed.unsqueeze(-1)#[B,31,1]
-
-        hist_state = torch.cat([hist_pos, hist_speed, hist_yaw], dim=-1) #[B,31,4]
-        hist_state = self.scale_traj(hist_state,[0,1,2,3])
-
-        _, (h_n, _) = self.hist_encoder(hist_state)
-        hist_features = h_n[-1]#[B,hid=128]
-
-        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())#[B,4]
-    
-        image_batch = data_batch["image"]#[B,34,224,224]包含历史轨迹和邻居轨迹
-        map_global_feat,_ = self.map_encoder(image_batch)#[B,256]
-        cond_feat_in = torch.cat([hist_features, map_global_feat], dim=-1)#[B,128+256=384]
-        context = self.process_cond_mlp(cond_feat_in)#[B,256]
-        aux_info = {
-            'context':context,
-            'curr_states':curr_states
-        }
-        return aux_info
-
-    def z2traj(self,z,aux_info,num_samp=1):
-        scaled_actions= self.lstmvae.getTraj(z,num_samp)
-        scaled_output = self.convert_action_to_state_and_action(scaled_actions,aux_info['curr_states'])
-        return scaled_output
-  
+    def compute_vae_loss(self,input,output,mean,logvar,beta):
+        
+        recon = F.mse_loss(input,output)
+        kld = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp())
+        loss = recon + beta * kld
+        return loss,recon,kld
     def convert_action_to_state_and_action(self, x_out, curr_states, scaled_input=True, descaled_output=False):
         '''
         Apply dynamics on input action trajectory to get state+action trajectory
@@ -162,7 +110,7 @@ class VaeModel(nn.Module):
             initial_states=curr_states,
             actions=x_out,
             step_time=self.dt,
-            mode='chain'
+            mode='parallel'
         )
 
         x_out_all = torch.cat([x_out_state, x_out], dim=-1)
@@ -173,26 +121,6 @@ class VaeModel(nn.Module):
             x_out_all = x_out_all.reshape([B, N, T, -1])
         return x_out_all
   
-
-    
-    
-    def get_state_and_action_from_data_batch(self, data_batch, chosen_inds=[]):
-        '''
-        Extract state and(or) action from the data_batch from data_batch
-        Input:
-            data_batch: dict
-        Output:
-            x: (batch_size, num_steps, len(chosen_inds)).
-        '''
-        if len(chosen_inds) == 0:
-            chosen_inds = self.default_chosen_inds
-        # NOTE: for predicted agent, history and future with always be fully available
-        traj_state = torch.cat(
-                (data_batch["target_positions"][:, :self.horizon, :], data_batch["target_yaws"][:, :self.horizon, :]), dim=2)
-
-        traj_state_and_action = convert_state_to_state_and_action(traj_state, data_batch["curr_speed"], self.dt)
-
-        return traj_state_and_action[..., chosen_inds]
     def scale_traj(self, target_traj_orig, chosen_inds=[]):
         '''
         - traj: B x T x D

@@ -86,9 +86,10 @@ class TrajectoryVisualizationCallback(pl.Callback):
             if isinstance(outputs, list):
                 outputs = outputs[0]
             # Ensure that we have trajectories to plot
-            target_position = outputs['target'].detach().cpu().numpy()
+            input = outputs['input'].detach().cpu().numpy()
             raster_from_agent = outputs['raster_from_agent'].detach().cpu().numpy()
-            target_raster = transform_points(target_position,raster_from_agent)
+
+            input_raster = transform_points(input,raster_from_agent)
 
             hist_position = outputs['hist'].detach().cpu().numpy()
             hist_raster  = transform_points(hist_position,raster_from_agent)
@@ -99,7 +100,7 @@ class TrajectoryVisualizationCallback(pl.Callback):
             recon_raster = transform_points(recon_fut,raster_from_agent)
 
 
-            fig = vis_in_out(image, target_raster, hist_raster,recon_raster, indices=self.indices)
+            fig = vis_in_out(image, input_raster, hist_raster,recon_raster, indices=self.indices)
 
             save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
             fig.savefig(save_path, dpi=300)

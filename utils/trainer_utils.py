@@ -24,7 +24,12 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
             train_config=cfg.train,
             modality_shapes=datamodule.modality_shapes,
                            )
-    
+    elif train_mode == 'vae':
+        model = VAELightningModule(
+            algo_config=cfg.algo,
+            train_config=cfg.train,
+            modality_shapes=datamodule.modality_shapes,
+        )
     
     train_callbacks = []
     logger= None
@@ -105,7 +110,7 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     
     
 )
-    return trainer,datamodule, model,checkpoint_dm
+    return trainer, datamodule, model, checkpoint_dm
             
 def create_wandb_dir(base_dir="logs"):
     

@@ -9,8 +9,8 @@ from utils.trainer_utils import prepare_trainer_and_data,prepare_for_guided_dm
 
 
 def train_vae(cfg,debug=False):
-    trainer, datamodule,model,ckpt_vae,_ = prepare_trainer_and_data(cfg,train_mode="vae",debug=cfg.train.debug)
-    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_vae)
+    trainer, datamodule,model,ckpt= prepare_trainer_and_data(cfg,train_mode="vae",debug=cfg.train.debug)
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt)
 
 def train_dm(cfg,debug=False):
     trainer, datamodule,model,ckpt_dm = prepare_trainer_and_data(cfg,train_mode="dm",debug=cfg.train.debug)
