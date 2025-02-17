@@ -66,8 +66,10 @@ class VaeModel(nn.Module):
         aux_info,batch_state_and_action_scaled = self.pre_vae(batch)
         recon_act_output,mu,logvar = self.lstmvae(batch_state_and_action_scaled,aux_info["cond_feat"])
         recon_state_and_action_scaled = self.convert_action_to_state_and_action(recon_act_output,aux_info['curr_states'])
+       
+        loss,recon,kld = self.compute_vae_loss(batch_state_and_action_scaled,recon_state_and_action_scaled,mu,logvar,beta)
+
         recon_state_and_action_descaled = self.descale_traj(recon_state_and_action_scaled)
-        loss,recon,kld = self.compute_vae_loss(batch_state_and_action_scaled,recon_state_and_action_descaled,mu,logvar,beta)
         return {"loss": loss, 
                 'recon':recon,
                 'kld':kld,
@@ -84,10 +86,15 @@ class VaeModel(nn.Module):
         state_and_action_scaled = self.scale_traj(state_and_action)
         return aux_info,state_and_action_scaled
 
-    def compute_vae_loss(self,input,output,mean,logvar,beta):
-        
-        recon = F.mse_loss(input,output)
-        kld = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp())
+    def compute_vae_loss(self,input,output,mu,logvar,beta):
+        input_action = input[...,:2]
+        output_action = output[...,:2]
+        recon = F.mse_loss(input_action,output_action,reduction='mean')
+
+        B, T, latent_dim = mu.shape
+        kld = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        kld = kld / (B * T )
+
         loss = recon + beta * kld
         return loss,recon,kld
     def convert_action_to_state_and_action(self, x_out, curr_states, scaled_input=True, descaled_output=False):
@@ -135,14 +142,14 @@ class VaeModel(nn.Module):
             squeeze_time_dim = True
 
 
-        add_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
-        div_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
+        mean_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
+        std_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D     #[1,1,4]
 
         # TODO make these a buffer so they're put on the device automatically
         device = target_traj_orig.get_device()
-        dx_add = torch.tensor(add_coeffs, device=device)
-        dx_div = torch.tensor(div_coeffs, device=device)
-        target_traj = (target_traj_orig + dx_add) / dx_div
+        dx_mean= torch.tensor(mean_coeffs, device=device)
+        dx_std = torch.tensor(std_coeffs, device=device)
+        target_traj = (target_traj_orig - dx_mean) / dx_std
         if squeeze_time_dim:
             target_traj = target_traj.squeeze(1) 
         return target_traj 
@@ -153,14 +160,14 @@ class VaeModel(nn.Module):
         '''
         if len(chosen_inds) == 0:
             chosen_inds = self.default_chosen_inds
-        add_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D
-        div_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D
+        mean_coeffs = self.add_coeffs[chosen_inds][None,None] # 1 x 1 x D
+        std_coeffs = self.div_coeffs[chosen_inds][None,None] # 1 x 1 x D
 
         device = target_traj_orig.get_device()
-        dx_add = torch.tensor(add_coeffs, device=device)
-        dx_div = torch.tensor(div_coeffs, device=device) 
+        dx_mean = torch.tensor(mean_coeffs, device=device)
+        dx_std = torch.tensor(std_coeffs, device=device) 
 
-        target_traj = target_traj_orig * dx_div - dx_add
+        target_traj = target_traj_orig * dx_std + dx_mean
         
 
         return target_traj

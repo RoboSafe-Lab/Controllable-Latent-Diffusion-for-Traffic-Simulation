@@ -9,50 +9,46 @@ from utils.trainer_utils import prepare_trainer_and_data,prepare_for_guided_dm
 
 
 def train_vae(cfg,debug=False):
-    trainer, datamodule,model,ckpt= prepare_trainer_and_data(cfg,train_mode="vae",debug=cfg.train.debug)
-    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt)
+    trainer, datamodule,model,ckpt_vae= prepare_trainer_and_data(cfg,train_mode="vae",debug=cfg.train.debug)
+    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_vae)
 
 def train_dm(cfg,debug=False):
-    trainer, datamodule,model,ckpt_dm = prepare_trainer_and_data(cfg,train_mode="dm",debug=cfg.train.debug)
- 
-    trainer.fit(model=model, datamodule=datamodule,ckpt_path=ckpt_dm)
+    trainer, datamodule,model = prepare_trainer_and_data(cfg,train_mode="dm",debug=cfg.train.debug)
+    # import torch
+    # from tbsim.utils.batch_utils import batch_utils
+    # from tbsim.models.diffuser_helpers import convert_state_to_state_and_action
+    # from models.context_utils import get_state_and_action_from_data_batch
+    # dataloader = datamodule.train_dataloader()
+
+
+    # total_sum = torch.zeros(6)          # 用于存储所有数据中每个特征的和，初始值为 [0,0,0,0,0,0]
+    # total_sq_sum = torch.zeros(6)       # 用于存储所有数据中每个特征的平方和，初始值为 [0,0,0,0,0,0]
+    # total_count = 0
+
+    # i = 0
+    # with torch.no_grad():
+    #     for batch in dataloader:
+    #         batch = batch_utils().parse_batch(batch) 
+    #         state_and_action = get_state_and_action_from_data_batch(batch)
+    #         B, T, _ = state_and_action.shape 
+
+    #         total_sum += state_and_action.sum(dim=(0, 1)) 
+    #         total_sq_sum += (state_and_action ** 2).sum(dim=(0, 1))
+    #         total_count += B * T
+    # mean = total_sum / total_count
+    # variance = total_sq_sum / total_count - mean ** 2  
+    # std = torch.sqrt(variance) 
+
+    # print("Dataset feature mean:", mean)
+    # print("Dataset feature std:", std)    
+    
+    trainer.fit(model=model, datamodule=datamodule)
 
 def train_guide_dm(cfg,debug=False):
     trainer, datamodule,model,ckpt = prepare_for_guided_dm(cfg,debug=cfg.train.debug)
     trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
  
-    # import torch
-    # from tbsim.utils.batch_utils import batch_utils
-    # from tbsim.models.diffuser_helpers import convert_state_to_state_and_action
-    # dataloader = datamodule.train_dataloader()
-
-
-    # total_sum = None
-    # total_sum_sq = None
-    # total_count = 0
-    # with torch.no_grad():
-    #     for batch in dataloader:
-    #         batch = batch_utils().parse_batch(batch) 
-    #         traj_state = torch.cat(
-    #             (batch["target_positions"][:, :52, :], batch["target_yaws"][:, :52, :]), dim=2)
-    #         traj_state_and_action = convert_state_to_state_and_action(traj_state, batch["curr_speed"], 0.1)
-    #         B, T, D = traj_state_and_action.shape
-    #         data = traj_state_and_action.reshape(-1, D)
-
-    #         if total_sum is None:
-    #             total_sum = data.sum(dim=0)
-    #             total_sum_sq = (data ** 2).sum(dim=0)
-    #         else:
-    #             total_sum += data.sum(dim=0)
-    #             total_sum_sq += (data ** 2).sum(dim=0)
-    #         total_count += data.size(0)
-    #         if total_count%100==0:
-    #             print(total_count)
-    # mean = total_sum / total_count
-    # var = total_sum_sq / total_count - mean ** 2
-    # std = torch.sqrt(var)
-    # print(f"mean:{mean}, std:{std}")
-    #mean:tensor([ 3.9122e+00, -1.4352e-03,  1.5173e+00,  7.2863e-05,  8.3396e-03, 6.0973e-05]), std:tensor([9.5063, 1.5163, 3.1296, 0.1343, 2.0385, 0.0574])
+    
     
 
 def create_wandb_dir(base_dir="logs"):

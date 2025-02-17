@@ -5,7 +5,7 @@ from torch.nn import functional as F
 
 class Encoder(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers,cond_dim=256,dropout_rate=0.2):
-        super().__init__()
+        super(Encoder,self).__init__()
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.lstm = nn.LSTM(
@@ -27,7 +27,7 @@ class Encoder(nn.Module):
 
 class Decoder(nn.Module):
     def __init__(self, input_size, hidden_size, output_size, num_layers=1, dropout_rate=0.2,cond_dim=256):
-        super().__init__()
+        super(Decoder,self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
         self.num_layers = num_layers
@@ -97,28 +97,5 @@ class LSTMVAE(nn.Module):
         noise = torch.randn_like(std).to(self.device)
         z = mean + noise * std
         return z
-
-    def loss_function(self, *args, **kwargs) -> dict:
-        """
-        Computes the VAE loss function.
-        KL(N(\mu, \sigma), N(0, 1)) = \log \frac{1}{\sigma} + \frac{\sigma^2 + \mu^2}{2} - \frac{1}{2}
-        """
-        recons = args[0]
-        input = args[1]
-        mu = args[2]
-        log_var = args[3]
-
-        kld_weight = args[4]
-        recons_loss = F.mse_loss(recons, input)
-
-        kld_loss = torch.mean( -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1) )
-
-   
-        loss = recons_loss + kld_weight * kld_loss
-        return {
-            "loss": loss,
-            "Reconstruction_Loss": recons_loss,
-            "KLD": kld_loss,
-        }
 
     

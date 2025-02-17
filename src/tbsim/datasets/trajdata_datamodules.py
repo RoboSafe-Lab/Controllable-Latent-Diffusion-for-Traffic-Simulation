@@ -198,7 +198,7 @@ class PassUnifiedDataModule(pl.LightningDataModule):
             shuffle=True,
             batch_size=self._train_config.training.batch_size,
             num_workers=self._train_config.training.num_data_workers,
-            drop_last=True,
+            drop_last=False,
             collate_fn=self.train_dataset.get_collate_fn(return_dict=True),
             persistent_workers=True,
 

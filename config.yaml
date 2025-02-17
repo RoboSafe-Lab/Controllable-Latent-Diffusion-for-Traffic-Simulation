@@ -1,33 +1,29 @@
 train:
-
-  mode: "vae"
-
-
+  mode: "dm"
   debug: false
+
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 1000
-  plt_indices: [0,10,20,30,40,50,60]
-  checkpoint_vae: null
-
-  checkpoint_dm: null
-
-  checkpoint_dm: null 
-
+  plt_interval: 100000000000
+  plt_indices: [0,10,20,30,40,50,60,70,80,90]
+  
+  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-16 11:28:47/checkpoints/iterstep=1258_epepoch=1---val/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-17 16:40:02 dm/checkpoints/iterstep=1575_epepoch=4---val/loss.ckpt'
   checkpoint_rl: null
 
   training:
-    batch_size: 128
-    num_steps: 50000
+    batch_size: 256
+    epochs: 50
+    # num_steps: 100000
     num_data_workers: 20
 
   validation:
-    batch_size: 128
+    batch_size: 256
     every_n_steps: 500
-    num_steps_per_epoch: 5 #每次validation时,运行多少step
+    num_steps_per_epoch: 100 #每次validation时,运行多少step
     num_data_workers: 20
     enabled: true
   save:
-    every_n_steps: 1000
+    every_n_steps: 3000
     best_k: 1
     enabled: true
 
@@ -136,16 +132,9 @@ algo:
     - 8
   clip_denoised: false
   loss_type: "l2"
-  use_ema: true
-  ema_step: 300
-  ema_decay: 0.995
-  ema_start_step: 4000
+  
   diffuser_building_block: "concat"
-  action_loss_only: false
-  use_reconstructed_state: false
-  conditioning_drop_map_p: 0.0
-  conditioning_drop_neighbor_p: 0.0
-  conditioning_drop_fill: 0.5
+
   cond_feat_dim: 256
   curr_state_feat_dim: 64
   map_feature_dim: 256
@@ -158,8 +147,6 @@ algo:
   step_time: 0.1
   render_ego_history: false
   time_dim: 128
-  mlpres_hidden: 128
-  mlp_blocks: 4
   num_infer: 3
   vae:
     hidden_size: 64
@@ -181,13 +168,9 @@ algo:
   optim_params:
     dm:
       learning_rate:
-        initial: 0.0002
-        decay_factor: 0.1
-        epoch_schedule:
-          - 15
-          - 30
+        initial: 0.00005
       regularization:
-        L2: 0.0
+        L2: 0
     vae:
       learning_rate:
         initial: 0.0001
@@ -203,8 +186,8 @@ algo:
       # - [2.135494, 0.003704, 0.970226, 0.000573, -0.002965, 0.000309] #from ctg
       # - [5.5444, 0.524067, 2.206522, 0.049049, 0.729327, 0.023765]
    
-      - [-3.9122, 0.0014352, -1.5173, -0.000072716, -0.0083405, -0.000060884] # standard=true
-      - [9.5063, 1.5163, 3.1296, 0.1343, 2.0385, 0.0574]
+      - [13.162, -0.13891, 5.0223, -0.0046415, -0.0080072, -0.0013546] # standard=true
+      - [13.0717, 2.2462, 3.6187, 0.2210, 2.5770, 0.0840]
       # - [-1167.1, -1179.8, -1.8901, -0.18935, -0.0083414, -0.035908] #standard = false
       # - [596.52, 418.84, 1612.1, 1.785, 22798, 2.4892]
     agent_hist:

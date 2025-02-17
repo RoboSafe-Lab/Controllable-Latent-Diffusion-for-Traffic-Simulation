@@ -16,8 +16,8 @@ class VAELightningModule(pl.LightningModule):
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
         self.batch_size = train_config.training.batch_size
         
-        self.beta = 0.001
-        self.beta_max = 0.1
+        self.beta = 0.01
+        self.beta_max = 0.2
         
 
         self.beta_inc = (self.beta_max - self.beta) / 3000
@@ -37,7 +37,7 @@ class VAELightningModule(pl.LightningModule):
         "optimizer": optimizer,
         "lr_scheduler": {
             "scheduler": scheduler,
-            'monitor':'train/vae_loss',
+            'monitor':'val/loss',
         },
     }
 
@@ -46,9 +46,9 @@ class VAELightningModule(pl.LightningModule):
         batch = batch_utils().parse_batch(batch)     
         output_dict = self.vae(batch,self.beta)
        
-        self.log("train/kld", output_dict["kld"],        on_step=True, on_epoch=True,batch_size=self.batch_size)
-        self.log("train/recon", output_dict["recon"],    on_step=True, on_epoch=True,batch_size=self.batch_size)
-        self.log("train/vae_loss", output_dict["loss"],  on_step=True, on_epoch=True,batch_size=self.batch_size)
+        self.log("train/kld", output_dict["kld"],        on_step=True, on_epoch=False,batch_size=self.batch_size)
+        self.log("train/recon", output_dict["recon"],    on_step=True, on_epoch=False,batch_size=self.batch_size)
+        self.log("train/vae_loss", output_dict["loss"],  on_step=True, on_epoch=False,batch_size=self.batch_size)
       
         return {"loss": output_dict["loss"], "log_dict": output_dict}
 

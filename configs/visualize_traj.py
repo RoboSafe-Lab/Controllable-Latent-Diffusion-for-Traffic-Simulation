@@ -5,6 +5,7 @@ import matplotlib
 import numpy as np
 import os
 from l5kit.geometry import transform_points
+from pytorch_lightning.callbacks.progress import TQDMProgressBar
 # matplotlib.use('TkAgg')  # or another supported GUI backend
 def vis(pred,image,raster):
     idx1=3
@@ -59,14 +60,14 @@ def vis_in_out(image,target_raster, hist_raster,recon_fut,indices=[0]):
         image_i = image_rgb_list[i]
 
         ax_left.imshow(image_i)
-        ax_left.scatter(target_raster[idx,:,0],target_raster[idx,:,1],c='b',s=0.2,label='future')
-        ax_left.scatter(hist_raster[idx,:,0],hist_raster[idx,:,1],c='r',s=0.2,label='hist')
+        ax_left.scatter(target_raster[idx,:,0],target_raster[idx,:,1],c='b',s=0.5,label='future')
+        ax_left.scatter(hist_raster[idx,:,0],hist_raster[idx,:,1],c='r',s=0.5,label='hist')
        
         
         ax_left.set_title(f"batch  (idx={idx})")
 
         ax_right.imshow(image_i)
-        ax_right.scatter(recon_fut[idx,:,0],recon_fut[idx,:,1],c='b',s=0.2,label='recon')
+        ax_right.scatter(recon_fut[idx,:,0],recon_fut[idx,:,1],c='b',s=0.5,label='recon')
              
         ax_right.set_title(f"Output  (idx={idx})")
     plt.tight_layout()
@@ -109,4 +110,14 @@ class TrajectoryVisualizationCallback(pl.Callback):
             # Close the figure to free memory
             plt.close(fig)
 
-
+class VisierProgressBar(TQDMProgressBar):
+    def init_train_tqdm(self):
+        bar = super().init_train_tqdm()
+        bar.set_description("MyCustomTrain")
+        return bar
+    def get_metrics(self, trainer, model):
+         metrics = super().get_metrics(trainer, model)
+         metrics.pop("v_num", None)
+         step_info = f"{trainer.global_step} step"
+         metrics["step"] = step_info
+         return metrics
