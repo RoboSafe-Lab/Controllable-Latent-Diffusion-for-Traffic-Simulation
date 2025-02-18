@@ -3,22 +3,16 @@
     "configurations": [
         {
             "name": "train",
-            "type": "debugpy",
+            "type": "python",
             "request": "launch",
             "program": "/home/visier/hazardforge/HazardForge/train.py",
-            "console": "internalConsole",
+            "console": "integratedTerminal",
             "justMyCode": true,
             "env": {
                 "PYTHONPATH": "/home/visier/hazardforge/HazardForge/src"
             }
         },
 
-        {
-            "name": "rollout",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "/home/visier/hazardforge/HazardForge/rollout.py",
-            "console": "integratedTerminal",
-        }
+    
     ]
 }

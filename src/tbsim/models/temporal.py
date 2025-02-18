@@ -134,7 +134,8 @@ class TemporalMapUnet(nn.Module):
             # [ B*N ] -> [ B*N*M ]
             time = TensorUtils.repeat_by_expand_at(time, repeats=M, dim=0)
         else:
-            cond_feat = aux_info['cond_feat']#[B*N,256]
+            # cond_feat = aux_info['cond_feat']#[B*N,256]
+            cond_feat = aux_info
         x = einops.rearrange(x, 'b h t -> b t h')#[B,52,4]->[B,4,52]
         # print('rearrange x.size()', x.size())
         # print('time', time)

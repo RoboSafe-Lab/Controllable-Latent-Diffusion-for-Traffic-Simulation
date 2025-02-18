@@ -84,7 +84,7 @@ class VaeModel(nn.Module):
         aux_info = self.context_encoder(batch)
         state_and_action = get_state_and_action_from_data_batch(batch)#[B,52,6]
         state_and_action_scaled = self.scale_traj(state_and_action)
-        return aux_info,state_and_action_scaled
+        return aux_info,state_and_action_scaled,state_and_action
 
     def compute_vae_loss(self,input,output,mu,logvar,beta):
         input_action = input[...,:2]

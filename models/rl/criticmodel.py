@@ -2,14 +2,13 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 from l5kit.geometry import transform_points
-
+from collections import deque
+import random
 def compute_reward(trajectory,batch):
     B, N, T, D = trajectory.shape
     raster_from_agent = batch['raster_from_agent']#[B,3,3]
-    trajectory_position = trajectory[...,:2]#[B,N,52,2]
-    # positions_flat = trajectory_position.reshape(B * N, T, 2)
-    # raster_expanded = raster_from_agent.unsqueeze(1).expand(B, N, 3, 3).reshape(B * N, 3, 3)
-    traj_raster = transform_points_tensor(trajectory_position, raster_from_agent)#[B,N,52,2]    
+
+    traj_raster = transform_points_tensor(trajectory, raster_from_agent)#[B,N,52,2]    
 
     drivable_map = batch['drivable_map']#[B,224,224]
 
@@ -25,12 +24,12 @@ def compute_reward(trajectory,batch):
                                       torch.tensor(0.0,device=drivable_map.device))
 
     offroad_reward = reward_per_timestep.sum(dim=-1)#[B,5]
-    offroad_reward_mean = offroad_reward.mean(dim=1)
+    # offroad_reward_mean = offroad_reward.mean(dim=1)
 
-    collision_reward = compute_collision_reward(trajectory_position,batch)
-    collision_reward_mean =  collision_reward.mean(dim=1)
+    collision_reward = compute_collision_reward(trajectory,batch)
+    # collision_reward_mean =  collision_reward.mean(dim=1)
 
-    return offroad_reward_mean+collision_reward_mean
+    return offroad_reward+collision_reward
     
 def compute_collision_reward(traj,batch,collision_thresh=0.2):
     B, N, T, _ = traj.shape
@@ -75,6 +74,46 @@ def transform_points_tensor(trajectory_position,raster_from_agent):
     transformed_points = torch.bmm(points, linear_part) + translation_part
     transformed_trajectory = transformed_points.reshape(B, N, T, F)
     return transformed_trajectory
+
+
+
+class ReplayBuffer:
+    def __init__(self,capacity=10):
+        self.capacity = capacity
+        self.buffer = deque(maxlen = capacity)
+    
+    def add(self,x0,x1,log_prob_old,advantage,aux_info):
+        self.buffer.append((
+            x0.detach().cpu(),
+            x1.detach().cpu(), 
+            log_prob_old.detach().cpu(), 
+            advantage.detach().cpu(),
+            aux_info.detach().cpu(),
+            ))
+
+    def sample(self,batch_size):
+        return random.sample(self.buffer,batch_size)
+    
+    def clear(self):
+        self.buffer.clear()
+    def __len__(self):
+        return len(self.buffer)
+        
+
+
+def detach_aux_info(aux_info):
+    detached = {}
+    for key, value in aux_info.items():
+        if torch.is_tensor(value):
+            detached[key] = value.detach().cpu()
+        else:
+            detached[key] = value  # 如果不是 tensor，直接保存
+    return detached
+
+
+
+
+
 
 
 

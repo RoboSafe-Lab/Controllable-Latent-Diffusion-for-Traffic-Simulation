@@ -3,99 +3,142 @@ import torch.optim as optim
 import torch,copy
 from tbsim.utils.batch_utils import batch_utils
 import pytorch_lightning as pl
-from tbsim.models.diffuser_helpers import EMA
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
-from tbsim.utils.trajdata_utils import get_stationary_mask
-from models.rl.criticmodel import compute_reward
+
+from models.rl.criticmodel import compute_reward,ReplayBuffer,detach_aux_info
+from torch.optim.lr_scheduler import LambdaLR
+import tbsim.utils.tensor_utils as TensorUtils
 class GuideDMLightningModule(pl.LightningModule):
-    def __init__(self, algo_config,train_config,modality_shapes):
+    def __init__(self, algo_config,train_config,modality_shapes,ckpt_dm):
 
         super(GuideDMLightningModule, self).__init__()
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
-        self.disable_control_on_stationary = algo_config.disable_control_on_stationary
+        self.epochs = train_config.training.epochs
         
-        self.moving_speed_th = algo_config.moving_speed_th
-        self.num_samp = algo_config.num_samp
-   
-        self.dm = DmModel(algo_config,modality_shapes)
        
+        self.num_samp = algo_config.num_samp
+        self.ppo_sample = algo_config.ppo_num
+        self.dm = DmModel(algo_config,modality_shapes)
+        if ckpt_dm is not None:
+            ckpt = torch.load(ckpt_dm,map_location='cpu')
+            dm_state = {}
+            prefix = 'dm.'
 
-        self.use_ema = algo_config.use_ema
-        if self.use_ema:
-            print('DIFFUSER: using EMA... val and get_action will use ema model')
-            self.ema = EMA(algo_config.ema_decay)
-            
-            self.ema_dm = copy.deepcopy(self.dm)
-            self.ema_dm.requires_grad_(False)
+            for old_key, value in ckpt['state_dict'].items():
+                if old_key.startswith(prefix):
+                    new_key = old_key[len(prefix):]
+                    dm_state[new_key]=value
+            missing, unexpected = self.dm.load_state_dict(dm_state, strict=False)
+            print("Missing keys:", missing)
+            print("Unexpected keys:", unexpected)
 
-            self.ema_update_every = algo_config.ema_step
-            self.ema_start_step = algo_config.ema_start_step
-            self.reset_parameters()
-        else:
-            self.ema_policy=None
-        
+        self.vae = VaeModel(algo_config,train_config, modality_shapes)
+        for param in self.vae.lstmvae.parameters():
+            param.requires_grad = False
+
+        self.replay_buffer = ReplayBuffer(capacity=10)
         
     def configure_optimizers(self):  
+
         optim_params_dm = self.algo_config.optim_params["dm"]
         optimizer = optim.Adam(
             params=self.dm.parameters(),
             lr=optim_params_dm["learning_rate"]["initial"],
             weight_decay=optim_params_dm["regularization"]["L2"],
         )
-        scheduler = torch.optim.lr_scheduler.OneCycleLR(
-            optimizer,
-            max_lr=1e-3,                  
-            steps_per_epoch=7000,         
-            epochs=10,                    
-            pct_start=0.3,                
-            anneal_strategy='cos',        
-            div_factor=25,                
-            final_div_factor=1000         
-        )
-        return {
-                "optimizer": optimizer,
-                "lr_scheduler": {
-                    "scheduler": scheduler,
-                                },
-                }
-            
+        warmup_epoch=10
+        total_epochs = self.epochs
+
+        def lr_lambda(epoch):
+            if epoch<warmup_epoch:
+                return float(epoch)/float(max(1,warmup_epoch))
+            else:
+                progress = float(epoch-warmup_epoch)/float(max(1,total_epochs-warmup_epoch))
+                return 0.5*(1. + math.cos(math.pi * progress))
+        scheduler = LambdaLR(optimizer,lr_lambda)
+        return [optimizer],[{
+            'scheduler':scheduler,
+            'interval':"epoch",
+            'frequency':1,
+            'name':'warmup_cosine_lr'
+        }]
+      
   
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
-        out_dict,image = self(batch,self.num_samp)
-        reward = compute_reward(out_dict['pred_traj'],batch)
+        aux_info, _,_ = self.vae.pre_vae(batch)
+        out_dict = self.dm(batch,aux_info['cond_feat'],self.algo_config)
 
-        diffusion = out_dict['diffusion']#[B,5,52,101,6]
-        model_means = out_dict['mean']  #[B,5,52,100,2]         
-        log_vars = out_dict['log_var'] #[B,5,1,100,1]
+        x1 = out_dict['x1']         # shape: [B* num_samp, horizon, latent_size]
+        x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
         
-        x_sample = diffusion[...,1:, -2:]
 
-        std = (0.5*log_vars).exp()
-        dist = torch.distributions.Normal(model_means,std)
-        log_prob = dist.log_prob(x_sample)#[B,5,52,100,2]
-        
-        
-        total_log_prob = log_prob.sum(dim=(-1,-2,-3))#[B,5]
-        total_log_prob_mean = total_log_prob.mean(dim=1)
-        loss = -(reward)* total_log_prob_mean
-        
-        loss = loss.mean()
-        self.log("train/loss", loss, on_step=True, logger=True)
-        return loss
-    
-    def forward(self,obs_dict,num_samp):
-        cur_policy = self.dm
-      
-        self.stationary_mask = get_stationary_mask(obs_dict,self.disable_control_on_stationary,self.moving_speed_th)#[B]
-        B = self.stationary_mask.shape[0]
-        stationary_mask_expand = self.stationary_mask.unsqueeze(1).expand(B,num_samp).reshape(B*num_samp)#[B*N]
-        return cur_policy(obs_dict,stationary_mask_expand,self.algo_config)
-    
+        aux_info = out_dict['aux_info']
+        # aux_info_detached = detach_aux_info(aux_info)
 
+
+
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info)#[B*N,52,2]
+        recon_state_and_action_scaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info)
+        recon_state_and_action_descaled = self.vae.descale_traj(recon_state_and_action_scaled)
+        state_descaled = recon_state_and_action_descaled[...,:2]
+        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,5,52,2]
+        reward = compute_reward(state_descaled,batch) #[B, num_samp]
+        baseline = reward.mean(dim=1, keepdim=True)  # [B,1]
+        advantage = reward - baseline  # [B, num_samp]
+
+        log_prob_old = self.dm.log_prob(x1, x0, aux_info,t=torch.zeros(x0.shape[0], device=x0.device, dtype=torch.long)) #[B*N,52,4]
+        log_prob_old = log_prob_old.detach()
+
+        self.replay_buffer.add(x0,x1,log_prob_old,advantage,aux_info)
+
+        ppo_buffer_max = 4
+     
+        if len(self.replay_buffer) < ppo_buffer_max:
+            self.log('train/reward', reward.mean())
+            return None
         
+        else:
+            ppo_loss = self.ppo_update()
+            self.log('train/ppo_loss', ppo_loss)
+            self.log('train/reward', reward.mean())
+        
+    def ppo_update(self):
+        K=4
+        eps = 0.2
+        losses = []
+        for _ in range(K):
+            batch = self.replay_buffer.sample(self.ppo_sample)
+            x0_batch, x1_batch, log_prob_old_batch, advantage, aux_info= zip(*batch)
+            x0_batch = torch.stack(x0_batch).to(self.device)
+            x1_batch = torch.stack(x1_batch).to(self.device)
+
+            x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) #[M * (B*num_samp), 52, 4]
+            x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))
+
+            log_prob_old_batch = torch.stack(log_prob_old_batch).to(self.device)
+            log_prob_old_batch = log_prob_old_batch.view(-1)
+
+            advantage = torch.stack(advantage).to(self.device)
+            advantage=advantage.view(-1,advantage.size(-1))
+
+            aux_info = torch.stack(aux_info).to(self.device)
+            aux_info = aux_info.view(-1,aux_info.size(-1))
+            log_prob_new = self.dm.log_prob(x1_batch, x0_batch, aux_info, t=torch.zeros(x0_batch.shape[0], device=self.device, dtype=torch.long))#[M*B*N]
+            ratios = torch.exp(log_prob_new - log_prob_old_batch)
+
+            # advantage = advantage - advantage.mean(dim=1, keepdim=True)#NOTE:根据实际计算情况看要不要再次归一化
+            surr1 = ratios * advantage
+            surr2 = torch.clamp(ratios, 1 - eps, 1 + eps) * advantage
+            loss = -torch.min(surr1, surr2).mean()
+            losses.append(loss)
+            # 优化更新 (假设你已经定义了 self.optimizer)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+        return torch.stack(losses).mean()
 
 
   
@@ -123,18 +166,6 @@ class GuideDMLightningModule(pl.LightningModule):
         self.log("val/loss", loss, on_step=True, logger=True)
       
 
-    def reset_parameters(self):
-        self.ema_dm.load_state_dict(self.dm.state_dict())
-
-    def on_after_optimizer_step(self, optimizer, optimizer_idx):
-        if self.use_ema and (self.global_step % self.ema_update_every == 0):
-            self.step_ema(self.global_step)
-
-    def step_ema(self, step):
-        if step < self.ema_start_step:
-            self.reset_parameters()
-            return
-        self.ema.update_model_average(self.ema_dm, self.dm)
 
     def on_save_checkpoint(self, checkpoint):
         if self.use_ema:
@@ -144,18 +175,19 @@ class GuideDMLightningModule(pl.LightningModule):
                     ema_state[name]=param.detach().cpu().clone()
             checkpoint["ema_state_dm"] = ema_state
 
-    def on_load_checkpoint(self, checkpoint):
-        if self.use_ema and ("ema_state_dm" in checkpoint):
-            ema_state = checkpoint["ema_state_dm"]
-            with torch.no_grad():
-                for name, param in self.ema_dm.named_parameters():
-                    if name in ema_state:
-                        param.copy_(ema_state[name])
-            
-                    
-              
+    def on_save_checkpoint(self, checkpoint):
+        full_sd = super().state_dict()
 
-      # def state_dict(self, *args, **kwargs):
-    #     sd = super().state_dict(*args, **kwargs)
-    #     sd = {k: v for k, v in sd.items() if not k.startswith("old_dm.")}
-    #     return sd
+        dm_only_sd = {}
+        for k, v in full_sd.items():
+            if k.startswith("dm."):
+                dm_only_sd[k] = v
+    
+        checkpoint["state_dict"] = dm_only_sd
+    # def on_after_backward(self):
+    #     max_norm=1e6
+    #     total_norm = torch.nn.utils.clip_grad_norm(self.dm.parameters(),max_norm=max_norm)
+
+    #     total_norm=  float(total_norm)
+    #     self.log('grad_norm', total_norm,on_step=True,on_epoch=False)          
+

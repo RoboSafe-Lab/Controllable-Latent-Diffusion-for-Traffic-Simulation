@@ -45,8 +45,8 @@ def train_dm(cfg,debug=False):
     trainer.fit(model=model, datamodule=datamodule)
 
 def train_guide_dm(cfg,debug=False):
-    trainer, datamodule,model,ckpt = prepare_for_guided_dm(cfg,debug=cfg.train.debug)
-    trainer.fit(model=model,datamodule=datamodule,ckpt_path=ckpt)
+    trainer, datamodule,model = prepare_for_guided_dm(cfg,debug=cfg.train.debug)
+    trainer.fit(model=model,datamodule=datamodule)
  
     
     

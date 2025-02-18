@@ -7,39 +7,43 @@ import os
 from l5kit.geometry import transform_points
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
 # matplotlib.use('TkAgg')  # or another supported GUI backend
-def vis(pred,image,raster):
-    idx1=3
-    idx2=15
-    idx3=16
+def vis(pred,ori,image,raster):
+    idx1=0
+    idx2=10
+    idx3=20
     fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize=(24,8))
 
     raster = raster.detach().cpu().numpy()
     image = image.permute(0,2,3,1).detach().cpu().numpy()
-    pred = pred.detach().cpu().numpy()
-    positions = pred[...,:2]
+    pred_tensor = torch.stack(pred, dim=0)
+    pred = pred_tensor.detach().cpu().numpy()
+    ori = ori.detach().cpu().numpy()
+    ori_raster = transform_points(ori,raster)
 
-    num_samp = pred.shape[1]
+
 
     ax1.imshow(image[idx1,:,:,-3:]*0.5+0.5)
 
-    for i in range(num_samp):
-        sample = positions[:,i,:,:]
-        recon_raster = transform_points(sample,raster)
-        ax1.scatter(recon_raster[idx1,:,0],recon_raster[idx1,:,1],c='b',s=0.2,label='future')
 
+    for i in range(5):
+        sample = pred[i,:,:,:]
+        recon_raster = transform_points(sample,raster)
+        ax1.scatter(recon_raster[idx1,:,0],recon_raster[idx1,:,1],c='b',s=0.1,label='future')
+        ax1.scatter(ori_raster[idx1,:,0],ori_raster[idx1,:,1],c='r',s=0.2,label='future')
     ax2.imshow(image[idx2,:,:,-3:]*0.5+0.5)
 
-    for i in range(num_samp):
-        sample = positions[:,i,:,:]
+    for i in range(5):
+        sample = pred[i,:,:,:]
         recon_raster = transform_points(sample,raster)
-        ax2.scatter(recon_raster[idx2,:,0],recon_raster[idx2,:,1],c='b',s=0.2,label='future')
-
+        ax2.scatter(recon_raster[idx2,:,0],recon_raster[idx2,:,1],c='b',s=0.1,label='future')
+        ax2.scatter(ori_raster[idx2,:,0],ori_raster[idx2,:,1],c='r',s=0.2,label='future')
     ax3.imshow(image[idx1,:,:,-3:]*0.5+0.5)
 
-    for i in range(num_samp):
-        sample = positions[:,i,:,:]
+    for i in range(5):
+        sample = pred[i,:,:,:]
         recon_raster = transform_points(sample,raster)
-        ax3.scatter(recon_raster[idx3,:,0],recon_raster[idx3,:,1],c='b',s=0.2,label='future')
+        ax3.scatter(recon_raster[idx3,:,0],recon_raster[idx3,:,1],c='b',s=0.1,label='future')
+        ax3.scatter(ori_raster[idx3,:,0],ori_raster[idx3,:,1],c='r',s=0.2,label='future')
     print("11111")
     
 def vis_in_out(image,target_raster, hist_raster,recon_fut,indices=[0]):

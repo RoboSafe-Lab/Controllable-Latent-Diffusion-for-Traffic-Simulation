@@ -1,17 +1,17 @@
 train:
-  mode: "dm"
-  debug: false
+  mode: "ppo"
+  debug: true
 
   trajdata_cache_location: "~/my_custom_cache_location"
   plt_interval: 100000000000
   plt_indices: [0,10,20,30,40,50,60,70,80,90]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-16 11:28:47/checkpoints/iterstep=1258_epepoch=1---val/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-17 16:40:02 dm/checkpoints/iterstep=1575_epepoch=4---val/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-17 17:25:25 dm/checkpoints/iterstep=2370_epepoch=14---val/loss.ckpt'
   checkpoint_rl: null
 
   training:
-    batch_size: 256
+    batch_size: 32
     epochs: 50
     # num_steps: 100000
     num_data_workers: 20
@@ -107,6 +107,7 @@ algo:
   name: "dm_vae"
   eval_class: "dm_vae"
   num_samp: 5
+  ppo_num: 2
   update_old_model_every: 20
   coordinate: "agent_centric"
   scene_agent_max_neighbor_dist: 30

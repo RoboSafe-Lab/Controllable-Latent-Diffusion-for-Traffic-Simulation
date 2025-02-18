@@ -17,8 +17,7 @@ class DMLightningModule(pl.LightningModule):
         self.algo_config = algo_config
         self.batch_size = train_config.training.batch_size
         self.epochs = train_config.training.epochs
-        self.moving_speed_th = algo_config.moving_speed_th
-        self.disable_control_on_stationary = algo_config.disable_control_on_stationary
+     
         self.num_samp = algo_config.num_samp
 
         self.dm = DmModel(algo_config,modality_shapes)
@@ -39,7 +38,7 @@ class DMLightningModule(pl.LightningModule):
         
 
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
-        for param in self.vae.parameters():
+        for param in self.vae.lstmvae.parameters():
             param.requires_grad = False
     
     

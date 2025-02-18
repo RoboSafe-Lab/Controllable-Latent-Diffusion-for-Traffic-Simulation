@@ -139,15 +139,30 @@ def prepare_for_guided_dm(cfg,debug=False):
     datamodule = Hf_DataModule(trajdata_config, cfg.train)
     datamodule.setup()
 
-   
-    checkpoint_dm = cfg.train.checkpoint_dm
-    # checkpoint_rl = cfg.train.checkpoint_rl
+    ckpt_vae = cfg.train.checkpoint_vae
+    ckpt_dm = cfg.train.checkpoint_dm
+
     model = GuideDMLightningModule(
         algo_config=cfg.algo,
         train_config=cfg.train,
         modality_shapes=datamodule.modality_shapes,
+        ckpt_dm = cfg.train.checkpoint_dm
       
                     )
+    if ckpt_vae is not None and os.path.exists(ckpt_vae):
+            print(f"Loading VAE weights from {ckpt_vae}")
+            vae_ckpt = torch.load(ckpt_vae,map_location='cpu')
+            vae_state = {}
+            prefix = 'vae.'
+
+            for old_key, value in vae_ckpt['state_dict'].items():
+                if old_key.startswith(prefix):
+                    new_key = old_key[len(prefix):]
+                    vae_state[new_key]=value
+           
+            missing, unexpected = model.vae.load_state_dict(vae_state, strict=False)
+            print("Missing keys:", missing)
+            print("Unexpected keys:", unexpected)
 
     
     train_callbacks = []
@@ -174,19 +189,19 @@ def prepare_for_guided_dm(cfg,debug=False):
                 cfg.train.save.every_n_steps) + ") needs to be greater than validation frequency (" + str(cfg.train.validation.every_n_steps) + ")"
             
             ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-                dirpath=f"{checkpoint_dir}",
-                filename=f"iter{{step}}_ep{{epoch}}_val/loss",
-                auto_insert_metric_name=False,
-                save_top_k=cfg.train.save.best_k,
-                monitor='val/loss',
+                monitor = 'val/loss',
                 mode="min",
-                every_n_train_steps=cfg.train.save.every_n_steps,
-                verbose=True,
-                
+                save_top_k = 1,
+                dirpath=f"{checkpoint_dir}",
+                filename=f"iter{{step}}_ep{{epoch}}---val/loss",
+                save_on_train_epoch_end = True,
+                # every_n_train_steps= None, #cfg.train.save.every_n_steps,
+                verbose=True,  
             )
             train_callbacks.append(ckpt_valid_callback)
         visual_callback = TrajectoryVisualizationCallback(cfg,media_dir)
         train_callbacks.append(visual_callback)
+        train_callbacks.append(VisierProgressBar())
     else:
         
         checkpoint_dir = "logs/debug_run"
@@ -208,17 +223,19 @@ def prepare_for_guided_dm(cfg,debug=False):
     # flush_logs_every_n_steps=cfg.train.logging.flush_every_n_steps,
     log_every_n_steps=cfg.train.logging.log_every_n_steps,
     # training
-    min_epochs = 1,
+    max_epochs = cfg.train.training.epochs,
     # max_steps=cfg.train.training.num_steps,
     # validation
-    val_check_interval=cfg.train.validation.every_n_steps,
+    check_val_every_n_epoch=1,
+    val_check_interval=None,#cfg.train.validation.every_n_steps,
     limit_val_batches=cfg.train.validation.num_steps_per_epoch,
     # all callbacks
     callbacks=train_callbacks,
     num_sanity_val_steps=0,
+    gradient_clip_val=1.0,
     
     
-)
+) 
     
             
-    return trainer,datamodule,model,checkpoint_dm
+    return trainer,datamodule,model
