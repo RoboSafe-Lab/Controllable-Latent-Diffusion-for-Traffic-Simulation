@@ -140,7 +140,7 @@ def prepare_for_guided_dm(cfg,debug=False):
     datamodule.setup()
 
     ckpt_vae = cfg.train.checkpoint_vae
-    ckpt_dm = cfg.train.checkpoint_dm
+   
 
     model = GuideDMLightningModule(
         algo_config=cfg.algo,
@@ -202,6 +202,7 @@ def prepare_for_guided_dm(cfg,debug=False):
         visual_callback = TrajectoryVisualizationCallback(cfg,media_dir)
         train_callbacks.append(visual_callback)
         train_callbacks.append(VisierProgressBar())
+        
     else:
         
         checkpoint_dir = "logs/debug_run"
@@ -232,7 +233,7 @@ def prepare_for_guided_dm(cfg,debug=False):
     # all callbacks
     callbacks=train_callbacks,
     num_sanity_val_steps=0,
-    gradient_clip_val=1.0,
+    # gradient_clip_val=1.0,
     
     
 ) 

@@ -78,7 +78,7 @@ def transform_points_tensor(trajectory_position,raster_from_agent):
 
 
 class ReplayBuffer:
-    def __init__(self,capacity=10):
+    def __init__(self,capacity=10000):
         self.capacity = capacity
         self.buffer = deque(maxlen = capacity)
     
@@ -88,7 +88,7 @@ class ReplayBuffer:
             x1.detach().cpu(), 
             log_prob_old.detach().cpu(), 
             advantage.detach().cpu(),
-            aux_info.detach().cpu(),
+            aux_info,
             ))
 
     def sample(self,batch_size):

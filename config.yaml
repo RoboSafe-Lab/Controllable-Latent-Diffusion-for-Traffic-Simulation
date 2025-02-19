@@ -199,6 +199,9 @@ algo:
       - [7.587311, 7.444489, 1.680952, 2.578202, 0.832563]
   trajectory_shape: [52,6]
   hist_encoder_hidden: 128
-  
+
+  buffer_max: 50
+  ppo_update_times: 30
+  update_interval: 20
 
 seed: 1
