@@ -35,7 +35,7 @@ class DMLightningModule(pl.LightningModule):
             print("Unexpected keys:", unexpected)
 
            
-        
+         
 
         self.vae = VaeModel(algo_config,train_config, modality_shapes)
         for param in self.vae.lstmvae.parameters():
@@ -71,7 +71,7 @@ class DMLightningModule(pl.LightningModule):
     
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch)  
-        aux_info,  batch_state_and_action_scaled = self.vae.pre_vae(batch)
+        aux_info,  batch_state_and_action_scaled,_ = self.vae.pre_vae(batch)
 
         z0,_,_ = self.vae.lstmvae.traj2z(batch_state_and_action_scaled, aux_info["cond_feat"])#[B,52,4]
         loss = self.dm.compute_losses(aux_info,z0)
@@ -111,9 +111,9 @@ class DMLightningModule(pl.LightningModule):
     
         checkpoint["state_dict"] = dm_only_sd
 
-    def on_after_backward(self):
-        max_norm=1e6
-        total_norm = torch.nn.utils.clip_grad_norm(self.dm.parameters(),max_norm=max_norm)
+    # def on_after_backward(self):
+    #     max_norm=1e6
+    #     total_norm = torch.nn.utils.clip_grad_norm(self.dm.parameters(),max_norm=max_norm)
 
-        total_norm=  float(total_norm)
-        self.log('grad_norm', total_norm,on_step=True,on_epoch=False)
+    #     total_norm=  float(total_norm)
+    #     self.log('grad_norm', total_norm,on_step=True,on_epoch=False)

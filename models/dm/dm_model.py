@@ -135,10 +135,6 @@ class DmModel(nn.Module):
                 x_0 = x.clone()
                 dist = torch.distributions.Normal(x_tminus1_mean, sigma)
                 log_prob_final = dist.log_prob(x).view(x.size(0), -1).sum(dim=1)
-
-        # x_1 = TensorUtils.reshape_dimensions(x_1, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))#[B,_numsamp,52,4]
-        # x0 = TensorUtils.reshape_dimensions(x0, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))#[B,_numsamp,52,4]
-      
         out_dict = {
                     'pred_traj' : x_0,#[B*N,52,4]
                     'x1':x_1, #[B,N,52,4]

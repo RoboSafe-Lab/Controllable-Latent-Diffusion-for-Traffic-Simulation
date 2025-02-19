@@ -1,7 +1,7 @@
-import torch.nn as nn
+
 import torch
-import torch.nn.functional as F
-from l5kit.geometry import transform_points
+
+
 from collections import deque
 import random
 def compute_reward(trajectory,batch):
@@ -13,15 +13,16 @@ def compute_reward(trajectory,batch):
     drivable_map = batch['drivable_map']#[B,224,224]
 
     traj_int = traj_raster.round().long()
-    cols = traj_int[..., 0].clamp(0, drivable_map.shape[-1] - 1)
+    cols = traj_int[..., 0].clamp(0, drivable_map.shape[-1] - 1)#[B,N,52]
     rows = traj_int[..., 1].clamp(0, drivable_map.shape[-2] - 1)
 
     batch_idx = torch.arange(B,device=drivable_map.device).view(B,1,1).expand(B, N, T)
 
-    traj_values = drivable_map[batch_idx,rows,cols]#[B,_num_samp,52]
+    traj_values = drivable_map[batch_idx,rows,cols]#[B,N,52]   
+
 
     reward_per_timestep = torch.where(traj_values == False,torch.tensor(-1.0,device=drivable_map.device),
-                                      torch.tensor(0.0,device=drivable_map.device))
+                                      torch.tensor(0.0,device=drivable_map.device))#[B,N,52]
 
     offroad_reward = reward_per_timestep.sum(dim=-1)#[B,5]
     # offroad_reward_mean = offroad_reward.mean(dim=1)
@@ -35,30 +36,24 @@ def compute_collision_reward(traj,batch,collision_thresh=0.2):
     B, N, T, _ = traj.shape
     ego_pos = traj
 
-    other_pos = batch['all_other_agents_future_positions']#[B,73,52,2]
-    avail = batch['all_other_agents_future_availability'] #[B,75,T]
+    other_pos = batch['all_other_agents_future_positions']#[B,S,52,2]
+    avail = batch['all_other_agents_future_availability'] #[B,S,52] S个其他agents
 
-    traj_exp = traj.unsqueeze(2)#[B,N,1,T,2]
-    other_pos_exp = other_pos.unsqueeze(1)#[B,1,A,T,2]
+    traj_exp = traj.unsqueeze(2)#[B,N,1,52,2]
+    other_pos_exp = other_pos.unsqueeze(1)#[B,1,S,52,2]
 
-    diff = traj_exp - other_pos_exp #[B,N,A,T,2]
-    distance = torch.norm(diff, dim=-1) #[B,N,A,T]
+    diff = traj_exp - other_pos_exp #[B,N,S,T,2]
+    distance = torch.norm(diff, dim=-1) #[B,N,S,52]
 
     collision_mask = distance < collision_thresh
 
-    avail_exp = avail.unsqueeze(1) #[B,1,A,T]
-    valid_collision = collision_mask & avail_exp
+    avail_exp = avail.unsqueeze(1) #[B,1,S,52]
+    valid_collision = collision_mask & avail_exp#[B,N,S,52]
 
-    collision_occur = valid_collision.any(dim=2)#[B,N,T]
+    collision_count = valid_collision.float().sum(dim=2)# [B, N, 52]
+    collision_reward = -collision_count.sum(dim=-1) # [B, N]
 
-    collision_reward_per_timestep = torch.where(
-        collision_occur,
-        torch.tensor(-1.0, device=traj.device),
-        torch.tensor(0.0, device=traj.device)
-    )#[B,N,52]
-
-
-    collision_reward = collision_reward_per_timestep.sum(dim=-1)#[B,N]
+   
     
     return collision_reward
 

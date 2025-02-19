@@ -85,30 +85,38 @@ class GuideDMLightningModule(pl.LightningModule):
         # aux_info_detached = detach_aux_info(aux_info)
 
         action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
-        recon_state_and_action_scaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'])
-        recon_state_and_action_descaled = self.vae.descale_traj(recon_state_and_action_scaled)
-        state_descaled = recon_state_and_action_descaled[...,:2]
-        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,5,52,2]
+        recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
+      
+        state_descaled = recon_state_and_action_descaled[...,:2] #[B*N,52,2]
+        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
+
         reward = compute_reward(state_descaled,batch) #[B, num_samp]
         baseline = reward.mean(dim=1, keepdim=True)  # [B,1]
         advantage = reward - baseline  # [B, num_samp]
 
         log_prob_old = self.dm.log_prob(x1, x0, aux_info,t=torch.zeros(x0.shape[0], device=x0.device, dtype=torch.long)) #[B*N,52,4]
-        log_prob_old = log_prob_old.detach()
+       
         aux_info_detached = detach_aux_info(aux_info)
         self.replay_buffer.add(x0,x1,log_prob_old,advantage,aux_info_detached)
-
-      
-     
+        self.steps_since_update += 1
+       
+        vis_dict={
+            "raster_from_agent":batch['raster_from_agent'],
+            "image":batch['image'],
+            'traj':state_descaled,
+        }
+        print(self.global_step)
         if len(self.replay_buffer) < self.buffer_max or self.steps_since_update < self.update_interval:
             self.log('train/reward', reward.mean())
-            return None
+            
+            return vis_dict
         
         else:
             ppo_loss = self.ppo_update()
             self.log('train/ppo_loss', ppo_loss)
             self.log('train/reward', reward.mean())
             self.steps_since_update = 0
+            return vis_dict
     def ppo_update(self):
         
         eps = 0.2
@@ -149,40 +157,27 @@ class GuideDMLightningModule(pl.LightningModule):
             opt.step()
         return torch.stack(losses).mean()
       
-
-  
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
-        out_dict,image = self(batch,self.num_samp)
-        reward = compute_reward(out_dict['pred_traj'],batch)
+        aux_info, _,_ = self.vae.pre_vae(batch)
+        out_dict = self.dm(batch,aux_info,self.algo_config)
 
-        diffusion = out_dict['diffusion']#[B,5,52,101,6]
-        model_means = out_dict['mean']  #[B,5,52,100,2]         
-        log_vars = out_dict['log_var'] #[B,5,1,100,1]
+        x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
         
-        x_sample = diffusion[...,1:, -2:]
+        aux_info = out_dict['aux_info']
 
-        std = (0.5*log_vars).exp()
-        dist = torch.distributions.Normal(model_means,std)
-        log_prob = dist.log_prob(x_sample)#[B,5,52,100,2]
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
+        recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
+      
+        state_descaled = recon_state_and_action_descaled[...,:2] #[B*N,52,2]
+        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
+
+        reward = compute_reward(state_descaled,batch).mean() #[B, num_samp] 
+        self.log('val/reward',reward)
         
-        
-        total_log_prob = log_prob.sum(dim=(-1,-2,-3))#[B,5]
-        total_log_prob_mean = total_log_prob.mean(dim=1)
-        loss = -(reward)* total_log_prob_mean
-        
-        loss = loss.mean()
-        self.log("val/loss", loss, on_step=True, logger=True)
       
 
 
-    def on_save_checkpoint(self, checkpoint):
-        if self.use_ema:
-            ema_state = {}
-            with torch.no_grad():
-                for name,param in self.ema_dm.named_parameters():
-                    ema_state[name]=param.detach().cpu().clone()
-            checkpoint["ema_state_dm"] = ema_state
 
     def on_save_checkpoint(self, checkpoint):
         full_sd = super().state_dict()

@@ -1,10 +1,10 @@
 train:
   mode: "ppo"
-  debug: true
+  debug: false
 
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 100000000000
-  plt_indices: [0,10,20,30,40,50,60,70,80,90]
+  plt_interval: 3000
+  plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-16 11:28:47/checkpoints/iterstep=1258_epepoch=1---val/loss.ckpt'
   checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-17 17:25:25 dm/checkpoints/iterstep=2370_epepoch=14---val/loss.ckpt'
@@ -13,13 +13,13 @@ train:
   training:
     batch_size: 32
     epochs: 50
-    # num_steps: 100000
+    num_steps: 600
     num_data_workers: 20
 
   validation:
-    batch_size: 256
+    batch_size: 32
     every_n_steps: 500
-    num_steps_per_epoch: 100 #每次validation时,运行多少step
+    num_steps_per_epoch: 1 #每次validation时,运行多少step
     num_data_workers: 20
     enabled: true
   save:
@@ -200,8 +200,8 @@ algo:
   trajectory_shape: [52,6]
   hist_encoder_hidden: 128
 
-  buffer_max: 50
-  ppo_update_times: 30
-  update_interval: 20
+  buffer_max: 100
+  ppo_update_times: 300
+  update_interval: 50
 
 seed: 1
