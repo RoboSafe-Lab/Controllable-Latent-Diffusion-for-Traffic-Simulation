@@ -93,9 +93,9 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
         os.makedirs(media_dir, exist_ok=True)
         
         ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-            monitor = 'val/reward',
-            mode="max",
-            save_top_k = 1,
+            # monitor = 'val/reward',
+            # mode="max",
+            # save_top_k = 1,
             dirpath=f"{checkpoint_dir}",
             filename=f"iter{{step}}_ep{{epoch}}---val/loss",
             every_n_train_steps=cfg.train.training.num_steps,

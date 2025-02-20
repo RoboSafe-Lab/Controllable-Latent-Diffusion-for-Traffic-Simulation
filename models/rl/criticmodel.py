@@ -79,8 +79,8 @@ class ReplayBuffer:
     
     def add(self,x0,x1,log_prob_old,advantage,aux_info):
         self.buffer.append((
-            x0.detach().cpu(),
-            x1.detach().cpu(), 
+            x0.cpu(),
+            x1.cpu(), 
             log_prob_old.detach().cpu(), 
             advantage.detach().cpu(),
             aux_info,

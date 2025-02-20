@@ -1,14 +1,17 @@
 
 import torch.optim as optim
-import torch,copy
+import torch
 from tbsim.utils.batch_utils import batch_utils
 import pytorch_lightning as pl
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
 import math
-from models.rl.criticmodel import compute_reward,ReplayBuffer,detach_aux_info
+from models.rl.criticmodel import compute_reward,ReplayBuffer
 from torch.optim.lr_scheduler import LambdaLR
 import tbsim.utils.tensor_utils as TensorUtils
+from tqdm.auto import tqdm
+
+
 class GuideDMLightningModule(pl.LightningModule):
     def __init__(self, algo_config,train_config,modality_shapes,ckpt_dm):
 
@@ -79,10 +82,10 @@ class GuideDMLightningModule(pl.LightningModule):
 
         x1 = out_dict['x1']         # shape: [B* num_samp, horizon, latent_size]
         x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
-        
+        log_prob_old = out_dict['log_prob_final']
 
         aux_info = out_dict['aux_info']
-        # aux_info_detached = detach_aux_info(aux_info)
+        aux_info_cpu = {k: (v.detach().cpu() if isinstance(v, torch.Tensor) else v) for k, v in aux_info.items()}
 
         action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
         recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
@@ -94,10 +97,12 @@ class GuideDMLightningModule(pl.LightningModule):
         baseline = reward.mean(dim=1, keepdim=True)  # [B,1]
         advantage = reward - baseline  # [B, num_samp]
 
-        log_prob_old = self.dm.log_prob(x1, x0, aux_info,t=torch.zeros(x0.shape[0], device=x0.device, dtype=torch.long)) #[B*N,52,4]
-       
-        aux_info_detached = detach_aux_info(aux_info)
-        self.replay_buffer.add(x0,x1,log_prob_old,advantage,aux_info_detached)
+        
+
+        
+
+        # aux_info_detached = detach_aux_info(aux_info)
+        self.replay_buffer.add(x0,x1,log_prob_old,advantage,aux_info_cpu)
         self.steps_since_update += 1
        
         vis_dict={
@@ -105,29 +110,30 @@ class GuideDMLightningModule(pl.LightningModule):
             "image":batch['image'],
             'traj':state_descaled,
         }
-        print(self.global_step)
+        
         if len(self.replay_buffer) < self.buffer_max or self.steps_since_update < self.update_interval:
-            self.log('train/reward', reward.mean())
+            self.log('train/reward', reward.mean(),batch_size=self.batch_size,prog_bar=True)
             
             return vis_dict
         
         else:
             ppo_loss = self.ppo_update()
-            self.log('train/ppo_loss', ppo_loss)
-            self.log('train/reward', reward.mean())
+            self.log('train/ppo_loss', ppo_loss.item(), batch_size=self.batch_size,prog_bar=True)
             self.steps_since_update = 0
             return vis_dict
     def ppo_update(self):
         
         eps = 0.2
         losses = []
-        for _ in range(self.ppo_update_times):
+        opt = self.optimizers()
+        for _ in tqdm(range(self.ppo_update_times),desc='PPO Update',leave=False):
             batch = self.replay_buffer.sample(self.ppo_sample)
             x0_batch, x1_batch, log_prob_old_batch, advantage, aux_info_batch= zip(*batch)
+            
             x0_batch = torch.stack(x0_batch).to(self.device)
-            x1_batch = torch.stack(x1_batch).to(self.device)
+            x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) #[M * (B*N), 52, 4]
 
-            x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) #[M * (B*num_samp), 52, 4]
+            x1_batch = torch.stack(x1_batch).to(self.device)
             x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))
 
             log_prob_old_batch = torch.stack(log_prob_old_batch).to(self.device)
@@ -135,9 +141,6 @@ class GuideDMLightningModule(pl.LightningModule):
 
             advantage = torch.stack(advantage).to(self.device)
             advantage=advantage.view(-1)
-
-            # aux_info = torch.stack(aux_info).to(self.device)
-            # aux_info = aux_info.view(-1,aux_info.size(-1))
 
             cond_feat_list = [d['cond_feat'] for d in aux_info_batch]
             aux_info_stacked = torch.stack(cond_feat_list, dim=0).view(-1, cond_feat_list[0].shape[-1]).to(self.device)
@@ -151,11 +154,13 @@ class GuideDMLightningModule(pl.LightningModule):
             loss = -torch.min(surr1, surr2).mean()
             losses.append(loss)
 
-            opt = self.optimizers()
+           
             opt.zero_grad()
             self.manual_backward(loss)
             opt.step()
-        return torch.stack(losses).mean()
+        losses_tensor = torch.stack(losses)
+        mean_loss = losses_tensor.mean()
+        return mean_loss
       
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch) 

@@ -101,7 +101,8 @@ class DmModel(nn.Module):
             extract(self.sqrt_one_minus_alphas_cumprod, t, x_0.shape) * noise
         )
         return sample
-   
+    
+    @torch.no_grad()
     def forward(self,data_batch,aux_info,algo_config):
         out_dict = self.sample_traj(data_batch,algo_config,aux_info)
  
@@ -134,13 +135,16 @@ class DmModel(nn.Module):
             if i==0:
                 x_0 = x.clone()
                 dist = torch.distributions.Normal(x_tminus1_mean, sigma)
-                log_prob_final = dist.log_prob(x).view(x.size(0), -1).sum(dim=1)
+                log_prob_final = dist.log_prob(x)
+                log_prob_final=log_prob_final.sum(dim=(1, 2))
+                
         out_dict = {
                     'pred_traj' : x_0,#[B*N,52,4]
                     'x1':x_1, #[B,N,52,4]
                     'log_prob_final':log_prob_final, #[B*N]
                     'aux_info':aux_info
                     }
+                
 
         return out_dict      
        
@@ -172,35 +176,6 @@ class DmModel(nn.Module):
 
         new_dist = torch.distributions.Normal(x_tminus1_mean,sigma)
 
-        log_prob = new_dist.log_prob(x_t_minus_1)#[B*N,52,4]
-        log_prob = log_prob.view(log_prob.size(0), -1).sum(dim=1)
+        log_prob = new_dist.log_prob(x_t_minus_1)#[M*B*N,52,4]
+        log_prob = log_prob.sum(dim=(1, 2))
         return log_prob
-    # def x_Tminus1_mean_variance(self,x,t,aux_info):
-    #     noise_recon = self.model(x, aux_info, t)#[B*N,52,4]
-    #     x_0_recon = self.predict_start_from_noise(x, t=t, noise=noise_recon)
-    #     model_mean, posterior_variance, posterior_log_variance = self.q_posterior(x_start=x_0_recon, x_t=x, t=t)
-    #     return model_mean, posterior_variance, posterior_log_variance
-    
-    # def predict_start_from_noise(self, x_t, t, noise):
-    #     return (
-    #             extract(self.sqrt_recip_alphas_cumprod, t, x_t.shape) * x_t -
-    #             extract(self.sqrt_recipm1_alphas_cumprod, t, x_t.shape) * noise
-    #         )
-    # def q_posterior(self, x_start, x_t, t):
-    #     posterior_mean = (
-    #         extract(self.posterior_mean_coef1, t, x_t.shape) * x_start +
-    #         extract(self.posterior_mean_coef2, t, x_t.shape) * x_t
-    #     )
-    #     posterior_variance = extract(self.posterior_variance, t, x_t.shape)
-    #     posterior_log_variance_clipped = extract(self.posterior_log_variance_clipped, t, x_t.shape)
-    #     return posterior_mean, posterior_variance, posterior_log_variance_clipped
-
-            # model_mean, posterior_variance, posterior_log_variance = self.x_Tminus1_mean_variance(x, t, aux_info)
-
-        # sigma = (0.5 * posterior_log_variance).exp()
-        # nonzero_mask = (1 - (t == 0).float()).reshape(b, *((1,) * (len(x.shape) - 1)))
-
-        # noise = torch.randn_like(model_mean)
-        # noise = nonzero_mask * sigma * noise
-        # x_out = model_mean + noise
-    
