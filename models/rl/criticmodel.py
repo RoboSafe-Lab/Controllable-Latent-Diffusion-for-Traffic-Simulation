@@ -73,19 +73,31 @@ def transform_points_tensor(trajectory_position,raster_from_agent):
 
 
 class ReplayBuffer:
-    def __init__(self,capacity=10000):
+    def __init__(self,capacity=10000, alpha = 0.9):
         self.capacity = capacity
         self.buffer = deque(maxlen = capacity)
-    
-    def add(self,x0,x1,log_prob_old,advantage,aux_info):
+
+        self.running_reward_baseline = 0.0
+        self.has_init_baseline = False
+        self.alpha = alpha
+    def add(self,x0,x1,log_prob_old,reward,aux_info):
+        current_batch_mean_r = reward.mean().item()
+        if not self.has_init_baseline:
+            self.running_reward_baseline = current_batch_mean_r
+            self.has_init_baseline = True
+        else:
+            self.running_reward_baseline = (self.alpha*self.running_reward_baseline + (1-self.alpha)*current_batch_mean_r)
+
         self.buffer.append((
             x0.cpu(),
             x1.cpu(), 
             log_prob_old.detach().cpu(), 
-            advantage.detach().cpu(),
+            reward.detach().cpu(),
             aux_info,
             ))
-
+    def get_baseline(self):
+        return self.running_reward_baseline
+    
     def sample(self,batch_size):
         return random.sample(self.buffer,batch_size)
     

@@ -94,15 +94,9 @@ class GuideDMLightningModule(pl.LightningModule):
         state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
 
         reward = compute_reward(state_descaled,batch) #[B, num_samp]
-        baseline = reward.mean(dim=1, keepdim=True)  # [B,1]
-        advantage = reward - baseline  # [B, num_samp]
-
-        
-
-        
 
         # aux_info_detached = detach_aux_info(aux_info)
-        self.replay_buffer.add(x0,x1,log_prob_old,advantage,aux_info_cpu)
+        self.replay_buffer.add(x0,x1,log_prob_old,reward,aux_info_cpu)
         self.steps_since_update += 1
        
         vis_dict={
@@ -127,8 +121,9 @@ class GuideDMLightningModule(pl.LightningModule):
         losses = []
         opt = self.optimizers()
         for _ in tqdm(range(self.ppo_update_times),desc='PPO Update',leave=False):
+
             batch = self.replay_buffer.sample(self.ppo_sample)
-            x0_batch, x1_batch, log_prob_old_batch, advantage, aux_info_batch= zip(*batch)
+            x0_batch, x1_batch, log_p_old_batch, reward, aux_info_batch= zip(*batch)
             
             x0_batch = torch.stack(x0_batch).to(self.device)
             x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) #[M * (B*N), 52, 4]
@@ -136,22 +131,29 @@ class GuideDMLightningModule(pl.LightningModule):
             x1_batch = torch.stack(x1_batch).to(self.device)
             x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))
 
-            log_prob_old_batch = torch.stack(log_prob_old_batch).to(self.device)
-            log_prob_old_batch = log_prob_old_batch.view(-1)
+            log_p_old_batch = torch.stack(log_p_old_batch).to(self.device)
+            log_p_old_batch = log_p_old_batch.view(-1)
 
-            advantage = torch.stack(advantage).to(self.device)
-            advantage=advantage.view(-1)
+            reward_batch = torch.stack(reward).to(self.device)
+            reward_batch = reward_batch.view(-1)
+            
 
-            cond_feat_list = [d['cond_feat'] for d in aux_info_batch]
-            aux_info_stacked = torch.stack(cond_feat_list, dim=0).view(-1, cond_feat_list[0].shape[-1]).to(self.device)
+            baseline = self.replay_buffer.get_baseline()
+            advantage = reward_batch - baseline
 
-            log_prob_new = self.dm.log_prob(x1_batch, x0_batch, {'cond_feat':aux_info_stacked}, t=torch.zeros(x0_batch.shape[0], device=self.device, dtype=torch.long))#[M*B*N]
-            ratios = torch.exp(log_prob_new - log_prob_old_batch)
+            # cond_feat_list = [d['cond_feat'] for d in aux_info_batch]
+            # aux_info_stacked = torch.stack(cond_feat_list, dim=0).view(-1, cond_feat_list[0].shape[-1]).to(self.device)
 
-            # advantage = advantage - advantage.mean(dim=1, keepdim=True)#NOTE:根据实际计算情况看要不要再次归一化
+            aux_info_stacked = torch.stack([d['cond_feat'] for d in aux_info_batch], dim=0).view(-1, [d['cond_feat'] for d in aux_info_batch][0].shape[-1]).to(self.device)
+
+            log_p_new = self.dm.log_prob(x1_batch, x0_batch, {'cond_feat':aux_info_stacked}, t=torch.zeros(x0_batch.shape[0], device=self.device, dtype=torch.long))#[M*B*N]
+            ratios = torch.exp(log_p_new - log_p_old_batch)
+
+
             surr1 = ratios * advantage
             surr2 = torch.clamp(ratios, 1 - eps, 1 + eps) * advantage
-            loss = -torch.min(surr1, surr2).mean()
+            loss = -torch.min(surr1, surr2)
+            loss = loss.mean()
             losses.append(loss)
 
            

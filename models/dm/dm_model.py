@@ -136,7 +136,7 @@ class DmModel(nn.Module):
                 x_0 = x.clone()
                 dist = torch.distributions.Normal(x_tminus1_mean, sigma)
                 log_prob_final = dist.log_prob(x)
-                log_prob_final=log_prob_final.sum(dim=(1, 2))
+                log_prob_final=log_prob_final.mean(dim=(1, 2))
                 
         out_dict = {
                     'pred_traj' : x_0,#[B*N,52,4]
@@ -176,6 +176,6 @@ class DmModel(nn.Module):
 
         new_dist = torch.distributions.Normal(x_tminus1_mean,sigma)
 
-        log_prob = new_dist.log_prob(x_t_minus_1)#[M*B*N,52,4]
-        log_prob = log_prob.sum(dim=(1, 2))
-        return log_prob
+        log_p = new_dist.log_prob(x_t_minus_1)#[M*B*N,52,4]
+        log_p = log_p.mean(dim=(1, 2))
+        return log_p

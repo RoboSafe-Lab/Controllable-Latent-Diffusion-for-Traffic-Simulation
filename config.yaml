@@ -187,9 +187,9 @@ algo:
   hist_encoder_hidden: 128
 
   num_samp: 4  # N
-  ppo_num: 1    # M
+  ppo_num: 5    # M
 
-  buffer_max: 30
+  buffer_max: 20
   ppo_update_times: 50
   update_interval: 10
 
