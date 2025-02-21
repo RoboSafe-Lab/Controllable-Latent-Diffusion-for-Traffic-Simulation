@@ -29,8 +29,8 @@ def compute_reward(trajectory,batch):
 
     collision_reward = compute_collision_reward(trajectory,batch)
     # collision_reward_mean =  collision_reward.mean(dim=1)
-
-    return offroad_reward+collision_reward
+    reward = (offroad_reward+collision_reward).view(-1)
+    return reward
     
 def compute_collision_reward(traj,batch,collision_thresh=0.2):
     B, N, T, _ = traj.shape
@@ -53,7 +53,7 @@ def compute_collision_reward(traj,batch,collision_thresh=0.2):
     collision_count = valid_collision.float().sum(dim=2)# [B, N, 52]
     collision_reward = -collision_count.sum(dim=-1) # [B, N]
 
-   
+    
     
     return collision_reward
 
@@ -80,21 +80,35 @@ class ReplayBuffer:
         self.running_reward_baseline = 0.0
         self.has_init_baseline = False
         self.alpha = alpha
-    def add(self,x0,x1,log_prob_old,reward,aux_info):
+    def add(self,x0,x1,log_p_old,reward,aux_info):
         current_batch_mean_r = reward.mean().item()
         if not self.has_init_baseline:
             self.running_reward_baseline = current_batch_mean_r
             self.has_init_baseline = True
         else:
             self.running_reward_baseline = (self.alpha*self.running_reward_baseline + (1-self.alpha)*current_batch_mean_r)
+        batch_size = x0.shape[0]
+        for i in range(batch_size):
 
-        self.buffer.append((
-            x0.cpu(),
-            x1.cpu(), 
-            log_prob_old.detach().cpu(), 
-            reward.detach().cpu(),
-            aux_info,
-            ))
+            sample_x0 = x0[i].detach().cpu()
+            sample_x1 = x1[i].detach().cpu()
+            sample_log_p = log_p_old[i].detach().cpu()
+            sample_reward = reward[i].detach().cpu()
+            sample_aux_info = {}
+            for key, value in aux_info.items():
+                if torch.is_tensor(value):
+                    sample_aux_info[key] = value[i].detach().cpu()
+                else:
+                    sample_aux_info[key] = value
+
+
+            self.buffer.append((
+                sample_x0,
+                sample_x1,
+                sample_log_p,
+                sample_reward,
+                sample_aux_info,
+                ))
     def get_baseline(self):
         return self.running_reward_baseline
     

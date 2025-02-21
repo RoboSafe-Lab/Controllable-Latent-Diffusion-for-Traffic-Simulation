@@ -3,7 +3,7 @@ train:
   debug: false
 
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 1000
+  plt_interval: 200
   plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-16 11:28:47/checkpoints/iterstep=1258_epepoch=1---val/loss.ckpt'
@@ -187,10 +187,10 @@ algo:
   hist_encoder_hidden: 128
 
   num_samp: 4  # N
-  ppo_num: 5    # M
+  ppo_num: 512   # M
 
-  buffer_max: 20
+  buffer_max: 20000
   ppo_update_times: 50
-  update_interval: 10
+  update_interval: 50
 
 seed: 1

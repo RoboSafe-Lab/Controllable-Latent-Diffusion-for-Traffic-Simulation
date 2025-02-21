@@ -137,10 +137,13 @@ class DmModel(nn.Module):
                 dist = torch.distributions.Normal(x_tminus1_mean, sigma)
                 log_prob_final = dist.log_prob(x)
                 log_prob_final=log_prob_final.mean(dim=(1, 2))
-                
+        # x_0 = TensorUtils.reshape_dimensions(x_0, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
+        # x_1 = TensorUtils.reshape_dimensions(x_1, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
+        # log_prob_final = TensorUtils.reshape_dimensions(log_prob_final, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
+      
         out_dict = {
                     'pred_traj' : x_0,#[B*N,52,4]
-                    'x1':x_1, #[B,N,52,4]
+                    'x1':x_1, #[B*N,52,4]
                     'log_prob_final':log_prob_final, #[B*N]
                     'aux_info':aux_info
                     }
@@ -176,6 +179,6 @@ class DmModel(nn.Module):
 
         new_dist = torch.distributions.Normal(x_tminus1_mean,sigma)
 
-        log_p = new_dist.log_prob(x_t_minus_1)#[M*B*N,52,4]
-        log_p = log_p.mean(dim=(1, 2))
+        log_p = new_dist.log_prob(x_t_minus_1)#[M,52,4]
+        log_p = log_p.mean(dim=(1, 2))#[M]
         return log_p
