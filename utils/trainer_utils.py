@@ -103,9 +103,10 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
             verbose=True,  
         )
         train_callbacks.append(ckpt_valid_callback)
-        
-        # train_callbacks.append(TrajectoryVisualizationCallback(cfg,media_dir))
-        # train_callbacks.append(PPOVisualizationCallback(cfg,media_dir))
+        if train_mode=='vae':
+            train_callbacks.append(TrajectoryVisualizationCallback(cfg,media_dir))
+        if train_mode=='ppo':
+            train_callbacks.append(PPOVisualizationCallback(cfg,media_dir))
         train_callbacks.append(VisierProgressBar())
     else:
         

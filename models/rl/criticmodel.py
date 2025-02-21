@@ -80,7 +80,7 @@ class ReplayBuffer:
         self.running_reward_baseline = 0.0
         self.has_init_baseline = False
         self.alpha = alpha
-    def add(self,x0,x1,log_p_old,reward,aux_info):
+    def add(self,x0,x1,log_p_old,reward,cond_feat_value):
         current_batch_mean_r = reward.mean().item()
         if not self.has_init_baseline:
             self.running_reward_baseline = current_batch_mean_r
@@ -94,20 +94,14 @@ class ReplayBuffer:
             sample_x1 = x1[i].detach().cpu()
             sample_log_p = log_p_old[i].detach().cpu()
             sample_reward = reward[i].detach().cpu()
-            sample_aux_info = {}
-            for key, value in aux_info.items():
-                if torch.is_tensor(value):
-                    sample_aux_info[key] = value[i].detach().cpu()
-                else:
-                    sample_aux_info[key] = value
-
-
+            sample_cond_feat = cond_feat_value[i]
+ 
             self.buffer.append((
                 sample_x0,
                 sample_x1,
                 sample_log_p,
                 sample_reward,
-                sample_aux_info,
+                sample_cond_feat,
                 ))
     def get_baseline(self):
         return self.running_reward_baseline

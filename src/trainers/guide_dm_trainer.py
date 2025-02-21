@@ -88,7 +88,9 @@ class GuideDMLightningModule(pl.LightningModule):
         log_prob_old = out_dict['log_prob_final']#[B*N]
 
         aux_info = out_dict['aux_info']
-        aux_info_cpu = {k: (v.detach().cpu() if isinstance(v, torch.Tensor) else v) for k, v in aux_info.items()}
+        # aux_info_cpu = {k: (v.detach().cpu() if isinstance(v, torch.Tensor) else v) for k, v in aux_info.items()}
+        cond_feat_value = aux_info['cond_feat'].detach().cpu() if isinstance(aux_info['cond_feat'], torch.Tensor) else aux_info['cond_feat']
+
 
         action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
         recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
@@ -99,7 +101,7 @@ class GuideDMLightningModule(pl.LightningModule):
         reward = compute_reward(state_descaled,batch) #[B, N]
 
         # aux_info_detached = detach_aux_info(aux_info)
-        self.replay_buffer.add(x0,x1,log_prob_old,reward,aux_info_cpu)
+        self.replay_buffer.add(x0,x1,log_prob_old,reward,cond_feat_value)
         
        
         vis_dict={
@@ -126,7 +128,7 @@ class GuideDMLightningModule(pl.LightningModule):
         losses = []
         opt = self.optimizers()
         
-        with Progress() as progress:
+        with Progress(transient=True) as progress:
             epoch_task = progress.add_task("[green]Epoch Progress...", total=ppo_epochs)
             for epoch in range(ppo_epochs):
                 
@@ -135,7 +137,7 @@ class GuideDMLightningModule(pl.LightningModule):
                    
                     batch = self.replay_buffer.sample(self.ppo_mini_batch)
                     
-                    x0_list, x1_list, log_p_old_list, reward_list, aux_info_list = zip(*batch)
+                    x0_list, x1_list, log_p_old_list, reward_list, cond_feat_value = zip(*batch)
                     
                   
                     x0_batch = torch.stack(x0_list).to(self.device)
@@ -147,17 +149,14 @@ class GuideDMLightningModule(pl.LightningModule):
                     log_p_old_batch = torch.stack(log_p_old_list).to(self.device).view(-1)  # shape: [M]
                     reward_batch = torch.stack(reward_list).to(self.device).view(-1)  # shape: [M]
                     
-                    
+            
                     baseline = self.replay_buffer.get_baseline()
                     advantage = reward_batch - baseline  # shape: [M]
                     
-                   
-
-                    aux_info_stacked = torch.stack([aux['cond_feat'] for aux in aux_info_list], dim=0)
+    
+                    aux_info_stacked = torch.stack(cond_feat_value, dim=0).to(self.device)
                     # 调整为二维张量：[M, cond_dim]
-                    aux_info_stacked = aux_info_stacked.view(-1, aux_info_stacked.size(-1)).to(self.device)
-                    
-               
+                  
                     t_tensor = torch.zeros(x0_batch.size(0), device=self.device, dtype=torch.long)
                    
                     log_p_new = self.dm.log_prob(x1_batch, x0_batch, {'cond_feat': aux_info_stacked}, t=t_tensor)
@@ -166,13 +165,14 @@ class GuideDMLightningModule(pl.LightningModule):
                     surr1 = ratios * advantage
                     surr2 = torch.clamp(ratios, 1 - eps, 1 + eps) * advantage
                     loss = -torch.min(surr1, surr2).mean()
-                    losses.append(loss)
+                    losses.append(loss.detach())
                     
                     opt.zero_grad()
                     self.manual_backward(loss)
                     opt.step()
                     
                     progress.update(batch_task, advance=1)
+
                 progress.update(epoch_task, advance=1)
         
         mean_loss = torch.stack(losses).mean()

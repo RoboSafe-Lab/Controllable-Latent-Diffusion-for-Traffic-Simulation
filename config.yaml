@@ -6,8 +6,8 @@ train:
   plt_interval: 50
   plt_indices: [0,10,20,30]
   
-  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-21 16:50:44 vae/checkpoints/iterstep=16354_epepoch=25---val/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-21 17:58:34 dm/checkpoints/iterstep=3774_epepoch=5---val/loss.ckpt'
+  checkpoint_vae: '/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/checkpoint/ppo/loss.ckpt'
 
 
   training:
@@ -28,7 +28,6 @@ train:
     enabled: true
 
   logging:
-    terminal_output_to_txt: true
     wandb_project_name: "Visier_VAE"
     log_every_n_steps: 5             #the frequency of wandb refresh
     flush_every_n_steps: 500
@@ -49,20 +48,6 @@ train:
     nusc_mini: "/home/visier/nuscenes"
 
   trajdata_rebuild_cache: false
-  parallel_strategy: "ddp"
-  rollout:
-    enabled: false
-    save_video: false
-    every_n_steps: 5000
-    warm_start_n_steps: 0
-
-  
-
-  on_ngc: false
-
- 
-  
-
   training_vec_map_params: 
     S_seg: 15
     S_point: 80
@@ -121,15 +106,11 @@ algo:
   base_dim: 32
   horizon: 52
   n_diffusion_steps: 100
-  action_weight: 1
-  diffusor_loss_weights: null
-  loss_discount: 1
-  predict_epsilon: false
   dim_mults:
     - 2
     - 4
     - 8
-  clip_denoised: false
+
   loss_type: "l2"
   
   diffuser_building_block: "concat"
@@ -187,7 +168,7 @@ algo:
   ppo_mini_batch: 256  # M
 
   buffer_max: 2000
-  ppo_update_times: 500
-  update_interval: 10
+  ppo_update_times: 300
+  update_interval: 30
 
 seed: 1
