@@ -123,7 +123,7 @@ class VisierProgressBar(TQDMProgressBar):
     def get_metrics(self, trainer, model):
         metrics = super().get_metrics(trainer, model)
         metrics = {k: v for k, v in metrics.items() if "v_num" not in k}
-        # metrics["step"] = f"{trainer.global_step} step"
+        metrics["step"] = f"{trainer.global_step}"
         return metrics
 
 

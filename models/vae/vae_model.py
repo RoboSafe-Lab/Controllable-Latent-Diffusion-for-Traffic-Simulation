@@ -63,11 +63,11 @@ class VaeModel(nn.Module):
             self.dyn = None
 
     def forward(self, batch,beta):
-        aux_info,batch_state_and_action_scaled = self.pre_vae(batch)
+        aux_info,batch_state_and_action_scaled,_ = self.pre_vae(batch)
         recon_act_output,mu,logvar = self.lstmvae(batch_state_and_action_scaled,aux_info["cond_feat"])
         recon_state_and_action_scaled = self.convert_action_to_state_and_action(recon_act_output,aux_info['curr_states'])
        
-        loss,recon,kld = self.compute_vae_loss(batch_state_and_action_scaled,recon_state_and_action_scaled,mu,logvar,beta)
+        loss,recon,kld = self.compute_vae_loss(batch_state_and_action_scaled,recon_act_output,mu,logvar,beta)
 
         recon_state_and_action_descaled = self.descale_traj(recon_state_and_action_scaled)
         return {"loss": loss, 
@@ -87,8 +87,8 @@ class VaeModel(nn.Module):
         return aux_info,state_and_action_scaled,state_and_action
 
     def compute_vae_loss(self,input,output,mu,logvar,beta):
-        input_action = input[...,:2]
-        output_action = output[...,:2]
+        input_action = input[...,-2:]
+        output_action = output
         recon = F.mse_loss(input_action,output_action,reduction='mean')
 
         B, T, latent_dim = mu.shape

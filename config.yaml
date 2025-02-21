@@ -3,34 +3,34 @@ train:
   debug: false
 
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 200
+  plt_interval: 50
   plt_indices: [0,10,20,30]
   
-  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-16 11:28:47/checkpoints/iterstep=1258_epepoch=1---val/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-17 17:25:25 dm/checkpoints/iterstep=2370_epepoch=14---val/loss.ckpt'
-  checkpoint_rl: null
+  checkpoint_vae: '/home/visier/hazardforge/HazardForge/logs/2025-02-21 16:50:44 vae/checkpoints/iterstep=16354_epepoch=25---val/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-21 17:58:34 dm/checkpoints/iterstep=3774_epepoch=5---val/loss.ckpt'
+
 
   training:
     batch_size: 64
-    epochs: 50
-    num_steps: 600
+    epochs: 6
+    num_steps: 1000
     num_data_workers: 20
 
   validation:
     batch_size: 64
-    every_n_steps: 500
-    num_steps_per_epoch: 1 #每次validation时,运行多少step
+    every_n_steps: 100
+    num_steps_per_epoch: 15 #每次validation时,运行多少step
     num_data_workers: 20
     enabled: true
   save:
-    every_n_steps: 3000
+    every_n_steps: 200
     best_k: 1
     enabled: true
 
   logging:
     terminal_output_to_txt: true
     wandb_project_name: "Visier_VAE"
-    log_every_n_steps: 50             #the frequency of wandb refresh
+    log_every_n_steps: 5             #the frequency of wandb refresh
     flush_every_n_steps: 500
   trajdata_source_train:
     - "nusc_trainval-train"
@@ -167,16 +167,13 @@ algo:
   optim_params:
     dm:
       learning_rate:
-        initial: 0.00005
+        initial: 0.0001
       regularization:
-        L2: 0
+        L2: 0.00001
     vae:
       learning_rate:
         initial: 0.0001
-        decay_factor: 0.5
-        epoch_schedule:
-          - 10
-          - 20
+
       regularization:
         L2:  0.00001
 
@@ -186,11 +183,11 @@ algo:
       - [13.0717, 2.2462, 3.6187, 0.2210, 2.5770, 0.0840]
   hist_encoder_hidden: 128
 
-  num_samp: 4  # N
-  ppo_num: 512   # M
+  num_samp: 5 # N
+  ppo_mini_batch: 256  # M
 
-  buffer_max: 20000
-  ppo_update_times: 50
-  update_interval: 50
+  buffer_max: 2000
+  ppo_update_times: 500
+  update_interval: 10
 
 seed: 1

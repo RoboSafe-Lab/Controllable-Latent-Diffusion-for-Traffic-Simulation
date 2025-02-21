@@ -79,21 +79,11 @@ class DMLightningModule(pl.LightningModule):
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size,prog_bar=True)
         return loss
         
-        
-    
-    def get_action(self,obs_dict,num_action_samples=1):
-      pass
- 
-        
-    def forward(self,obs_dict,num_samp):
-        
-        pass
-
 
   
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch)  
-        aux_info,  batch_state_and_action_scaled = self.vae.pre_vae(batch)
+        aux_info,  batch_state_and_action_scaled,_ = self.vae.pre_vae(batch)
         z0,_,_ = self.vae.lstmvae.traj2z(batch_state_and_action_scaled, aux_info["cond_feat"])
         loss = self.dm.compute_losses(aux_info,z0)
         

@@ -93,18 +93,19 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
         os.makedirs(media_dir, exist_ok=True)
         
         ckpt_valid_callback = pl.callbacks.ModelCheckpoint(
-            # monitor = 'val/reward',
-            # mode="max",
+            # monitor = 'val/loss',
+            # mode="min",
             # save_top_k = 1,
             dirpath=f"{checkpoint_dir}",
             filename=f"iter{{step}}_ep{{epoch}}---val/loss",
-            every_n_train_steps=cfg.train.training.num_steps,
-            # save_on_train_epoch_end = True,
+            every_n_train_steps=cfg.train.save.every_n_steps,
+            save_on_train_epoch_end = False,
             verbose=True,  
         )
         train_callbacks.append(ckpt_valid_callback)
         
-        train_callbacks.append(PPOVisualizationCallback(cfg,media_dir))
+        # train_callbacks.append(TrajectoryVisualizationCallback(cfg,media_dir))
+        # train_callbacks.append(PPOVisualizationCallback(cfg,media_dir))
         train_callbacks.append(VisierProgressBar())
     else:
         
@@ -130,7 +131,7 @@ def prepare_trainer_and_data(cfg, train_mode,debug=False):
     max_epochs = cfg.train.training.epochs,
     # max_steps=cfg.train.training.num_steps,
     # validation
-    check_val_every_n_epoch=1,
+    check_val_every_n_epoch=None,
     val_check_interval=cfg.train.validation.every_n_steps,
     limit_val_batches=cfg.train.validation.num_steps_per_epoch,
     # all callbacks

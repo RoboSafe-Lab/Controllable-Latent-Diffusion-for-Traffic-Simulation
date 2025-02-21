@@ -24,7 +24,7 @@ class GuideDMLightningModule(pl.LightningModule):
         
        
         self.num_samp = algo_config.num_samp
-        self.ppo_sample = algo_config.ppo_num
+        self.ppo_mini_batch = algo_config.ppo_mini_batch
         self.dm = DmModel(algo_config,modality_shapes)
         if ckpt_dm is not None:
             ckpt = torch.load(ckpt_dm,map_location='cpu')
@@ -59,8 +59,9 @@ class GuideDMLightningModule(pl.LightningModule):
             lr=optim_params_dm["learning_rate"]["initial"],
             weight_decay=optim_params_dm["regularization"]["L2"],
         )
-        warmup_epoch=10
+        
         total_epochs = self.epochs
+        warmup_epoch = total_epochs / 3
 
         def lr_lambda(epoch):
             if epoch<warmup_epoch:
@@ -99,14 +100,14 @@ class GuideDMLightningModule(pl.LightningModule):
 
         # aux_info_detached = detach_aux_info(aux_info)
         self.replay_buffer.add(x0,x1,log_prob_old,reward,aux_info_cpu)
-        self.steps_since_update += 1
+        
        
         vis_dict={
             "raster_from_agent":batch['raster_from_agent'],
             "image":batch['image'],
             'traj':state_descaled,
         }
-        
+        self.steps_since_update += 1
         # if len(self.replay_buffer) < self.buffer_max or self.steps_since_update < self.update_interval:
         if self.steps_since_update < self.update_interval:
             self.log('train/reward', reward.mean(),batch_size=self.batch_size,prog_bar=True)
@@ -120,56 +121,63 @@ class GuideDMLightningModule(pl.LightningModule):
             self.steps_since_update = 0
             return vis_dict
     def ppo_update(self):
-        
+        ppo_epochs = 10  # 外层 epoch 数
         eps = 0.2
         losses = []
         opt = self.optimizers()
-        # for _ in tqdm(range(self.ppo_update_times),desc='PPO Update',leave=False):
+        
         with Progress() as progress:
-            task = progress.add_task("[green]PPO Update...",total=self.ppo_update_times)
-            for _ in range(self.ppo_update_times):
-                batch = self.replay_buffer.sample(self.ppo_sample)
-                x0_batch, x1_batch, log_p_old_batch, reward, aux_info_batch= zip(*batch)
+            epoch_task = progress.add_task("[green]Epoch Progress...", total=ppo_epochs)
+            for epoch in range(ppo_epochs):
                 
-                x0_batch = torch.stack(x0_batch).to(self.device)
-                x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) #[M, 52, 4]
+                batch_task = progress.add_task("[blue]Mini-Batch Progress...", total=self.ppo_update_times)
+                for _ in range(self.ppo_update_times):
+                   
+                    batch = self.replay_buffer.sample(self.ppo_mini_batch)
+                    
+                    x0_list, x1_list, log_p_old_list, reward_list, aux_info_list = zip(*batch)
+                    
+                  
+                    x0_batch = torch.stack(x0_list).to(self.device)
+                    x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1))  # shape: [M, T, latent_dim]
 
-                x1_batch = torch.stack(x1_batch).to(self.device)
-                x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1)) #[M,52,4]
+                    x1_batch = torch.stack(x1_list).to(self.device)
+                    x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))  # shape: [M, T, latent_dim]
 
-                log_p_old_batch = torch.stack(log_p_old_batch).to(self.device)
-                log_p_old_batch = log_p_old_batch.view(-1) #[M]
+                    log_p_old_batch = torch.stack(log_p_old_list).to(self.device).view(-1)  # shape: [M]
+                    reward_batch = torch.stack(reward_list).to(self.device).view(-1)  # shape: [M]
+                    
+                    
+                    baseline = self.replay_buffer.get_baseline()
+                    advantage = reward_batch - baseline  # shape: [M]
+                    
+                   
 
-                reward_batch = torch.stack(reward).to(self.device)
-                reward_batch = reward_batch.view(-1) #[M]
-                
-
-                baseline = self.replay_buffer.get_baseline()
-                advantage = reward_batch - baseline #[M]
-
-                # cond_feat_list = [d['cond_feat'] for d in aux_info_batch]
-                # aux_info_stacked = torch.stack(cond_feat_list, dim=0).view(-1, cond_feat_list[0].shape[-1]).to(self.device)
-
-                aux_info_stacked = torch.stack([d['cond_feat'] for d in aux_info_batch], dim=0).view(-1, [d['cond_feat'] for d in aux_info_batch][0].shape[-1]).to(self.device) #[M,256]
-
-                log_p_new = self.dm.log_prob(x1_batch, x0_batch, {'cond_feat':aux_info_stacked}, t=torch.zeros(x0_batch.shape[0], device=self.device, dtype=torch.long))#[M*B*N]
-                ratios = torch.exp(log_p_new - log_p_old_batch)
-
-
-                surr1 = ratios * advantage
-                surr2 = torch.clamp(ratios, 1 - eps, 1 + eps) * advantage
-                loss = -torch.min(surr1, surr2)
-                loss = loss.mean()
-                losses.append(loss)
-
-            
-                opt.zero_grad()
-                self.manual_backward(loss)
-                opt.step()
-                progress.update(task, advance=1)
-        losses_tensor = torch.stack(losses)
-        mean_loss = losses_tensor.mean()
+                    aux_info_stacked = torch.stack([aux['cond_feat'] for aux in aux_info_list], dim=0)
+                    # 调整为二维张量：[M, cond_dim]
+                    aux_info_stacked = aux_info_stacked.view(-1, aux_info_stacked.size(-1)).to(self.device)
+                    
+               
+                    t_tensor = torch.zeros(x0_batch.size(0), device=self.device, dtype=torch.long)
+                   
+                    log_p_new = self.dm.log_prob(x1_batch, x0_batch, {'cond_feat': aux_info_stacked}, t=t_tensor)
+                    ratios = torch.exp(log_p_new - log_p_old_batch)
+                    
+                    surr1 = ratios * advantage
+                    surr2 = torch.clamp(ratios, 1 - eps, 1 + eps) * advantage
+                    loss = -torch.min(surr1, surr2).mean()
+                    losses.append(loss)
+                    
+                    opt.zero_grad()
+                    self.manual_backward(loss)
+                    opt.step()
+                    
+                    progress.update(batch_task, advance=1)
+                progress.update(epoch_task, advance=1)
+        
+        mean_loss = torch.stack(losses).mean()
         return mean_loss
+
       
     def validation_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
@@ -187,7 +195,7 @@ class GuideDMLightningModule(pl.LightningModule):
         state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
 
         reward = compute_reward(state_descaled,batch).mean() #[B, num_samp] 
-        self.log('val/reward',reward)
+        self.log('val/reward',reward,batch_size=self.batch_size,prog_bar=True)
         
       
 
