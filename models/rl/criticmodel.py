@@ -5,70 +5,71 @@ import torch
 from collections import deque
 import random
 def compute_reward(trajectory,batch):
-    B, N, T, D = trajectory.shape
-    raster_from_agent = batch['raster_from_agent']#[B,3,3]
+    with torch.no_grad():
+        B, N, T, D = trajectory.shape
+        raster_from_agent = batch['raster_from_agent']#[B,3,3]
 
-    traj_raster = transform_points_tensor(trajectory, raster_from_agent)#[B,N,52,2]    
+        traj_raster = transform_points_tensor(trajectory, raster_from_agent)#[B,N,52,2]    
 
-    drivable_map = batch['drivable_map']#[B,224,224]
+        drivable_map = batch['drivable_map']#[B,224,224]
 
-    traj_int = traj_raster.round().long()
-    cols = traj_int[..., 0].clamp(0, drivable_map.shape[-1] - 1)#[B,N,52]
-    rows = traj_int[..., 1].clamp(0, drivable_map.shape[-2] - 1)
+        traj_int = traj_raster.round().long()
+        cols = traj_int[..., 0].clamp(0, drivable_map.shape[-1] - 1)#[B,N,52]
+        rows = traj_int[..., 1].clamp(0, drivable_map.shape[-2] - 1)
 
-    batch_idx = torch.arange(B,device=drivable_map.device).view(B,1,1).expand(B, N, T)
+        batch_idx = torch.arange(B,device=drivable_map.device).view(B,1,1).expand(B, N, T)
 
-    traj_values = drivable_map[batch_idx,rows,cols]#[B,N,52]   
+        traj_values = drivable_map[batch_idx,rows,cols]#[B,N,52]   
 
 
-    reward_per_timestep = torch.where(traj_values == False,torch.tensor(-1.0,device=drivable_map.device),
-                                      torch.tensor(0.0,device=drivable_map.device))#[B,N,52]
+        reward_per_timestep = torch.where(traj_values == False,torch.tensor(-1.0,device=drivable_map.device),
+                                        torch.tensor(0.0,device=drivable_map.device))#[B,N,52]
 
-    offroad_reward = reward_per_timestep.sum(dim=-1)#[B,5]
-    # offroad_reward_mean = offroad_reward.mean(dim=1)
+        offroad_reward = reward_per_timestep.sum(dim=-1)#[B,5]
+        # offroad_reward_mean = offroad_reward.mean(dim=1)
 
-    collision_reward = compute_collision_reward(trajectory,batch)
-    # collision_reward_mean =  collision_reward.mean(dim=1)
-    reward = (offroad_reward+collision_reward).view(-1)
-    return reward
+        collision_reward = compute_collision_reward(trajectory,batch)
+        # collision_reward_mean =  collision_reward.mean(dim=1)
+        reward = (offroad_reward+collision_reward).view(-1)
+        return reward
     
 def compute_collision_reward(traj,batch,collision_thresh=0.2):
-    B, N, T, _ = traj.shape
-    ego_pos = traj
+    with torch.no_grad():
+        B, N, T, _ = traj.shape
+        ego_pos = traj
 
-    other_pos = batch['all_other_agents_future_positions']#[B,S,52,2]
-    avail = batch['all_other_agents_future_availability'] #[B,S,52] S个其他agents
+        other_pos = batch['all_other_agents_future_positions']#[B,S,52,2]
+        avail = batch['all_other_agents_future_availability'] #[B,S,52] S个其他agents
 
-    traj_exp = traj.unsqueeze(2)#[B,N,1,52,2]
-    other_pos_exp = other_pos.unsqueeze(1)#[B,1,S,52,2]
+        traj_exp = traj.unsqueeze(2)#[B,N,1,52,2]
+        other_pos_exp = other_pos.unsqueeze(1)#[B,1,S,52,2]
 
-    diff = traj_exp - other_pos_exp #[B,N,S,T,2]
-    distance = torch.norm(diff, dim=-1) #[B,N,S,52]
+        diff = traj_exp - other_pos_exp #[B,N,S,T,2]
+        distance = torch.norm(diff, dim=-1) #[B,N,S,52]
 
-    collision_mask = distance < collision_thresh
+        collision_mask = distance < collision_thresh
 
-    avail_exp = avail.unsqueeze(1) #[B,1,S,52]
-    valid_collision = collision_mask & avail_exp#[B,N,S,52]
+        avail_exp = avail.unsqueeze(1) #[B,1,S,52]
+        valid_collision = collision_mask & avail_exp#[B,N,S,52]
 
-    collision_count = valid_collision.float().sum(dim=2)# [B, N, 52]
-    collision_reward = -collision_count.sum(dim=-1) # [B, N]
+        collision_count = valid_collision.float().sum(dim=2)# [B, N, 52]
+        collision_reward = -collision_count.sum(dim=-1) # [B, N]
 
-    
-    
-    return collision_reward
+        return collision_reward
 
 def transform_points_tensor(trajectory_position,raster_from_agent):
-    B, N, T, F = trajectory_position.shape
-    points = trajectory_position.reshape(B, N * T, F)
-    num_dims = raster_from_agent.shape[-1] - 1 
-    T_matrix = raster_from_agent.transpose(1, 2)
+    with torch.no_grad():
+        B, N, T, F = trajectory_position.shape
+        points = trajectory_position.reshape(B, N * T, F)
+        num_dims = raster_from_agent.shape[-1] - 1 
+        T_matrix = raster_from_agent.transpose(1, 2)
 
-    linear_part = T_matrix[:, :num_dims, :num_dims]#[B,2,2]
-    translation_part = T_matrix[:, -1:, :num_dims]#[B,1,2]
+        linear_part = T_matrix[:, :num_dims, :num_dims]#[B,2,2]
+        translation_part = T_matrix[:, -1:, :num_dims]#[B,1,2]
 
-    transformed_points = torch.bmm(points, linear_part) + translation_part
-    transformed_trajectory = transformed_points.reshape(B, N, T, F)
-    return transformed_trajectory
+        transformed_points = torch.bmm(points, linear_part) + translation_part
+        transformed_trajectory = transformed_points.reshape(B, N, T, F)
+        return transformed_trajectory
 
 
 

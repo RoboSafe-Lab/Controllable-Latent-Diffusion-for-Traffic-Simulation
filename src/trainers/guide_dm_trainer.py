@@ -10,7 +10,7 @@ from models.rl.criticmodel import compute_reward,ReplayBuffer
 from torch.optim.lr_scheduler import LambdaLR
 import tbsim.utils.tensor_utils as TensorUtils
 from tqdm.auto import tqdm
-from alive_progress import alive_bar
+from memory_profiler import profile
 from rich.progress import Progress
 
 
@@ -77,7 +77,7 @@ class GuideDMLightningModule(pl.LightningModule):
             'name':'warmup_cosine_lr'
         }]
       
-  
+    #@profile
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
         aux_info, _,_ = self.vae.pre_vae(batch)
@@ -122,6 +122,7 @@ class GuideDMLightningModule(pl.LightningModule):
             self.log('train/reward', reward.mean(),batch_size=self.batch_size,prog_bar=True)
             self.steps_since_update = 0
             return vis_dict
+    # @profile
     def ppo_update(self):
         ppo_epochs = 10  # 外层 epoch 数
         eps = 0.2
@@ -172,10 +173,12 @@ class GuideDMLightningModule(pl.LightningModule):
                     opt.step()
                     
                     progress.update(batch_task, advance=1)
-
+                    del batch, x0_list, x1_list, log_p_old_list, reward_list, cond_feat_value
+                    del x0_batch, x1_batch, log_p_old_batch, reward_batch, advantage, aux_info_stacked, t_tensor, log_p_new, ratios, surr1, surr2, loss
                 progress.update(epoch_task, advance=1)
         
         mean_loss = torch.stack(losses).mean()
+        losses.clear() 
         return mean_loss
 
       

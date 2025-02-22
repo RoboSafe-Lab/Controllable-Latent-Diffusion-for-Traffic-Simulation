@@ -3,11 +3,11 @@ train:
   debug: false
 
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 50
+  plt_interval: 150
   plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/checkpoint/ppo/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-22 13:35:22 ppo/checkpoints/iterstep=69000_epepoch=0---val/loss.ckpt'
 
 
   training:
@@ -165,10 +165,10 @@ algo:
   hist_encoder_hidden: 128
 
   num_samp: 5 # N
-  ppo_mini_batch: 256  # M
+  ppo_mini_batch: 128  # M
 
-  buffer_max: 2000
+  buffer_max: 3000
   ppo_update_times: 300
-  update_interval: 30
+  update_interval: 10
 
 seed: 1
