@@ -93,3 +93,15 @@ class Hf_DataModule(PassUnifiedDataModule):
             persistent_workers=True,
 
         )
+    
+    def test_dataloader(self):
+        return DataLoader(
+            dataset=self.train_dataset,
+            shuffle=False, # since pytorch lightning only evals a subset of val on each epoch, shuffle
+            batch_size=self._train_config.validation.batch_size,
+            num_workers=self._train_config.validation.num_data_workers,
+            drop_last=True,
+            collate_fn=self.valid_dataset.get_collate_fn(return_dict=True),
+            persistent_workers=True,
+
+        )

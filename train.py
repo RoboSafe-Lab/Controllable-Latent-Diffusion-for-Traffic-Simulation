@@ -19,6 +19,9 @@ def train_ppo(cfg,debug=False):
     trainer, datamodule,model = prepare_trainer_and_data(cfg,train_mode='ppo',debug=cfg.train.debug)
     trainer.fit(model=model,datamodule=datamodule)
  
+def evaluate_model(cfg):
+    trainer, datamodule,model = prepare_trainer_and_data(cfg,train_mode='ppo')
+    results = trainer.test(model=model,datamodule=datamodule)
 def main(cfg):
     pl.seed_everything(cfg.seed)
     set_global_batch_type("trajdata")
@@ -27,12 +30,14 @@ def main(cfg):
     
     print("\n============= New Training Run with Config =============")
 
-    if cfg.train.mode == "vae":
+    if   cfg.train.mode == "vae":
         train_vae(cfg)
     elif cfg.train.mode == "dm":
         train_dm(cfg)
     elif cfg.train.mode == 'ppo':
         train_ppo(cfg)
+    elif cfg.train.mode == 'test':
+        evaluate_model(cfg)
     else:
         raise ValueError(f"Unknown train mode: {cfg.train.mode}") 
 

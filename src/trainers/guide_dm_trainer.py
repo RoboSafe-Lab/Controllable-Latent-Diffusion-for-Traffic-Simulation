@@ -12,7 +12,8 @@ import tbsim.utils.tensor_utils as TensorUtils
 from tqdm.auto import tqdm
 from memory_profiler import profile
 from rich.progress import Progress
-
+from scipy.stats import wasserstein_distance
+import numpy as np
 
 class GuideDMLightningModule(pl.LightningModule):
     def __init__(self, algo_config,train_config,modality_shapes,ckpt_dm):
@@ -51,6 +52,9 @@ class GuideDMLightningModule(pl.LightningModule):
         self.steps_since_update=0
 
         self.automatic_optimization = False
+
+
+        self.dt = algo_config.step_time
     def configure_optimizers(self):  
 
         optim_params_dm = self.algo_config.optim_params["dm"]
@@ -200,10 +204,79 @@ class GuideDMLightningModule(pl.LightningModule):
         reward = compute_reward(state_descaled,batch).mean() #[B, num_samp] 
         self.log('val/reward',reward,batch_size=self.batch_size,prog_bar=True)
         
+    def test_step(self, batch):
+        batch = batch_utils().parse_batch(batch) 
+        aux_info, state_and_action,_ = self.vae.pre_vae(batch)
+        out_dict = self.dm(batch,aux_info,self.algo_config)
+        x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
+        aux_info = out_dict['aux_info']
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
+        recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True) #[B,52,6]
+
+        dt = self.dt
+
+        #计算纵向加速度
+        long_acc_gt = state_and_action[...,4] #
+        long_acc_pred = recon_state_and_action_descaled[...,4]
+
+        #计算横向加速度
+        lat_acc_gt = state_and_action[..., 2] * state_and_action[..., 5]
+        lat_acc_pred = recon_state_and_action_descaled[..., 2] * recon_state_and_action_descaled[..., 5]
+
+        #计算Jerk
+        jerk_gt = (long_acc_gt[:, 1:] - long_acc_gt[:, :-1]) / dt
+        jerk_pred = (long_acc_pred[:, 1:] - long_acc_pred[:, :-1]) / dt
+
+        long_acc_gt_flat = long_acc_gt.detach().cpu().numpy().flatten()
+        long_acc_pred_flat = long_acc_pred.detach().cpu().numpy().flatten()
+        lat_acc_gt_flat = lat_acc_gt.detach().cpu().numpy().flatten()
+        lat_acc_pred_flat = lat_acc_pred.detach().cpu().numpy().flatten()
+        jerk_gt_flat = jerk_gt.detach().cpu().numpy().flatten()
+        jerk_pred_flat = jerk_pred.detach().cpu().numpy().flatten()
+
+        self.test_outputs = []
+        self.test_outputs.append({
+                'long_acc_gt': long_acc_gt_flat,
+                'long_acc_pred': long_acc_pred_flat,
+                'lat_acc_gt': lat_acc_gt_flat,
+                'lat_acc_pred': lat_acc_pred_flat,
+                'jerk_gt': jerk_gt_flat,
+                'jerk_pred': jerk_pred_flat,
+    })
       
 
+        return {}
 
+    def on_test_epoch_end(self):
+        outputs = self.test_outputs
+        long_acc_gt_all = np.concatenate([x['long_acc_gt'] for x in outputs])
+        long_acc_pred_all = np.concatenate([x['long_acc_pred'] for x in outputs])
+        lat_acc_gt_all = np.concatenate([x['lat_acc_gt'] for x in outputs])
+        lat_acc_pred_all = np.concatenate([x['lat_acc_pred'] for x in outputs])
+        jerk_gt_all = np.concatenate([x['jerk_gt'] for x in outputs])
+        jerk_pred_all = np.concatenate([x['jerk_pred'] for x in outputs])
 
+        wd_long = wasserstein_distance(long_acc_gt_all, long_acc_pred_all)
+        wd_lat = wasserstein_distance(lat_acc_gt_all, lat_acc_pred_all)
+        wd_jerk = wasserstein_distance(jerk_gt_all, jerk_pred_all)
+
+        realism_deviation = (wd_long + wd_lat + wd_jerk) / 3.0
+
+        self.log('wd_long', wd_long, prog_bar=True)
+        self.log('wd_lat', wd_lat, prog_bar=True)
+        self.log('wd_jerk', wd_jerk, prog_bar=True)
+        self.log('realism_deviation', realism_deviation, prog_bar=True)
+
+        print(f"Test Epoch: wd_long={wd_long:.4f}, wd_lat={wd_lat:.4f}, wd_jerk={wd_jerk:.4f}, realism_deviation={realism_deviation:.4f}")
+
+        return {
+        'wd_long': wd_long,
+        'wd_lat': wd_lat,
+        'wd_jerk': wd_jerk,
+        'realism_deviation': realism_deviation,
+    }
+        
+   
     def on_save_checkpoint(self, checkpoint):
         full_sd = super().state_dict()
 
@@ -213,10 +286,4 @@ class GuideDMLightningModule(pl.LightningModule):
                 dm_only_sd[k] = v
     
         checkpoint["state_dict"] = dm_only_sd
-    # def on_after_backward(self):
-    #     max_norm=1e6
-    #     total_norm = torch.nn.utils.clip_grad_norm(self.dm.parameters(),max_norm=max_norm)
-
-    #     total_norm=  float(total_norm)
-    #     self.log('grad_norm', total_norm,on_step=True,on_epoch=False)          
-
+ 

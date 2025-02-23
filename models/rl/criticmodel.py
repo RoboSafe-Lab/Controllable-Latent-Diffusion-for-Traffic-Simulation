@@ -31,6 +31,7 @@ def compute_reward(trajectory,batch):
         collision_reward = compute_collision_reward(trajectory,batch)
         # collision_reward_mean =  collision_reward.mean(dim=1)
         reward = (offroad_reward+collision_reward).view(-1)
+
         return reward
     
 def compute_collision_reward(traj,batch,collision_thresh=0.2):
@@ -70,6 +71,8 @@ def transform_points_tensor(trajectory_position,raster_from_agent):
         transformed_points = torch.bmm(points, linear_part) + translation_part
         transformed_trajectory = transformed_points.reshape(B, N, T, F)
         return transformed_trajectory
+
+
 
 
 
@@ -115,8 +118,6 @@ class ReplayBuffer:
     def __len__(self):
         return len(self.buffer)
         
-
-
 def detach_aux_info(aux_info):
     detached = {}
     for key, value in aux_info.items():

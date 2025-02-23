@@ -1,5 +1,5 @@
 train:
-  mode: "ppo"
+  mode: "test"
   debug: false
 
   trajdata_cache_location: "~/my_custom_cache_location"
@@ -7,17 +7,17 @@ train:
   plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/checkpoint/ppo/media/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/checkpoint/ppo/loss.ckpt'
 
 
   training:
-    batch_size: 64
+    batch_size: 512
     epochs: 6
     num_steps: 1000
     num_data_workers: 20
 
   validation:
-    batch_size: 64
+    batch_size: 1024
     every_n_steps: 100
     num_steps_per_epoch: 15 #每次validation时,运行多少step
     num_data_workers: 20
@@ -164,7 +164,7 @@ algo:
       - [13.0717, 2.2462, 3.6187, 0.2210, 2.5770, 0.0840]
   hist_encoder_hidden: 128
 
-  num_samp: 5 # N
+  num_samp: 1 # N
   ppo_mini_batch: 128  # M
 
   buffer_max: 3000
