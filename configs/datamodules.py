@@ -4,6 +4,7 @@ from tbsim.utils.trajdata_utils import TRAJDATA_AGENT_TYPE_MAP, get_closest_lane
 from collections import defaultdict
 import gc
 import os
+from torch.utils.data import DataLoader
 class Hf_DataModule(PassUnifiedDataModule):
     def setup(self, stage = None):
         data_cfg = self._data_config
@@ -68,3 +69,27 @@ class Hf_DataModule(PassUnifiedDataModule):
         self.num_sem_layers = 0 if not data_cfg.trajdata_incl_map else data_cfg.num_sem_layers
 
         gc.collect()
+
+    def train_dataloader(self):
+        return DataLoader(
+            dataset=self.train_dataset,
+            shuffle=True,
+            batch_size=self._train_config.training.batch_size,
+            num_workers=self._train_config.training.num_data_workers,
+            drop_last=True,
+            collate_fn=self.train_dataset.get_collate_fn(return_dict=True),
+            persistent_workers=True,
+
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            dataset=self.valid_dataset,
+            shuffle=False, # since pytorch lightning only evals a subset of val on each epoch, shuffle
+            batch_size=self._train_config.validation.batch_size,
+            num_workers=self._train_config.validation.num_data_workers,
+            drop_last=True,
+            collate_fn=self.valid_dataset.get_collate_fn(return_dict=True),
+            persistent_workers=True,
+
+        )

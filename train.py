@@ -2,7 +2,6 @@ import yaml,argparse
 import pytorch_lightning as pl
 from tbsim.utils.batch_utils import set_global_batch_type
 from tbsim.utils.trajdata_utils import set_global_trajdata_batch_env, set_global_trajdata_batch_raster_cfg
-from datetime import  datetime
 from configs.custom_config import dict_to_config,ConfigBase
 from tbsim.configs.base import ExperimentConfig
 from utils.trainer_utils import prepare_trainer_and_data

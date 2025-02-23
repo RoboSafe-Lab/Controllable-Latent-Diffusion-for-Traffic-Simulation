@@ -7,7 +7,7 @@ train:
   plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt'
-  checkpoint_dm: '/home/visier/hazardforge/HazardForge/logs/2025-02-22 13:35:22 ppo/checkpoints/iterstep=69000_epepoch=0---val/loss.ckpt'
+  checkpoint_dm: '/home/visier/hazardforge/HazardForge/checkpoint/ppo/media/loss.ckpt'
 
 
   training:
