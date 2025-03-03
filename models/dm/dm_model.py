@@ -67,13 +67,7 @@ class DmModel(nn.Module):
         self._dynamics_type = algo_config.dynamics.type
         self._dynamics_kwargs=algo_config.dynamics
         self._create_dynamics()
-        '''
-        diffuser_norm_info = algo_config.nusc_norm_info.diffuser
-        norm_add_coeffs = diffuser_norm_info[0]
-        norm_div_coeffs = diffuser_norm_info[1]
-        self.add_coeffs = np.array(norm_add_coeffs).astype('float32')
-        self.div_coeffs = np.array(norm_div_coeffs).astype('float32')
-        '''
+
     def _create_dynamics(self):
         if self._dynamics_type in ["Unicycle", dynamics.DynType.UNICYCLE]:
             self.dyn = dynamics.Unicycle(
@@ -87,11 +81,10 @@ class DmModel(nn.Module):
 
     def compute_losses(self,aux_info,z0):
         batch_size = len(z0)
-        t = torch.randint(0, self.n_timesteps, (batch_size,), device=z0.device).long()# 128 在(0,100)之内
-        noise_init = torch.randn_like(z0) #[B,52,4=latent_dim] 
+        t = torch.randint(0, self.n_timesteps, (batch_size,), device=z0.device).long()
+        noise_init = torch.randn_like(z0) 
         z_noisy = self.q_sample(x_0=z0, t=t, noise=noise_init) 
-        noise = self.model(z_noisy, aux_info, t)#[B,52,latent]
-        # z_recon = self.predict_start_from_noise(z_noisy, t=t, noise=noise)
+        noise = self.model(z_noisy, aux_info, t)
         loss = F.mse_loss(noise_init,noise)
         return loss
 
@@ -114,8 +107,8 @@ class DmModel(nn.Module):
         #NOTE:p_sample_loop:      
         device = self.betas.device
 
-        x = torch.randn(shape, device=device)#[B,N,52,4]
-        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)#[B*N,52,4]
+        x = torch.randn(shape, device=device)
+        x = TensorUtils.join_dimensions(x, begin_axis=0, end_axis=2)
         
         x_1 = None
         x_0 = None
@@ -126,7 +119,7 @@ class DmModel(nn.Module):
         steps = [i for i in reversed(range(0, self.n_timesteps, self.stride))]
 
         for i in steps:
-            t = torch.full((batch_size*algo_config.num_samp,), i, device=device, dtype=torch.long)#[99,99,99,99...B*num_samp个]
+            t = torch.full((batch_size*algo_config.num_samp,), i, device=device, dtype=torch.long)
             x, x_tminus1_mean, sigma = self.x_Tminus1(x,t,aux_info)
           
             
@@ -137,14 +130,11 @@ class DmModel(nn.Module):
                 dist = torch.distributions.Normal(x_tminus1_mean, sigma)
                 log_prob_final = dist.log_prob(x)
                 log_prob_final=log_prob_final.mean(dim=(1, 2))
-        # x_0 = TensorUtils.reshape_dimensions(x_0, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
-        # x_1 = TensorUtils.reshape_dimensions(x_1, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
-        # log_prob_final = TensorUtils.reshape_dimensions(log_prob_final, begin_axis=0, end_axis=1, target_dims=(batch_size, num_samp))
-      
+ 
         out_dict = {
-                    'pred_traj' : x_0,#[B*N,52,4]
-                    'x1':x_1, #[B*N,52,4]
-                    'log_prob_final':log_prob_final, #[B*N]
+                    'pred_traj' : x_0,
+                    'x1':x_1, 
+                    'log_prob_final':log_prob_final,
                     'aux_info':aux_info
                     }
                 
@@ -168,8 +158,8 @@ class DmModel(nn.Module):
     def x_tminus1_mean_var(self,xt,noise,t):
         x_t_minus1_mean =  (
             extract(self.x_t_cof, t,xt.shape)*xt - extract(self.noise_cof,t,noise.shape)*noise
-        )#[B*N,52,4]
-        x_t_minus1_log_var = extract(self.posterior_log_variance_clipped, t, xt.shape)#[B*N,1,1]
+        )
+        x_t_minus1_log_var = extract(self.posterior_log_variance_clipped, t, xt.shape)
         return x_t_minus1_mean,x_t_minus1_log_var
     
     def log_prob(self, x_t, x_t_minus_1, aux_info, t ):
@@ -179,6 +169,6 @@ class DmModel(nn.Module):
 
         new_dist = torch.distributions.Normal(x_tminus1_mean,sigma)
 
-        log_p = new_dist.log_prob(x_t_minus_1)#[M,52,4]
-        log_p = log_p.mean(dim=(1, 2))#[M]
+        log_p = new_dist.log_prob(x_t_minus_1)
+        log_p = log_p.mean(dim=(1, 2))
         return log_p

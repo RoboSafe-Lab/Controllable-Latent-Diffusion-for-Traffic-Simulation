@@ -66,8 +66,8 @@ if __name__ == '__main__':
     # dataloader = datamodule.train_dataloader()
 
 
-    # total_sum = torch.zeros(6)          # 用于存储所有数据中每个特征的和，初始值为 [0,0,0,0,0,0]
-    # total_sq_sum = torch.zeros(6)       # 用于存储所有数据中每个特征的平方和，初始值为 [0,0,0,0,0,0]
+    # total_sum = torch.zeros(6)          
+    # total_sq_sum = torch.zeros(6)       
     # total_count = 0
 
     # i = 0

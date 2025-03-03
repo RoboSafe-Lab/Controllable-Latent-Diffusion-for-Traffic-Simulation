@@ -23,13 +23,9 @@ class UnifiedTrainer(pl.LightningModule):
         self.train_config = train_config
         self._do_log = do_log
 
-        # assigned at run-time according to the given data batch
         self.data_centric = None
-        # ['agent_centric', 'scene_centric']
         self.coordinate = algo_config.coordinate
-        # used only when data_centric == 'scene' and coordinate == 'agent'
         self.scene_agent_max_neighbor_dist = algo_config.scene_agent_max_neighbor_dist
-        # to help control stationary agent's behavior
         self.disable_control_on_stationary = algo_config.disable_control_on_stationary
         self.moving_speed_th = algo_config.moving_speed_th
         self.stationary_mask = None
@@ -132,14 +128,7 @@ class UnifiedTrainer(pl.LightningModule):
         self.val_batch_size = self.train_config.validation.batch_size
         self.plot_interval = self.train_config.plt_interval
 
-        '''
-        (B,256)->(B,1,256)
 
-        (B,52,x,y,vel,yaw,)
-            +
-        map:(B,seq,256)考虑current_state 目前先这样做,以后去掉也方便
-        '''
-        # set up EMA
         self.use_ema = algo_config.use_ema
         if self.use_ema:
             print('DIFFUSER: using EMA... val and get_action will use ema model')
@@ -178,7 +167,6 @@ class UnifiedTrainer(pl.LightningModule):
                 weight_decay=optim_params_vae["regularization"]["L2"],
               
             )
-            # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,mode='min',factor=0.5,patience=3)
             scheduler = torch.optim.lr_scheduler.OneCycleLR(
                 optimizer,
                 max_lr=1e-3,                  
@@ -262,7 +250,7 @@ class UnifiedTrainer(pl.LightningModule):
 
         elif self.train_mode == "dm":
             aux_info,unscaled_input,scaled_input = self.pre_vae(batch)
-            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
+            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])
             loss = self.dm.compute_losses(z,aux_info)
 
             self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size)
@@ -302,7 +290,7 @@ class UnifiedTrainer(pl.LightningModule):
         aux_info = self.get_aux_info(batch)
 
 
-        unscaled_input = self.get_state_and_action_from_data_batch(batch)#[B,52,6]
+        unscaled_input = self.get_state_and_action_from_data_batch(batch)
         scaled_input = self.scale_traj(unscaled_input)
         return aux_info,unscaled_input,scaled_input
 
@@ -311,18 +299,18 @@ class UnifiedTrainer(pl.LightningModule):
         device = data_batch["history_positions"].device
         cond_feat_in = torch.empty((N,0)).to(device)
 
-        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())#[B,4]
-        curr_states_input = self.scale_traj(curr_states,[0,1,2,3])#[B,4]
-        curr_state_feat = self.agent_state_encoder(curr_states_input)#[B,64]
-        cond_feat_in = torch.cat([cond_feat_in, curr_state_feat], dim=-1)#[B,0+64]
+        curr_states = batch_utils().get_current_states(data_batch, dyn_type=self.dyn.type())
+        curr_states_input = self.scale_traj(curr_states,[0,1,2,3])
+        curr_state_feat = self.agent_state_encoder(curr_states_input)
+        cond_feat_in = torch.cat([cond_feat_in, curr_state_feat], dim=-1)
 
-        image_batch = data_batch["image"]#[B,34,224,224]包含历史轨迹和邻居轨迹
-        map_global_feat, map_grid_feat = self.map_encoder(image_batch)#[B,256]
-        cond_feat_in = torch.cat([cond_feat_in, map_global_feat], dim=-1)#[B,64+256=320]
-        cond_feat = self.process_cond_mlp(cond_feat_in)#[B,256]
+        image_batch = data_batch["image"]
+        map_global_feat, map_grid_feat = self.map_encoder(image_batch)
+        cond_feat_in = torch.cat([cond_feat_in, map_global_feat], dim=-1)
+        cond_feat = self.process_cond_mlp(cond_feat_in)
         aux_info = {
-            'cond_feat': cond_feat, #已经归一化输入
-            'curr_states': curr_states, #没有归一化
+            'cond_feat': cond_feat,
+            'curr_states': curr_states, 
         }
         return aux_info
     
@@ -352,8 +340,8 @@ class UnifiedTrainer(pl.LightningModule):
 
         squeeze_time_dim = False
         if target_traj_orig.dim() == 2:
-        # 变成 [B, 1, D]
-            target_traj_orig = target_traj_orig.unsqueeze(1)#[B,1,4]
+      
+            target_traj_orig = target_traj_orig.unsqueeze(1)
             squeeze_time_dim = True
 
 
@@ -411,7 +399,7 @@ class UnifiedTrainer(pl.LightningModule):
 
         else:
             aux_info,_,scaled_input = self.pre_vae(batch)
-            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])#[B,128]
+            z = self.vae.getZ(scaled_input,aux_info["cond_feat"])
             loss = self.dm.compute_losses(z,aux_info)
 
             self.log('val/loss',loss,on_step=False, on_epoch=True,batch_size=self.batch_size)
@@ -431,7 +419,7 @@ class UnifiedTrainer(pl.LightningModule):
         for k in range(num_samp):
             traj_k = sampled_output_3d[:, k, :]
             scaled_output_k = self.convert_action_to_state_and_action(traj_k, aux_info['curr_states']) 
-            descaled_output_k = self.descale_traj(scaled_output_k)  # => shape [B, ...]
+            descaled_output_k = self.descale_traj(scaled_output_k)  
 
             all_recon_trajs.append(descaled_output_k)
      
@@ -474,7 +462,6 @@ class UnifiedTrainer(pl.LightningModule):
                 save_path = os.path.join(self.image_dir, f"trajectory_fig_step{self.global_step}.png")
                 fig.savefig(save_path, dpi=300)
 
-                # Close the figure to free memory
                 plt.close(fig)
 
     def on_train_epoch_end(self):
@@ -490,7 +477,6 @@ class UnifiedTrainer(pl.LightningModule):
     
 
         if self.train_mode == "vae":
-            # Monitor metrics specific to VAE training
             return {"val_loss": "val/loss"}
         elif self.train_mode == "dm":
             return {"val_loss": "val/loss"}

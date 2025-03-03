@@ -1,9 +1,9 @@
 train:
-  mode: "test"
-  debug: false
+  mode: "ppo"
+  debug: true
 
   trajdata_cache_location: "~/my_custom_cache_location"
-  plt_interval: 150
+  plt_interval: 150000000
   plt_indices: [0,10,20,30]
   
   checkpoint_vae: '/home/visier/hazardforge/HazardForge/checkpoint/vae/loss.ckpt'
@@ -11,14 +11,14 @@ train:
 
 
   training:
-    batch_size: 512
+    batch_size: 128
     epochs: 6
     num_steps: 1000
     num_data_workers: 20
 
   validation:
-    batch_size: 1024
-    every_n_steps: 100
+    batch_size: 128
+    every_n_steps: 1000000
     num_steps_per_epoch: 15 #每次validation时,运行多少step
     num_data_workers: 20
     enabled: true
@@ -66,9 +66,9 @@ env:
       - "vehicle"
     trajdata_scene_desc_contains: null
     trajdata_incl_map: true
-    trajdata_max_agents_distance: 20
+    trajdata_max_agents_distance: 50
     trajdata_standardize_data: true            #设置为true则采用局部坐标系,以agent为原点| false 使用全局坐标系,真实轨迹数据
-    other_agents_num: 10
+    other_agents_num: 30
 
   rasterizer:
     include_hist: true

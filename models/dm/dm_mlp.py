@@ -18,9 +18,9 @@ class ResidualBlock(nn.Module):
 class MLPResNetwork(nn.Module):
     def __init__(
             self,
-            latent_dim,#128
-            cond_dim, #256
-            time_dim, #128
+            latent_dim,
+            cond_dim, 
+            time_dim, 
             num_res_blocks
             ):
         super().__init__()
@@ -41,9 +41,9 @@ class MLPResNetwork(nn.Module):
         ])
     def forward(self,x,aux_info,time):
 
-        t_emb = self.time_mlp(time) # [B, time_dim=128]
-        context = aux_info['context']#[B,256]
-        cond = torch.cat([t_emb, context], dim=-1)#[B,128+256]
+        t_emb = self.time_mlp(time) 
+        context = aux_info['context']
+        cond = torch.cat([t_emb, context], dim=-1)
 
         for block in self.blocks:
             x = block(x, cond)

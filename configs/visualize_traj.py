@@ -7,7 +7,6 @@ import os
 from l5kit.geometry import transform_points
 from pytorch_lightning.callbacks.progress import TQDMProgressBar
 from models.rl.criticmodel import transform_points_tensor
-# matplotlib.use('TkAgg')  # or another supported GUI backend
 def vis(pred,ori,image,raster):
     idx1=0
     idx2=10
@@ -92,7 +91,6 @@ class TrajectoryVisualizationCallback(pl.Callback):
             if isinstance(outputs, list):
                 outputs = outputs[0]
             output = outputs['log_dict']
-            # Ensure that we have trajectories to plot
             input = output['input'].detach().cpu().numpy()
             raster_from_agent = output['raster_from_agent'].detach().cpu().numpy()
 
@@ -112,7 +110,6 @@ class TrajectoryVisualizationCallback(pl.Callback):
             save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
             fig.savefig(save_path, dpi=300)
 
-            # Close the figure to free memory
             plt.close(fig)
 
 class VisierProgressBar(TQDMProgressBar):
@@ -140,7 +137,6 @@ class PPOVisualizationCallback(pl.Callback):
                 outputs = outputs[0]
           
             
-            # Ensure that we have trajectories to plot
             traj = outputs['traj']
             raster_from_agent = outputs['raster_from_agent']
             traj_raster = transform_points_tensor(traj,raster_from_agent)
@@ -155,7 +151,6 @@ class PPOVisualizationCallback(pl.Callback):
             save_path = os.path.join(self.save_dir, f"trajectory_fig_step{trainer.global_step}.png")
             fig.savefig(save_path, dpi=300)
 
-            # Close the figure to free memory
             plt.close(fig)
 
 def ppo_vis(image,traj_raster,indices=[0]):

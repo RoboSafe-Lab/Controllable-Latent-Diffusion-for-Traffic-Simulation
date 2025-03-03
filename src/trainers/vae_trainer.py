@@ -81,37 +81,5 @@ class VAELightningModule(pl.LightningModule):
         self.log("lr", current_lr, on_step=True, on_epoch=False)
         self.log("beta", self.beta, on_step=True, on_epoch=False)    
 
-    # def on_after_optimizer_step(self, optimizer, optimizer_idx):
-    #     if self.use_ema and (self.global_step % self.ema_update_every == 0):
-    #         self.step_ema(self.global_step)
- 
-
- 
- 
-
-    # def reset_parameters(self):
-    #     self.ema_policy.load_state_dict(self.vae.state_dict())
-    # def step_ema(self, step):
-    #     if step < self.ema_start_step:
-    #         self.reset_parameters()
-    #         return
-    #     self.ema.update_model_average(self.ema_policy, self.vae)
-
-    # def on_save_checkpoint(self, checkpoint):
-    #     if self.use_ema:
-    #         ema_state = {}
-    #         with torch.no_grad():
-    #             for name,param in self.ema_policy.named_parameters():
-    #                 ema_state[name]=param.detach().cpu().clone()
-    #         checkpoint["ema_state"] = ema_state
-
-    # def on_load_checkpoint(self, checkpoint):
-    #     if self.use_ema and ("ema_state" in checkpoint):
-    #         ema_state = checkpoint["ema_state"]
-    #         with torch.no_grad():
-    #             for name, param in self.ema_policy.named_parameters():
-    #                 if name in ema_state:
-    #                     param.copy_(ema_state[name])
-
 
 

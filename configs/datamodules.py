@@ -65,7 +65,7 @@ class Hf_DataModule(PassUnifiedDataModule):
         kwargs["desired_data"] = data_cfg.trajdata_source_valid
         self.valid_dataset = UnifiedDataset(**kwargs)
 
-        # set modality shape based on input
+      
         self.num_sem_layers = 0 if not data_cfg.trajdata_incl_map else data_cfg.num_sem_layers
 
         gc.collect()
@@ -85,7 +85,7 @@ class Hf_DataModule(PassUnifiedDataModule):
     def val_dataloader(self):
         return DataLoader(
             dataset=self.valid_dataset,
-            shuffle=False, # since pytorch lightning only evals a subset of val on each epoch, shuffle
+            shuffle=False, 
             batch_size=self._train_config.validation.batch_size,
             num_workers=self._train_config.validation.num_data_workers,
             drop_last=True,
@@ -96,8 +96,8 @@ class Hf_DataModule(PassUnifiedDataModule):
     
     def test_dataloader(self):
         return DataLoader(
-            dataset=self.train_dataset,
-            shuffle=False, # since pytorch lightning only evals a subset of val on each epoch, shuffle
+            dataset=self.valid_dataset,
+            shuffle=False, 
             batch_size=self._train_config.validation.batch_size,
             num_workers=self._train_config.validation.num_data_workers,
             drop_last=True,

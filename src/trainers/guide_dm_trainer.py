@@ -6,7 +6,7 @@ import pytorch_lightning as pl
 from models.vae.vae_model import VaeModel
 from models.dm.dm_model import DmModel
 import math
-from models.rl.criticmodel import compute_reward,ReplayBuffer
+from models.rl.criticmodel import compute_reward,ReplayBuffer,failure_rate_compute
 from torch.optim.lr_scheduler import LambdaLR
 import tbsim.utils.tensor_utils as TensorUtils
 from tqdm.auto import tqdm
@@ -81,30 +81,28 @@ class GuideDMLightningModule(pl.LightningModule):
             'name':'warmup_cosine_lr'
         }]
       
-    #@profile
     def training_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
         aux_info, _,_ = self.vae.pre_vae(batch)
         out_dict = self.dm(batch,aux_info,self.algo_config)
 
-        x1 = out_dict['x1']         # shape: [B* N, T, latent_size]
-        x0 = out_dict['pred_traj']  # shape: [B* N, T, latent_size]
-        log_prob_old = out_dict['log_prob_final']#[B*N]
+        x1 = out_dict['x1']         
+        x0 = out_dict['pred_traj']  
+        log_prob_old = out_dict['log_prob_final']
 
         aux_info = out_dict['aux_info']
-        # aux_info_cpu = {k: (v.detach().cpu() if isinstance(v, torch.Tensor) else v) for k, v in aux_info.items()}
         cond_feat_value = aux_info['cond_feat'].detach().cpu() if isinstance(aux_info['cond_feat'], torch.Tensor) else aux_info['cond_feat']
 
 
-        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])
         recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
       
-        state_descaled = recon_state_and_action_descaled[...,:2] #[B*N,52,2]
-        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
+        state_descaled = recon_state_and_action_descaled[...,:2] 
+        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))
+        recon_state_and_action_descaled = TensorUtils.reshape_dimensions(recon_state_and_action_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))
+        recon_state_and_action_scaled = self.vae.scale_traj(recon_state_and_action_descaled)
+        reward = compute_reward(recon_state_and_action_descaled,batch,recon_state_and_action_scaled) 
 
-        reward = compute_reward(state_descaled,batch) #[B, N]
-
-        # aux_info_detached = detach_aux_info(aux_info)
         self.replay_buffer.add(x0,x1,log_prob_old,reward,cond_feat_value)
         
        
@@ -114,7 +112,6 @@ class GuideDMLightningModule(pl.LightningModule):
             'traj':state_descaled,
         }
         self.steps_since_update += 1
-        # if len(self.replay_buffer) < self.buffer_max or self.steps_since_update < self.update_interval:
         if self.steps_since_update < self.update_interval:
             self.log('train/reward', reward.mean(),batch_size=self.batch_size,prog_bar=True)
             
@@ -126,9 +123,9 @@ class GuideDMLightningModule(pl.LightningModule):
             self.log('train/reward', reward.mean(),batch_size=self.batch_size,prog_bar=True)
             self.steps_since_update = 0
             return vis_dict
-    # @profile
+   
     def ppo_update(self):
-        ppo_epochs = 10  # 外层 epoch 数
+        ppo_epochs = 10  
         eps = 0.2
         losses = []
         opt = self.optimizers()
@@ -146,21 +143,21 @@ class GuideDMLightningModule(pl.LightningModule):
                     
                   
                     x0_batch = torch.stack(x0_list).to(self.device)
-                    x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1))  # shape: [M, T, latent_dim]
+                    x0_batch = x0_batch.view(-1, x0_batch.size(-2), x0_batch.size(-1)) 
 
                     x1_batch = torch.stack(x1_list).to(self.device)
-                    x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))  # shape: [M, T, latent_dim]
+                    x1_batch = x1_batch.view(-1, x1_batch.size(-2), x1_batch.size(-1))  
 
-                    log_p_old_batch = torch.stack(log_p_old_list).to(self.device).view(-1)  # shape: [M]
-                    reward_batch = torch.stack(reward_list).to(self.device).view(-1)  # shape: [M]
+                    log_p_old_batch = torch.stack(log_p_old_list).to(self.device).view(-1)  
+                    reward_batch = torch.stack(reward_list).to(self.device).view(-1)  
                     
             
                     baseline = self.replay_buffer.get_baseline()
-                    advantage = reward_batch - baseline  # shape: [M]
+                    advantage = reward_batch - baseline 
                     
     
                     aux_info_stacked = torch.stack(cond_feat_value, dim=0).to(self.device)
-                    # 调整为二维张量：[M, cond_dim]
+                   
                   
                     t_tensor = torch.zeros(x0_batch.size(0), device=self.device, dtype=torch.long)
                    
@@ -191,39 +188,45 @@ class GuideDMLightningModule(pl.LightningModule):
         aux_info, _,_ = self.vae.pre_vae(batch)
         out_dict = self.dm(batch,aux_info,self.algo_config)
 
-        x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
+        x0 = out_dict['pred_traj']  
         
         aux_info = out_dict['aux_info']
 
-        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])
         recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True)
       
-        state_descaled = recon_state_and_action_descaled[...,:2] #[B*N,52,2]
-        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))#[B,N,52,2]
+        state_descaled = recon_state_and_action_descaled[...,:2] 
+        state_descaled = TensorUtils.reshape_dimensions(state_descaled,begin_axis=0,end_axis=1,target_dims=(self.batch_size,self.num_samp))
 
-        reward = compute_reward(state_descaled,batch).mean() #[B, num_samp] 
+        reward = compute_reward(state_descaled,batch).mean() 
         self.log('val/reward',reward,batch_size=self.batch_size,prog_bar=True)
         
     def test_step(self, batch):
         batch = batch_utils().parse_batch(batch) 
         aux_info, state_and_action,_ = self.vae.pre_vae(batch)
         out_dict = self.dm(batch,aux_info,self.algo_config)
-        x0 = out_dict['pred_traj']  # shape: [B* num_samp, horizon, latent_size]
+        x0 = out_dict['pred_traj']  
         aux_info = out_dict['aux_info']
-        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])#[B*N,52,2]
-        recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True) #[B,52,6]
+        action_decoder = self.vae.lstmvae.lstm_dec(x0,aux_info['cond_feat'])
+        recon_state_and_action_descaled = self.vae.convert_action_to_state_and_action(action_decoder,aux_info['curr_states'],descaled_output=True) 
 
+        stats = failure_rate_compute(recon_state_and_action_descaled,batch)
+        self.all_failure_stats = []
+        self.all_failure_stats.append(stats)
+
+
+        recon_state_and_action_scaled = self.vae.scale_traj(recon_state_and_action_descaled)
         dt = self.dt
 
-        #计算纵向加速度
-        long_acc_gt = state_and_action[...,4] #
-        long_acc_pred = recon_state_and_action_descaled[...,4]
+        
+        long_acc_gt = state_and_action[...,4] 
+        long_acc_pred = recon_state_and_action_scaled[...,4]
 
-        #计算横向加速度
+        
         lat_acc_gt = state_and_action[..., 2] * state_and_action[..., 5]
-        lat_acc_pred = recon_state_and_action_descaled[..., 2] * recon_state_and_action_descaled[..., 5]
+        lat_acc_pred = recon_state_and_action_scaled[..., 2] * recon_state_and_action_scaled[..., 5]
 
-        #计算Jerk
+     
         jerk_gt = (long_acc_gt[:, 1:] - long_acc_gt[:, :-1]) / dt
         jerk_pred = (long_acc_pred[:, 1:] - long_acc_pred[:, :-1]) / dt
 
@@ -242,12 +245,27 @@ class GuideDMLightningModule(pl.LightningModule):
                 'lat_acc_pred': lat_acc_pred_flat,
                 'jerk_gt': jerk_gt_flat,
                 'jerk_pred': jerk_pred_flat,
-    })
+            })
       
 
         return {}
 
     def on_test_epoch_end(self):
+        offroad_rates = [stat['offroad_failure_rate'] for stat in self.all_failure_stats]
+        collision_rates = [stat['collision_failure_rate'] for stat in self.all_failure_stats]
+        overall_rates = [stat['overall_failure_rate'] for stat in self.all_failure_stats]
+        
+        avg_offroad_failure_rate = sum(offroad_rates) / len(offroad_rates)
+        avg_collision_failure_rate = sum(collision_rates) / len(collision_rates)
+        avg_overall_failure_rate = sum(overall_rates) / len(overall_rates)
+        
+        self.log("avg_offroad_failure_rate", avg_offroad_failure_rate, prog_bar=True)
+        self.log("avg_collision_failure_rate", avg_collision_failure_rate, prog_bar=True)
+        self.log("avg_overall_failure_rate", avg_overall_failure_rate, prog_bar=True)
+        
+        print(f"Epoch Average Offroad Failure Rate: {avg_offroad_failure_rate:.4f}")
+        print(f"Epoch Average Collision Failure Rate: {avg_collision_failure_rate:.4f}")
+        print(f"Epoch Average Overall Failure Rate: {avg_overall_failure_rate:.4f}")
         outputs = self.test_outputs
         long_acc_gt_all = np.concatenate([x['long_acc_gt'] for x in outputs])
         long_acc_pred_all = np.concatenate([x['long_acc_pred'] for x in outputs])
@@ -259,7 +277,7 @@ class GuideDMLightningModule(pl.LightningModule):
         wd_long = wasserstein_distance(long_acc_gt_all, long_acc_pred_all)
         wd_lat = wasserstein_distance(lat_acc_gt_all, lat_acc_pred_all)
         wd_jerk = wasserstein_distance(jerk_gt_all, jerk_pred_all)
-
+        
         realism_deviation = (wd_long + wd_lat + wd_jerk) / 3.0
 
         self.log('wd_long', wd_long, prog_bar=True)

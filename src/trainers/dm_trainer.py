@@ -78,7 +78,7 @@ class DMLightningModule(pl.LightningModule):
 
         self.log('train/dm_loss',loss, on_step=True, on_epoch=False,batch_size=self.batch_size,prog_bar=True)
         return loss
-        
+    
 
   
     def validation_step(self, batch):
@@ -101,9 +101,4 @@ class DMLightningModule(pl.LightningModule):
     
         checkpoint["state_dict"] = dm_only_sd
 
-    # def on_after_backward(self):
-    #     max_norm=1e6
-    #     total_norm = torch.nn.utils.clip_grad_norm(self.dm.parameters(),max_norm=max_norm)
-
-    #     total_norm=  float(total_norm)
-    #     self.log('grad_norm', total_norm,on_step=True,on_epoch=False)
+    
