@@ -13,6 +13,17 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
 - **Reward-Guided Optimization:** Uses reinforcement learning to steer the generative process for enhanced controllability.
 - **Comprehensive Evaluation:** Demonstrates improvements in realism and safety metrics compared to state-of-the-art baselines.
 
+## Video Demonstrations
+
+Below are some demonstration videos showcasing scenario generation with CLD.
+![CLD Demo GIF](video/01.gif)
+![CLD Demo GIF](video/02.gif)
+![CLD Demo GIF](video/03.gif)
+![CLD Demo GIF](video/04.gif)
+![CLD Demo GIF](video/05.gif)
+![CLD Demo GIF](video/06.gif)
+![CLD Demo GIF](video/07.gif)
+![CLD Demo GIF](video/08.gif)
 
 ## Installation
 
@@ -73,3 +84,4 @@ Once you have updated config.yaml with your desired training mode, simply run:
     ```
     python train.py
     ```
+
