@@ -1,4 +1,4 @@
-name: hf
+name: cld
 channels:
   - pytorch
   - nvidia
