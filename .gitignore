@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# 输出目录
+trajectory_prediction/outputs/logs/*
+trajectory_prediction/outputs/checkpoints/*
+trajectory_prediction/outputs/visualizations/*
+!trajectory_prediction/outputs/*/README.md
+
+# IDE
+.vscode/*
+!.vscode/launch.json
+    .idea/
+
+# 忽略notebooks中的视频文件
+trajectory_prediction/notebooks/**/*.avi
+
+

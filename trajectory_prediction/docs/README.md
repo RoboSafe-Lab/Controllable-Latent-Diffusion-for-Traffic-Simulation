@@ -33,18 +33,31 @@ l5kit要求PyTorch版本在1.5.0到2.0.0之间，和lightning冲突,所以先不
 pip install l5kit --no-deps 
 ```
 
-### 安装Pytorch_Lightning: 2.2版本
+### 安装 Pytorch_Lightning: 2.2版本
 
 ```bash
 conda install pytorch-lightning=2.2.0 -c conda-forge 
 ```
 
-### 安装PyTorch
+### 安装 PyTorch
 
 ```bash
 conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
 ```
-
+### 安装 Trajdata
+```bash
+pip install "trajdata[nusc]"
+```
+### 安装 tbsim
+```bash
+cd third_party/tbsim
+pip install -e .
+```
+### Matplotlib 检查版本(应该是3.5.3, 过高版本和nuscenes不兼容)
+```bash
+pip uninstall -y matplotlib
+pip install matplotlib==3.5.3
+```
 
 ## 验证安装
 
