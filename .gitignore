@@ -23,18 +23,20 @@ var/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# 输出目录
-trajectory_prediction/outputs/logs/*
-trajectory_prediction/outputs/checkpoints/*
-trajectory_prediction/outputs/visualizations/*
-!trajectory_prediction/outputs/*/README.md
-
 # IDE
 .vscode/*
 !.vscode/launch.json
-    .idea/
+.idea/
+.cursor/
 
 # 忽略notebooks中的视频文件
-trajectory_prediction/notebooks/**/*.avi
-
+/notebooks/**/*.avi
+# 忽略notebooks中的所有视频文件
+/notebooks/**/*.mp4
+/notebooks/**/*.mkv
+# 忽略notebooks中的所有音频文件
+/notebooks/**/*.mp3
+/notebooks/**/*.wav
+# 忽略docs/batch分析.md
+/docs/batch分析.md
 
