@@ -16,12 +16,12 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
 ## Video Demonstrations
 
 Below are some demonstration videos showcasing scenario generation with CLD.
-![CLD Demo GIF](video/01.gif)
-![CLD Demo GIF](video/03.gif)
-![CLD Demo GIF](video/04.gif)
-![CLD Demo GIF](video/05.gif)
-![CLD Demo GIF](video/06.gif)
-![CLD Demo GIF](video/07.gif)
+![CLD Demo GIF](video/1.gif)
+![CLD Demo GIF](video/2.gif)
+![CLD Demo GIF](video/3.gif)
+![CLD Demo GIF](video/4.gif)
+![CLD Demo GIF](video/5.gif)
+
 
 
 ## Installation
