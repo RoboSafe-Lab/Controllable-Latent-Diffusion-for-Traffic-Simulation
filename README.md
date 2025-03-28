@@ -16,7 +16,7 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
 ## Video Demonstrations
 <!-- Start of Selection -->
 
-以下是展示CLD场景生成的一些演示视频（请注意，GIF可能无法在此预览中显示）：
+
 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
     <div>
         <img src="video/1.gif" alt="CLD Demo GIF" style="width: 100%;">
