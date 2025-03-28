@@ -14,13 +14,25 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
 - **Comprehensive Evaluation:** Demonstrates improvements in realism and safety metrics compared to state-of-the-art baselines.
 
 ## Video Demonstrations
+<!-- Start of Selection -->
 
-Below are some demonstration videos showcasing scenario generation with CLD.
-![CLD Demo GIF](video/1.gif)
-![CLD Demo GIF](video/2.gif)
-![CLD Demo GIF](video/3.gif)
-![CLD Demo GIF](video/4.gif)
-![CLD Demo GIF](video/5.gif)
+以下是展示CLD场景生成的一些演示视频（请注意，GIF可能无法在此预览中显示）：
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+    <div>
+        <img src="video/1.gif" alt="CLD Demo GIF" style="width: 100%;">
+    </div>
+    <div>
+        <img src="video/2.gif" alt="CLD Demo GIF" style="width: 100%;">
+    </div>
+    <div>
+        <img src="video/3.gif" alt="CLD Demo GIF" style="width: 100%;">
+    </div>
+    <div>
+        <img src="video/4.gif" alt="CLD Demo GIF" style="width: 100%;">
+    </div>
+</div>
+
+<!-- End of Selection -->
 
 
 
