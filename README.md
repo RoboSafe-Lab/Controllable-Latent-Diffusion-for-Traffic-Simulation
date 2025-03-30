@@ -28,7 +28,7 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
         <img src="video/3.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
     <div>
-        <img src="video/4.gif" alt="CLD Demo GIF" style="width: 100%;">
+        <img src="video/0.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
 </div>
 
