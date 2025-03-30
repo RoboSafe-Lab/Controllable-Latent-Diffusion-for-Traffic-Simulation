@@ -1,7 +1,15 @@
-import torch
-import l5kit
-import pytorch_lightning as pl
+def print_triangle(height):
+    for i in range(height):
+        # 打印空格
+        for j in range(height - i - 1):
+            print(" ", end="")
+        # 打印星号
+        for k in range(2 * i + 1):
+            print("*", end="")
+        print()  # 换行
 
-print(f"PyTorch版本: {torch.__version__}")
-print(f"l5kit版本: {l5kit.__version__}")
-print(f"PyTorch Lightning版本: {pl.__version__}")
+# 设置三角形高度
+height = 5
+print("打印一个三角形:")
+print_triangle(height)
+

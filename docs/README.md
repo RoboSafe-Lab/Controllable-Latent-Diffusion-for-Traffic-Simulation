@@ -42,8 +42,17 @@ conda install pytorch-lightning=2.2.0 -c conda-forge
 ### 安装 PyTorch
 
 ```bash
+linux:
 conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 pytorch-cuda=11.7 -c pytorch -c nvidia
+
+osx:
+conda install pytorch==1.13.1 torchvision==0.14.1 torchaudio==0.13.1 -c pytorch
 ```
+### 检查numpy版本
+```bash
+conda install numpy=1.23.5
+```
+
 ### 安装 Trajdata
 ```bash
 pip install "trajdata[nusc]"

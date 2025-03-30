@@ -3,36 +3,30 @@ dataset:
   # 数据集基本信息
   name: "nusc_mini"  # 使用nuScenes迷你版，可选值: nusc_mini, nusc_trainval
   split: "mini_train"  # 数据集分割: train, train_val, mini_train
-  data_root: "/home/visier/nuscenes"  # 数据集根目录
+  data_root: "/Users/visier/nuscenes" #"/home/visier/nuscenes"  # 数据集根目录
   
   
   # 轨迹参数设置
-  history_sec: 2 # 历史轨迹时长（秒）
-  future_sec:  7 # 未来轨迹时长（秒）
+  history_sec: 3 # 历史轨迹时长（秒）
+  future_sec:  10 # 未来轨迹时长（秒）
   desired_dt: 0.1   # 采样间隔（秒）
   
  
-  cache_location: "/home/visier/cld_cache"
+  cache_location: "/Users/visier/cld_cache"   #"/home/visier/cld_cache"
   rebuild_cache: true
-  standardize_data: false
+  standardize_data: true
 
   raster_map_params:
-    px_per_m: 1
+    px_per_m: 0.5
     map_size_px: 224
     offset_frac_xy: [-0.5, 0.0]
     return_rgb: true           # 返回彩色地图
     no_map_fill_value: -1.0
 
-  vector_map_params:
-    incl_road_lanes: true
-    incl_road_areas: false
-    incl_ped_crosswalks: false
-    incl_ped_walkways: false
-    collate: false
-    keep_in_memory: true
+
 
 # 数据加载设置
 dataloader:
   batch_size: 32
-  num_workers: 12
+  num_workers: 0
 
