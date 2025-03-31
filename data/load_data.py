@@ -8,7 +8,7 @@ from trajdata import UnifiedDataset
 from torch.utils.data import DataLoader
 from trajdata import AgentType
 from tbsim.utils.batch_utils import batch_utils, set_global_batch_type
-
+from collections import defaultdict
 def load_config(config_path):
     """加载YAML配置文件"""
     with open(config_path, 'r') as f:
@@ -24,15 +24,7 @@ def create_dataset(config):
     data_dirs = {
         dataset_config['name']: dataset_config['data_root']
     }
-    
-    # 创建交互距离字典
-    agent_interaction_distances = dict()
-    agent_interaction_distances[(AgentType.VEHICLE, AgentType.VEHICLE)] = 50.0  # 车辆与车辆交互距离50米
-    agent_interaction_distances[(AgentType.VEHICLE, AgentType.PEDESTRIAN)] = 30.0  # 修改：增加车辆与行人交互距离
-    agent_interaction_distances[(AgentType.VEHICLE, AgentType.BICYCLE)] = 30.0  # 修改：增加车辆与自行车交互距离
-    agent_interaction_distances[(AgentType.PEDESTRIAN, AgentType.VEHICLE)] = 30.0  # 修改：增加行人与车辆交互距离
-    agent_interaction_distances[(AgentType.BICYCLE, AgentType.VEHICLE)] = 30.0  # 修改：增加自行车与车辆交互距离
-    
+
     # 创建统一数据集
     dataset = UnifiedDataset(
         desired_data=[dataset_config['name'] + "-" + dataset_config['split']],
@@ -40,8 +32,7 @@ def create_dataset(config):
         desired_dt=dataset_config['desired_dt'],
         history_sec=(dataset_config['history_sec'], dataset_config['history_sec']),
         future_sec=(dataset_config['future_sec'], dataset_config['future_sec']),
-        agent_interaction_distances=agent_interaction_distances,
-        only_predict=[AgentType.VEHICLE],  # 只预测车辆
+        agent_interaction_distances= defaultdict(lambda: 30.0),
         only_types=[AgentType.VEHICLE],    # 只考虑车辆
         centric="agent",                   # 修改：从"scene"改为"agent"
         cache_location=dataset_config.get('cache_location', '~/cld_cache'),
@@ -55,7 +46,7 @@ def create_dataset(config):
             "no_map_fill_value": -1.0
         }),
         standardize_data=True,             # 修改：建议改为True，便于agent-centric模式下的学习
-        max_neighbor_num=10,               # 新增：限制邻居数量
+        max_neighbor_num=20,               # 新增：限制邻居数量
         ego_only=False,                    # 新增：是否只预测ego vehicle
         verbose=True,
     )

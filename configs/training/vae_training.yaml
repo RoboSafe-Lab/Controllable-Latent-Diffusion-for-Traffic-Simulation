@@ -1,0 +1,27 @@
+# 训练配置
+training:
+  # 基本设置
+  output_dir: "results/vae_training"
+  max_epochs: 100
+  checkpoint: null  # 默认为null，如需从检查点恢复则指定路径
+  log_every_n_steps: 50
+  
+  # 优化器设置
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  gradient_clip_val: 1.0
+  
+  # VAE特定设置
+  kl_weight: 0.1
+  
+  # 早停设置
+  early_stopping: true
+  patience: 5
+  
+  # 学习率调度器设置
+  lr_scheduler: true
+
+  # wandb配置
+  wandb_project: "cld-vae"  # wandb项目名称
+  wandb_run_name: null  # 设为null将使用自动生成的名称
+  wandb_log_model: false  # 是否将模型上传到wandb
