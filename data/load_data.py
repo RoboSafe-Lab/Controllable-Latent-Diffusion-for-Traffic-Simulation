@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 import yaml, os
 import argparse
+import copy
+import pytorch_lightning as pl
 from trajdata import UnifiedDataset
 from torch.utils.data import DataLoader
 from trajdata import AgentType
 from tbsim.utils.batch_utils import batch_utils, set_global_batch_type
 from collections import defaultdict
+
 def load_config(config_path):
     """加载YAML配置文件"""
     with open(config_path, 'r') as f:
@@ -16,9 +18,12 @@ def load_config(config_path):
     return config
 
 
-def create_dataset(config):
-    """根据配置创建数据集"""
-    dataset_config = config['dataset']
+def create_dataset(config, split=None):
+    dataset_config = copy.deepcopy(config['dataset'])
+    
+    # 如果提供了split参数，则覆盖配置中的split
+    if split is not None:
+        dataset_config['split'] = split
     
     # 定义数据路径
     data_dirs = {
@@ -32,9 +37,9 @@ def create_dataset(config):
         desired_dt=dataset_config['desired_dt'],
         history_sec=(dataset_config['history_sec'], dataset_config['history_sec']),
         future_sec=(dataset_config['future_sec'], dataset_config['future_sec']),
-        agent_interaction_distances= defaultdict(lambda: 30.0),
+        agent_interaction_distances=defaultdict(lambda: 50.0),
         only_types=[AgentType.VEHICLE],    # 只考虑车辆
-        centric="agent",                   # 修改：从"scene"改为"agent"
+        centric="agent",           
         cache_location=dataset_config.get('cache_location', '~/cld_cache'),
         rebuild_cache=dataset_config.get('rebuild_cache', False),
         incl_raster_map=True,
@@ -54,43 +59,104 @@ def create_dataset(config):
     return dataset
 
 
-def create_dataloader(dataset, config):
-    """创建数据加载器"""
+def create_dataloader(dataset, config, shuffle=None):
+    """创建数据加载器，允许动态覆盖shuffle参数"""
     dataloader_config = config['dataloader']
+    
+    # 确定是否打乱数据
+    shuffle_data = dataloader_config.get('shuffle', True)
+    if shuffle is not None:
+        shuffle_data = shuffle
     
     dataloader = DataLoader(
         dataset,
         batch_size=dataloader_config['batch_size'],
-        shuffle=True,
+        shuffle=shuffle_data,
         num_workers=dataloader_config['num_workers'],
-        collate_fn=dataset.get_collate_fn(return_dict=True)
+        collate_fn=dataset.get_collate_fn(return_dict=True),
+        drop_last=True
     )
     
     return dataloader
 
 
+class VAEDataModule(pl.LightningDataModule):
+    """处理VAE训练的数据模块"""
+    
+    def __init__(self, dataset_config):
+        super().__init__()
+        self.dataset_config = dataset_config
+        self.train_dataset = None
+        self.val_dataset = None
+    
+    
+    def setup(self, stage=None):
+        """准备训练和验证数据集"""
+        config = copy.deepcopy(self.dataset_config)
+        train_split = config['dataset']['train_split']
+        val_split = config['dataset']['val_split']
+        self.train_dataset = create_dataset(config, split=train_split)
+        self.val_dataset = create_dataset(config, split=val_split)
+      
+    
+    def train_dataloader(self):
+        """返回训练数据加载器"""
+        return create_dataloader(self.train_dataset, self.dataset_config, shuffle=True)
+    
+    def val_dataloader(self):
+        """返回验证数据加载器"""
+        return create_dataloader(self.val_dataset, self.dataset_config, shuffle=False)
+
 
 def main():
     parser = argparse.ArgumentParser(description='从配置文件加载nuScenes数据')
     parser.add_argument('--config', type=str, default='config.yaml', help='配置文件路径')
+    parser.add_argument('--test_datamodule', action='store_true', help='测试VAEDataModule')
     args = parser.parse_args()
     set_global_batch_type("trajdata")
+    
     # 加载配置
     config = load_config(args.config)
     
-    # 创建数据集
-    dataset = create_dataset(config)
-    print(f"数据集大小: {len(dataset)}个样本")
-    
-    # 创建数据加载器
-    dataloader = create_dataloader(dataset, config)
-    
-    # 获取一个批次并显示信息
-    print("加载第一个批次...")
-    for batch in dataloader:
-        batch = batch_utils().parse_batch(batch) 
-        batch_size = len(batch)
-        print(f"批次大小: {batch_size}")
+    if args.test_datamodule:
+        # 测试VAEDataModule
+        print("初始化并测试 VAEDataModule...")
+        data_module = VAEDataModule(config)
+        data_module.setup()
+        
+        # 输出数据集信息
+        print(f"训练数据集大小: {len(data_module.train_dataset)}个样本")
+        print(f"验证数据集大小: {len(data_module.val_dataset)}个样本")
+        
+        # 测试数据加载器
+        train_loader = data_module.train_dataloader()
+        val_loader = data_module.val_dataloader()
+        
+        print("获取训练批次样本...")
+        train_batch = next(iter(train_loader))
+        train_batch = batch_utils().parse_batch(train_batch)
+        print(f"训练批次大小: {len(train_batch)}")
+        
+        print("获取验证批次样本...")
+        val_batch = next(iter(val_loader))
+        val_batch = batch_utils().parse_batch(val_batch)
+        print(f"验证批次大小: {len(val_batch)}")
+    else:
+        # 原始测试流程
+        # 创建数据集
+        dataset = create_dataset(config)
+        print(f"数据集大小: {len(dataset)}个样本")
+        
+        # 创建数据加载器
+        dataloader = create_dataloader(dataset, config)
+        
+        # 获取一个批次并显示信息
+        print("加载第一个批次...")
+        for batch in dataloader:
+            batch = batch_utils().parse_batch(batch) 
+            batch_size = len(batch)
+            print(f"批次大小: {batch_size}")
+            break
 
 
 if __name__ == '__main__':

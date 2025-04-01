@@ -5,6 +5,7 @@ training:
   max_epochs: 100
   checkpoint: null  # 默认为null，如需从检查点恢复则指定路径
   log_every_n_steps: 50
+  val_check_interval: 1.0  # 验证检查间隔，1.0表示每个epoch结束后检查一次；可以设置为0.0-1.0的浮点数（表示每个epoch的比例）或整数（表示每N个训练批次）
   
   # 优化器设置
   learning_rate: 0.001

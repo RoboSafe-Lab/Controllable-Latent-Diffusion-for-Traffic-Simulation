@@ -67,6 +67,10 @@ pip install -e .
 pip uninstall -y matplotlib
 pip install matplotlib==3.5.3
 ```
+### 安装wandb
+```bash
+pip install wandb
+```
 
 ## 验证安装
 

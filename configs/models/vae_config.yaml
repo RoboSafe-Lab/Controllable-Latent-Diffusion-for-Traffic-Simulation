@@ -1,0 +1,5 @@
+model:
+  input_dim: 512
+  hidden_dim: 256
+  latent_dim: 128
+  learning_rate: 0.001
