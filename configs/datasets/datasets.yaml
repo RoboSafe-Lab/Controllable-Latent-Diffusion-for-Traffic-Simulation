@@ -28,6 +28,6 @@ dataset:
 
 # 数据加载设置
 dataloader:
-  batch_size: 32
+  batch_size: 1
   num_workers: 0
 

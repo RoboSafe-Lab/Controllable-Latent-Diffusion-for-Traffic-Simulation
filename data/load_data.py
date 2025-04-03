@@ -10,13 +10,31 @@ from torch.utils.data import DataLoader
 from trajdata import AgentType
 from tbsim.utils.batch_utils import batch_utils, set_global_batch_type
 from collections import defaultdict
-
+import numpy as np
+from utils import current_lanes, lane_points, get_agent_lane, get_vector_map
 def load_config(config_path):
     """加载YAML配置文件"""
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     return config
 
+
+def get_lane_info(x):
+    """返回一个包含地图查询功能的字典"""
+    vector_map = x.vec_map
+    return {
+        "map": vector_map,
+        # 根据位置查询最近的车道
+        "get_lanes_at_point": lambda pos, dist=2.0: vector_map.get_lanes_within(pos, dist),
+        
+        # 根据位置和朝向查询当前车道
+        "get_current_lanes": lambda pos, heading, max_dist=2.0, max_heading_error=np.pi/4: 
+            vector_map.get_current_lane(
+                np.array([pos[0], pos[1], 0, heading]),
+                max_dist=max_dist,
+                max_heading_error=max_heading_error
+            )
+    }
 
 def create_dataset(config, split=None):
     dataset_config = copy.deepcopy(config['dataset'])
@@ -52,15 +70,28 @@ def create_dataset(config, split=None):
         }),
         standardize_data=True,             # 修改：建议改为True，便于agent-centric模式下的学习
         max_neighbor_num=20,               # 新增：限制邻居数量
-        ego_only=False,                    # 新增：是否只预测ego vehicle
+        ego_only=True,                    # 新增：是否只预测ego vehicle
         verbose=True,
+        incl_vector_map=True,
+        vector_map_params={
+        "incl_road_lanes": True,
+        "incl_road_areas": False,  # 这个参数是必需的
+        "incl_ped_crosswalks": False,
+        "incl_ped_walkways": False,
+        "collate": True,           # 关键：确保这个设置为 True
+        "keep_in_memory": True,
+    },
+        extras={"vector_map":lambda x:x.vec_map}
+            
+                
     )
     
     return dataset
 
+ 
 
 def create_dataloader(dataset, config, shuffle=None):
-    """创建数据加载器，允许动态覆盖shuffle参数"""
+    """创建数据加载器,允许动态覆盖shuffle参数"""
     dataloader_config = config['dataloader']
     
     # 确定是否打乱数据
@@ -73,7 +104,7 @@ def create_dataloader(dataset, config, shuffle=None):
         batch_size=dataloader_config['batch_size'],
         shuffle=shuffle_data,
         num_workers=dataloader_config['num_workers'],
-        collate_fn=dataset.get_collate_fn(return_dict=True),
+        collate_fn=custom_collate_fn,#dataset.get_collate_fn(return_dict=True),
         drop_last=True
     )
     
@@ -144,7 +175,7 @@ def main():
     else:
         # 原始测试流程
         # 创建数据集
-        dataset = create_dataset(config)
+        dataset = create_dataset(config, split="mini_train")
         print(f"数据集大小: {len(dataset)}个样本")
         
         # 创建数据加载器
@@ -154,6 +185,7 @@ def main():
         print("加载第一个批次...")
         for batch in dataloader:
             batch = batch_utils().parse_batch(batch) 
+            print(batch['extras']['current_lane'])
             batch_size = len(batch)
             print(f"批次大小: {batch_size}")
             break
