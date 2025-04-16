@@ -17,20 +17,19 @@ Codebase for **CLD**, focusing on the generation of controllable and dynamic haz
 <!-- Start of Selection -->
 
 
-<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;">
+<div style="display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px;">
     <div>
         <img src="video/0.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
     <div>
         <img src="video/1.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
-     <div>
+    <div>
         <img src="video/2.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
     <div>
         <img src="video/3.gif" alt="CLD Demo GIF" style="width: 100%;">
     </div>
- 
 </div>
 
 <!-- End of Selection -->
